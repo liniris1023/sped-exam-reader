@@ -1,0 +1,3236 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>評量報讀系統</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Tesseract.js (支援掛載最佳精度 tessdata_best 繁體中文模型) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- LZ-String (網址壓縮，供 QR Code 跨平板派卷) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- 載入 Microsoft Edge TTS Neural 瀏覽器直連模組 -->
+  <script type="module">
+    import { EdgeTTS, Communicate } from 'https://cdn.jsdelivr.net/npm/edge-tts-universal/dist/browser.js';
+    window.EdgeTTSModule = { EdgeTTS, Communicate };
+    window.dispatchEvent(new CustomEvent('edgetts-loaded'));
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+    
+    body {
+      font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+      background-color: #f8fafc;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* 逐字高亮動畫與樣式 */
+    .word-span {
+      transition: all 0.1s ease;
+      border-radius: 0.35rem;
+      padding: 0 2px;
+      display: inline;
+    }
+    .word-active {
+      background-color: #fde047 !important; /* 亮黃色高對比 */
+      color: #0f172a !important;
+      font-weight: 900;
+      box-shadow: 0 0 0 3px #fde047;
+    }
+    /* 被消音的考注音目標字樣式（視覺顯示，但語音不洩題） */
+    .word-masked-zhuyin {
+      color: #be123c;
+      border-bottom: 3px dashed #f43f5e;
+      padding: 0 3px;
+      position: relative;
+    }
+
+    /* 題目卡片播放中邊框呼吸燈 */
+    .card-playing {
+      border-color: #2563eb !important;
+      background-color: #eff6ff !important;
+      box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.25), 0 0 0 3px #3b82f6 !important;
+    }
+
+    /* 畫布框選十字游標 */
+    .canvas-crop-cursor {
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    /* 自訂捲軸 */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+
+  <!-- 頂部導覽列 -->
+  <header class="bg-indigo-700 text-white shadow-lg sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2">
+      <!-- 網站標題 -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-amber-400 text-indigo-950 flex items-center justify-center font-black text-xl shadow">
+          <i class="fa-solid fa-volume-high"></i>
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-black tracking-wide flex items-center gap-2">
+            評量報讀系統
+          </h1>
+          <p class="text-xs text-indigo-200 hidden sm:block">只讀題目 ‧ □唸「框框」‧【】（）唸「括弧」‧ 選項唸出 1. 2. 3. 4.</p>
+        </div>
+      </div>
+
+      <!-- 中央：多語音聲線選擇 + 試聽 + 語速控制 -->
+      <div class="flex flex-wrap items-center gap-1.5 bg-indigo-800/90 p-1.5 rounded-xl border border-indigo-600">
+        <div class="flex items-center gap-1">
+          <i class="fa-solid fa-headphones text-amber-300 text-xs pl-1.5"></i>
+          <select id="voiceQuickSelect" onchange="changeSelectedVoice(this.value, true)" 
+            class="bg-indigo-950 text-amber-300 font-bold text-xs sm:text-sm px-2 py-1.5 rounded-lg border border-indigo-500 focus:outline-none cursor-pointer max-w-[190px] sm:max-w-[240px]">
+            <option value="preset:female_warm">👩 台灣溫柔女聲 (曉臻/雅婷)</option>
+            <option value="preset:male_clear">👨 台灣清晰男聲 (雲哲/志威)</option>
+            <option value="preset:female_bright">👧 台灣清脆女聲 (曉雨/涵涵)</option>
+          </select>
+          <button onclick="previewCurrentVoice()" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-sky-500 hover:bg-sky-400 text-slate-950 shadow transition flex items-center gap-1" title="試聽目前選擇的聲音">
+            <i class="fa-solid fa-volume-high"></i>
+            <span class="hidden md:inline">試聽</span>
+          </button>
+        </div>
+
+        <span class="text-indigo-500 hidden sm:inline">|</span>
+
+        <button onclick="setSpeechRate(0.6)" id="rateBtn-0.6" class="rate-btn px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-indigo-900/50 text-indigo-200 hover:bg-indigo-700">
+          🐢 慢速
+        </button>
+        <button onclick="setSpeechRate(0.85)" id="rateBtn-0.85" class="rate-btn px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-amber-400 text-indigo-950 shadow">
+          🚶 適中
+        </button>
+        <button onclick="setSpeechRate(1.0)" id="rateBtn-1.0" class="rate-btn px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-indigo-900/50 text-indigo-200 hover:bg-indigo-700">
+          🏃 正常
+        </button>
+        <button onclick="stopAllSpeech()" class="ml-0.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-rose-500 hover:bg-rose-600 text-white shadow flex items-center gap-1" title="停止報讀">
+          <i class="fa-solid fa-stop"></i> <span>停止</span>
+        </button>
+      </div>
+
+      <!-- 右側工具按鈕 -->
+      <div class="flex items-center gap-2">
+        <button onclick="openQrModal()" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black bg-emerald-400 hover:bg-emerald-300 text-emerald-950 shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-qrcode text-base"></i>
+          <span>學生掃碼 QR Code</span>
+        </button>
+        <button onclick="openPasteModal()" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-amber-400 hover:bg-amber-300 text-indigo-950 shadow transition flex items-center gap-1.5">
+          <i class="fa-solid fa-paste"></i>
+          <span class="hidden sm:inline">貼上文字</span>
+        </button>
+        <button onclick="openSettingsModal()" class="p-2 rounded-xl bg-indigo-800 hover:bg-indigo-600 text-indigo-100 border border-indigo-600 transition" title="Edge TTS 語音與辨識設定">
+          <i class="fa-solid fa-gear text-base"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 頂部核心操作列：拍照 / 框選報讀 / 點選文字報讀 -->
+  <section class="bg-gradient-to-r from-indigo-50 via-blue-50 to-amber-50 border-b border-indigo-100 shadow-sm">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3.5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- 1. 拍照考卷 -->
+        <label class="cursor-pointer bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-2xl p-3.5 shadow-md flex items-center gap-3.5 transition border-2 border-blue-500">
+          <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-2xl shrink-0">
+            <i class="fa-solid fa-camera"></i>
+          </div>
+          <div>
+            <div class="font-black text-base sm:text-lg leading-tight">1. 拍照考卷題目</div>
+            <div class="text-xs text-blue-100 mt-0.5">銳利化增強，拍下直接畫框報讀</div>
+          </div>
+          <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
+        </label>
+
+        <!-- 2. 手指框選報讀專區按鈕 -->
+        <button onclick="focusCropCanvas()" class="bg-amber-400 hover:bg-amber-300 active:scale-95 text-indigo-950 rounded-2xl p-3.5 shadow-md border-2 border-amber-500 flex items-center gap-3.5 text-left transition">
+          <div class="w-12 h-12 rounded-xl bg-indigo-950 text-amber-400 flex items-center justify-center text-2xl shrink-0 shadow">
+            <i class="fa-solid fa-crop-simple"></i>
+          </div>
+          <div>
+            <div class="font-black text-base sm:text-lg leading-tight">2. 手指框選報讀</div>
+            <div class="text-xs text-indigo-950/80 font-bold mt-0.5">在考卷上框哪裡、就只讀哪裡！</div>
+          </div>
+        </button>
+
+        <!-- 3. 選取照片 / 上傳 PDF -->
+        <div class="flex gap-2">
+          <label class="flex-1 cursor-pointer bg-white hover:bg-indigo-50 active:scale-95 text-indigo-900 rounded-2xl p-3 shadow-sm border-2 border-indigo-200 flex flex-col items-center justify-center text-center transition">
+            <i class="fa-regular fa-image text-xl text-indigo-600 mb-1"></i>
+            <span class="font-black text-sm">選取照片</span>
+            <span class="text-[11px] text-slate-500">相簿或截圖</span>
+            <input type="file" id="imageInput" accept="image/*" multiple class="hidden" onchange="handleImageUpload(event)">
+          </label>
+
+          <label class="flex-1 cursor-pointer bg-white hover:bg-rose-50 active:scale-95 text-rose-900 rounded-2xl p-3 shadow-sm border-2 border-rose-200 flex flex-col items-center justify-center text-center transition">
+            <i class="fa-solid fa-file-pdf text-xl text-rose-600 mb-1"></i>
+            <span class="font-black text-sm">上傳 PDF</span>
+            <span class="text-[11px] text-slate-500">100% 原生文字</span>
+            <input type="file" id="pdfInput" accept="application/pdf" class="hidden" onchange="handlePdfUpload(event)">
+          </label>
+        </div>
+
+        <!-- 4. 顯示平板掃描 QR Code -->
+        <button onclick="openQrModal()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-2xl p-3.5 shadow-sm border-2 border-emerald-500 flex items-center gap-3 text-left transition">
+          <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-2xl shrink-0">
+            <i class="fa-solid fa-qrcode"></i>
+          </div>
+          <div>
+            <div class="font-black text-base sm:text-lg leading-tight">平板掃描 QR Code</div>
+            <div class="text-xs text-emerald-100 mt-0.5">學生先掃碼 ➔ 再拍照或點題</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- 底部版面方向設定與防洩題規則列 -->
+      <div class="mt-3 pt-2.5 border-t border-indigo-100/80 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="font-black text-indigo-950"><i class="fa-solid fa-compass-drafting text-indigo-600 mr-1"></i>文字辨識方向：</span>
+          <div class="inline-flex bg-white p-0.5 rounded-xl border border-slate-300 shadow-sm">
+            <button onclick="setTextDirection('auto')" id="dirBtn-auto" class="dir-btn px-2.5 py-1 rounded-lg font-bold bg-indigo-600 text-white transition">
+              ✨ 自動偵測 (橫/直/數學)
+            </button>
+            <button onclick="setTextDirection('horizontal')" id="dirBtn-horizontal" class="dir-btn px-2.5 py-1 rounded-lg font-bold text-slate-600 hover:text-slate-900 transition">
+              ↔️ 橫式文字 (由左至右)
+            </button>
+            <button onclick="setTextDirection('vertical')" id="dirBtn-vertical" class="dir-btn px-2.5 py-1 rounded-lg font-bold text-slate-600 hover:text-slate-900 transition">
+              ↕️ 直行國語 (由右至左)
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <span id="ttsEngineStatusBadge" onclick="openSettingsModal()" class="cursor-pointer text-xs font-bold px-2.5 py-1 rounded-full bg-sky-100 text-sky-900 border border-sky-300 hover:bg-sky-200">
+            <i class="fa-solid fa-headphones mr-1"></i>聲音：溫柔女聲
+          </span>
+          <button onclick="clearAllQuestions()" class="text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-full transition">
+            <i class="fa-solid fa-trash-can mr-1"></i>清空紀錄
+          </button>
+          <button onclick="loadDemoExam()" class="text-xs font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-full transition">
+            <i class="fa-solid fa-rotate-left mr-1"></i>載入範例題目
+          </button>
+          <span id="ocrEngineBadge" onclick="openSettingsModal()" class="cursor-pointer text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200">
+            <i class="fa-solid fa-bolt mr-1"></i>只讀題目高精準辨識
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 辨識進度條提示區 -->
+  <div id="loadingOverlay" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-3">
+    <div class="max-w-4xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <i class="fa-solid fa-circle-notch fa-spin text-amber-600 text-xl"></i>
+        <div>
+          <div id="loadingTitle" class="font-bold text-amber-900 text-sm sm:text-base">正在強化文字銳利度並高精準辨識...</div>
+          <div id="loadingSub" class="text-xs text-amber-700">自動偵測括弧與考注音題型（考注音不唸出目標字讀音）</div>
+        </div>
+      </div>
+      <div class="w-36 sm:w-48 bg-amber-200 rounded-full h-2.5 overflow-hidden">
+        <div id="loadingBar" class="bg-amber-600 h-2.5 rounded-full transition-all duration-300" style="width: 45%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 框選報讀專用：置頂即時大字報讀看板 -->
+  <section id="liveSpotlightSection" class="max-w-7xl w-full mx-auto px-3 sm:px-6 pt-4">
+    <div id="liveSpotlightCard" class="bg-white rounded-3xl p-4 sm:p-5 shadow-md border-2 border-indigo-500 flex flex-col gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="px-2.5 py-1 rounded-lg bg-amber-400 text-indigo-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-crop-simple"></i> 目前框選 / 點選報讀文字
+          </span>
+          <!-- 單題「考注音遮音模式」快速切換按鈕 -->
+          <button onclick="toggleSpotlightZhuyinQuizMode()" id="spotlightZhuyinBadge" 
+            class="px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center gap-1 bg-slate-100 text-slate-600 border-slate-300 hover:bg-rose-50"
+            title="開啟時，括弧前的被考國字（或「」內的字）不會唸出讀音，避免洩題！">
+            <i class="fa-solid fa-ear-deaf"></i>
+            <span id="spotlightZhuyinBadgeText">考注音消音：自動偵測</span>
+          </button>
+          <img id="lastCropThumb" class="hidden h-9 rounded border border-slate-300 bg-white object-contain px-1" alt="框選截圖">
+          <span id="ttsSynthesizingSpinner" class="hidden text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+            <i class="fa-solid fa-spinner fa-spin"></i> Edge TTS 合成中...
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="speakLiveSpotlightText()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black text-sm sm:text-base shadow flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-volume-high text-lg"></i>
+            <span>立即報讀題目</span>
+          </button>
+          <button onclick="toggleSpotlightEdit()" id="spotlightEditBtn" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition flex items-center gap-1">
+            <i class="fa-solid fa-pen"></i>
+            <span>改字</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 大字逐字高亮顯示區 -->
+      <div id="liveSpotlightDisplay" onclick="speakLiveSpotlightText()" 
+        class="cursor-pointer font-black text-slate-900 leading-relaxed py-1 px-2 rounded-xl hover:bg-slate-50 transition"
+        style="font-size: 26px;">
+        請在下方考卷圖片上「用手指畫框」框選題目或點選右側題目卡，系統只讀題目，遇到 □ 唸「框框」、【】（）唸「括弧」、選項 (1) 唸數字！
+      </div>
+
+      <!-- 實際語音唸法預覽小提示 -->
+      <div class="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
+        <i class="fa-solid fa-comment-dots text-indigo-500"></i>
+        <span>實際發音內容：</span>
+        <span id="actualSpokenPreview" class="font-bold text-indigo-900 truncate">（點擊題目或框選後顯示實際唸出的語音文字）</span>
+      </div>
+
+      <!-- 點擊「改字」時展開的即時修改框 -->
+      <div id="liveSpotlightEditorWrap" class="hidden flex flex-col gap-2 pt-1">
+        <div class="flex gap-2">
+          <input type="text" id="liveSpotlightInput" 
+            class="flex-1 px-3.5 py-2 rounded-xl border-2 border-indigo-400 text-lg font-bold text-slate-900 focus:outline-none"
+            placeholder="可直接修改辨識文字；若某字不想唸出讀音可用 {{字}} 包起來">
+          <button onclick="saveSpotlightEdit()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shrink-0">
+            確認並報讀
+          </button>
+        </div>
+        <p class="text-xs text-slate-500">
+          💡 規則說明：<code class="bg-slate-200 px-1 rounded">□</code> 唸「框框」，空白 <code class="bg-slate-200 px-1 rounded">【 】</code> 與 <code class="bg-slate-200 px-1 rounded">（ ）</code> 唸「括弧」，選項 <code class="bg-slate-200 px-1 rounded">(1)</code> 唸數字「1」；若手動指定某字消音可用 <code class="bg-slate-200 px-1 rounded">{{字}}</code> 包住。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 主工作區：左側大面積「考卷框選報讀畫布」 (佔 7 欄) + 右側「純文字點選題卡」 (佔 5 欄) -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 flex flex-col gap-4">
+
+    <!-- 檢視切換與報讀規則開關列 -->
+    <div class="flex flex-wrap items-center justify-between gap-2 bg-white px-4 py-2.5 rounded-2xl shadow-sm border border-slate-200">
+      <div class="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-700">
+        <i class="fa-solid fa-sliders text-indigo-600"></i>
+        <span>畫面配置：</span>
+        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+          <button onclick="setLayoutMode('split')" id="layoutBtn-split" class="layout-btn px-3 py-1 rounded-lg text-xs font-bold bg-white text-indigo-700 shadow-sm transition">
+            <i class="fa-solid fa-table-columns mr-1"></i>左框選 + 右題卡
+          </button>
+          <button onclick="setLayoutMode('canvas')" id="layoutBtn-canvas" class="layout-btn px-3 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">
+            <i class="fa-solid fa-crop-simple mr-1"></i>全螢幕大圖框選模式
+          </button>
+          <button onclick="setLayoutMode('cards')" id="layoutBtn-cards" class="layout-btn px-3 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">
+            <i class="fa-solid fa-rectangle-list mr-1"></i>純大字題卡模式
+          </button>
+        </div>
+      </div>
+
+      <!-- 字體大小、唸出括弧、考注音不唸該字讀音開關 -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200">
+          <button onclick="changeFontSize(-2)" class="px-2.5 py-0.5 text-xs font-bold text-slate-700 hover:bg-white rounded-lg transition">A-</button>
+          <span class="text-xs text-slate-400 px-1">|</span>
+          <button onclick="changeFontSize(2)" class="px-2.5 py-0.5 text-sm font-black text-slate-800 hover:bg-white rounded-lg transition">A+</button>
+        </div>
+
+        <label class="flex items-center gap-1.5 text-xs font-bold text-indigo-900 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-200 cursor-pointer" title="□唸框框、【】（）唸括弧、選項(1)唸數字">
+          <input type="checkbox" id="symbolReadToggle" checked onchange="renderQuestions()" class="w-4 h-4 accent-indigo-600 rounded">
+          <span>□唸框框 ‧【】（）唸括弧</span>
+        </label>
+
+        <label class="flex items-center gap-1.5 text-xs font-bold text-rose-900 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200 cursor-pointer" title="當題目是考寫注音或選正確注音時，自動隱藏目標國字的讀音，避免報讀洩題">
+          <input type="checkbox" id="maskZhuyinTargetToggle" checked onchange="renderQuestions()" class="w-4 h-4 accent-rose-600 rounded">
+          <span>考注音不唸該字讀音</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 雙欄主容器 -->
+    <div id="workspaceGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+      <!-- 左欄：考卷原圖「手指框選即讀」主畫布 (佔 7 欄) -->
+      <div id="canvasPanel" class="lg:col-span-7 bg-white rounded-2xl shadow-sm border-2 border-indigo-200 overflow-hidden flex flex-col">
+        <div class="bg-slate-800 text-white px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
+          <div class="flex items-center gap-2 font-bold">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+            <i class="fa-solid fa-crop-simple text-amber-400"></i>
+            <span>考卷框選報讀區（用手指拖曳畫框 ➔ 立即精準辨識並報讀）</span>
+          </div>
+
+          <div id="pageNavControls" class="hidden flex items-center gap-1.5 bg-slate-700 px-2 py-1 rounded-lg">
+            <button onclick="changePage(-1)" class="hover:text-amber-300 px-1"><i class="fa-solid fa-chevron-left"></i></button>
+            <span id="pageIndicator" class="font-mono text-xs">1 / 1</span>
+            <button onclick="changePage(1)" class="hover:text-amber-300 px-1"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button onclick="zoomCanvas(0.25)" class="px-2 py-1 rounded-lg font-bold bg-slate-700 hover:bg-slate-600 text-slate-200 transition" title="放大考卷圖片">
+              <i class="fa-solid fa-magnifying-glass-plus"></i>
+            </button>
+            <button onclick="zoomCanvas(-0.25)" class="px-2 py-1 rounded-lg font-bold bg-slate-700 hover:bg-slate-600 text-slate-200 transition" title="縮小考卷圖片">
+              <i class="fa-solid fa-magnifying-glass-minus"></i>
+            </button>
+            <button onclick="rotateCurrentCanvas(90)" class="px-2 py-1 rounded-lg font-bold bg-slate-700 hover:bg-slate-600 text-slate-200 transition" title="順時針旋轉 90 度">
+              <i class="fa-solid fa-rotate-right"></i> 轉向
+            </button>
+            <button onclick="toggleRegionReadMode()" id="regionCropBtn" class="px-2.5 py-1 rounded-lg font-bold bg-amber-400 text-slate-950 hover:bg-amber-300 transition flex items-center gap-1 shadow">
+              <i class="fa-solid fa-vector-square"></i>
+              <span id="regionCropBtnText">畫框報讀中</span>
+            </button>
+            <button onclick="reOcrCurrentPage()" class="px-2.5 py-1 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition" title="整頁自動拆解所有題目">
+              <i class="fa-solid fa-list-check"></i> 整頁拆題
+            </button>
+          </div>
+        </div>
+
+        <div id="cropHintBanner" class="bg-amber-50 border-b border-amber-200 px-3.5 py-2 text-xs sm:text-sm text-amber-950 flex flex-wrap items-center justify-between gap-2">
+          <span>
+            <i class="fa-solid fa-hand-pointer text-amber-600 mr-1"></i>
+            <strong>框選秘訣：</strong>直接在下方考卷上<strong>拖曳拉出方框</strong>框住想聽的一題，會自動唸出「<strong>括弧</strong>」，且若為考注音題會自動跳過該字讀音！
+          </span>
+        </div>
+
+        <div id="canvasContainer" class="relative bg-slate-200/70 min-h-[420px] max-h-[78vh] overflow-auto flex items-start justify-center p-3">
+          <div id="canvasWrapper" class="relative inline-block shadow-lg bg-white origin-top-left transition-transform">
+            <canvas id="examCanvas" class="block max-w-full h-auto"></canvas>
+            <canvas id="overlayCanvas" class="absolute top-0 left-0 w-full h-full canvas-crop-cursor"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右欄：純文字點選報讀卡片區 (佔 5 欄) -->
+      <div id="cardsPanel" class="lg:col-span-5 flex flex-col gap-3">
+
+        <div class="bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-6 bg-indigo-600 rounded-full inline-block"></span>
+            <h2 class="font-black text-slate-800 text-base">
+              點選文字直接報讀
+              <span id="questionCountBadge" class="ml-1 text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold">0 筆</span>
+            </h2>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button onclick="toggleTeacherEditMode()" id="editModeBtn" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1">
+              <i class="fa-solid fa-pen-to-square"></i>
+              <span id="editModeText">編輯文字</span>
+            </button>
+            <button onclick="addNewQuestionCard()" class="px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm flex items-center gap-1 transition">
+              <i class="fa-solid fa-plus"></i>
+              <span>新增</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="questionsList" class="flex flex-col gap-3 pb-12 max-h-[78vh] overflow-y-auto pr-1">
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- 模態框 1：學生先掃 QR Code -->
+  <div id="qrModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-fade-in">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-bold">
+            <i class="fa-solid fa-tablet-screen-button"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-lg text-slate-800">學生平板掃描 QR Code</h3>
+            <p class="text-xs text-slate-500">學生用平板相機掃描後，即可自己拍照題目、手指畫框報讀或點選題目</p>
+          </div>
+        </div>
+        <button onclick="closeQrModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1.5 rounded-2xl mb-4">
+        <button onclick="switchQrMode('clean')" id="qrTab-clean" class="py-2 px-3 rounded-xl text-xs sm:text-sm font-black bg-white text-emerald-800 shadow transition">
+          📸 模式一：學生掃碼後自己拍照
+        </button>
+        <button onclick="switchQrMode('withExam')" id="qrTab-withExam" class="py-2 px-3 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition">
+          📋 模式二：連同目前題目一起派送
+        </button>
+      </div>
+
+      <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-5 flex flex-col items-center justify-center mb-4">
+        <div id="qrcodeContainer" class="bg-white p-3 rounded-xl shadow-sm mb-3"></div>
+        <span id="qrStatusText" class="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200 text-center">
+          學生掃描後會進入「評量報讀系統」，可立即拍照並框選題目報讀
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">網站連結：</label>
+          <div class="flex gap-2">
+            <input type="text" id="shareUrlInput" readonly class="flex-1 text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 select-all">
+            <button onclick="copyShareUrl()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1 shrink-0">
+              <i class="fa-regular fa-copy"></i> 複製網址
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模態框 2：直接貼上題目文字 -->
+  <div id="pasteModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-bold">
+            <i class="fa-solid fa-paste"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-lg text-slate-800">貼上文字直接報讀（100% 零錯字）</h3>
+            <p class="text-xs text-slate-500">可從 Word 考卷或平板相簿「原況文字」複製題目貼在下方，自動偵測括弧與考注音題</p>
+          </div>
+        </div>
+        <button onclick="closePasteModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <textarea id="pasteTextarea" rows="8" placeholder="請在此貼上要報讀的文字（每一行會自動變成一張可點選報讀的文字卡）..."
+        class="w-full p-3.5 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none text-sm sm:text-base font-medium leading-relaxed mb-4"></textarea>
+
+      <div class="flex justify-end gap-2">
+        <button onclick="closePasteModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm">
+          取消
+        </button>
+        <button onclick="importPastedText(false)" class="px-4 py-2.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold rounded-xl text-sm">
+          加入現有清單
+        </button>
+        <button onclick="importPastedText(true)" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow text-sm">
+          產生報讀文字卡
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模態框 3：Edge TTS 語音與高精準文字辨識設定 -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center text-xl font-bold">
+            <i class="fa-brands fa-edge"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-lg text-slate-800">Edge TTS 語音與高精準辨識設定</h3>
+            <p class="text-xs text-slate-500">微軟 Edge Neural 自然真人語音 + 卷積銳利化多重中文 OCR</p>
+          </div>
+        </div>
+        <button onclick="closeSettingsModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-sm">
+        <!-- 語音聲線設定區 -->
+        <div class="bg-sky-50/80 p-4 rounded-2xl border border-sky-200 space-y-3">
+          <label class="block font-black text-sky-950">
+            <i class="fa-solid fa-headphones text-sky-600 mr-1.5"></i>報讀聲音選擇（支援台灣男女聲線與裝置內建語音）
+          </label>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">1. 選擇報讀聲音：</label>
+            <select id="voiceModalSelect" onchange="changeSelectedVoice(this.value, false)" class="w-full px-3 py-2 rounded-xl border border-sky-300 bg-white text-sm font-bold text-slate-800">
+              <option value="preset:female_warm">👩 台灣溫柔女聲 (曉臻 / 雅婷 / 美佳)</option>
+              <option value="preset:male_clear">👨 台灣清晰男聲 (雲哲 / 志威)</option>
+              <option value="preset:female_bright">👧 台灣清脆女聲 (曉雨 / 涵涵)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">2. 語音合成連線模式：</label>
+            <select id="ttsProviderSelect" class="w-full px-3 py-2 rounded-xl border border-sky-300 bg-white text-sm font-bold text-slate-800">
+              <option value="auto_edge">🚀 智慧高速語音 (優先本機/Edge 自然語音，零延遲切換)</option>
+              <option value="edge_ws_only">☁️ 嘗試線上 Edge Neural 串流合成 (無支援時自動切換本機)</option>
+              <option value="native_only">💻 純用裝置本機內建語音 (完全離線)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">3. 自訂 Edge TTS Proxy 端點（選填）：</label>
+            <input type="text" id="customEdgeProxyInput" placeholder="選填，例如 https://your-edge-tts.workers.dev/v1/audio/speech" 
+              class="w-full px-3 py-1.5 rounded-xl border border-sky-200 text-xs bg-white">
+          </div>
+
+          <div class="pt-1 flex items-center justify-between">
+            <span class="text-xs text-sky-800">支援 □唸框框、【】（）唸括弧、(1)唸數字</span>
+            <button onclick="testSelectedVoiceInModal()" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm shrink-0">
+              <i class="fa-solid fa-play mr-1"></i>試聽所選聲音
+            </button>
+          </div>
+        </div>
+
+        <!-- 免費文字辨識引擎設定 -->
+        <div class="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200">
+          <label class="block font-bold text-emerald-950 mb-1.5">
+            <i class="fa-solid fa-microchip text-emerald-600 mr-1.5"></i>免費高精準文字辨識模式
+          </label>
+          <select id="freeEngineSelect" class="w-full px-3 py-2 rounded-xl border border-emerald-300 bg-white text-sm font-bold text-slate-800">
+            <option value="cloud_plus_best">🌟 雙雲端繁中對決評分引擎 + 銳利化超解析 + Best 模型</option>
+            <option value="local_best">💻 純本機 Best 最高精度中文模型（離線可跑）</option>
+          </select>
+        </div>
+
+        <!-- Gemini API Key 設定 -->
+        <div class="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-100">
+          <label class="block font-bold text-indigo-950 mb-1 flex items-center justify-between">
+            <span><i class="fa-solid fa-wand-magic-sparkles text-indigo-600 mr-1.5"></i>Google Gemini API Key（選填，AI 視覺 99.9% 精準）</span>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-indigo-600 underline hover:text-indigo-800">免費取得金鑰 <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+          </label>
+          <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy... (留空即使用上方免費多重高精準引擎)" 
+            class="w-full px-3.5 py-2 rounded-xl border border-indigo-200 focus:border-indigo-500 focus:outline-none text-sm bg-white">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button onclick="saveSettings()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition">
+            儲存設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**************************************************************
+     * 1. 全域狀態與初始設定
+     **************************************************************/
+    const PUBLIC_SITE_URL = 'https://liniris1023.github.io/sped-exam-reader/';
+    const TESSDATA_BEST_URL = 'https://tessdata.projectnaptha.com/4.0.0_best';
+
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    let state = {
+      examTitle: '評量試卷',
+      questions: [],
+      liveSpotlightText: '請在下方考卷圖片上「用手指畫框」框選題目或點選右側題目卡，系統只讀題目，遇到 □ 唸「框框」、【】（）唸「括弧」、選項 (1) 唸數字！',
+      liveSpotlightForceZhuyinMode: 'auto', // 'auto' | 'on' | 'off'
+      speechRate: 0.85,
+      fontSize: 22,
+      canvasZoom: 1.0,
+      teacherEditMode: false,
+      regionCropMode: true,
+      textDirection: 'auto',
+      selectedVoiceId: localStorage.getItem('sped_selected_voice_v4') || 'preset:female_warm',
+      ttsProvider: localStorage.getItem('sped_tts_provider') || 'auto_edge',
+      customEdgeProxy: localStorage.getItem('sped_custom_edge_proxy') || '',
+      freeEngineMode: localStorage.getItem('sped_exam_free_engine') || 'cloud_plus_best',
+      playingCardId: null,
+      playingOptionIdx: null,
+      pages: [],
+      currentPageIndex: 0,
+      qrMode: 'clean',
+      geminiApiKey: localStorage.getItem('sped_exam_gemini_key') || ''
+    };
+
+    const edgeAudioCache = new Map();
+    let currentHtmlAudio = null;
+    let currentPlaybackSessionId = 0;
+    let edgeDirectWsBlocked = false;
+
+    const VOICE_PRESETS = {
+      'preset:female_warm': {
+        label: '👩 台灣溫柔女聲 (曉臻/雅婷)',
+        shortBadge: '溫柔女聲',
+        edgeVoice: 'zh-TW-HsiaoChenNeural',
+        nativeMatch: /HsiaoChen|曉臻|Yating|雅婷|Meijia|美佳/i,
+        fallbackPitch: 1.0
+      },
+      'preset:male_clear': {
+        label: '👨 台灣清晰男聲 (雲哲/志威)',
+        shortBadge: '清晰男聲',
+        edgeVoice: 'zh-TW-YunJheNeural',
+        nativeMatch: /YunJhe|雲哲|Zhiwei|志威|Kangkang|Danny/i,
+        fallbackPitch: 0.76
+      },
+      'preset:female_bright': {
+        label: '👧 台灣清脆女聲 (曉雨/涵涵)',
+        shortBadge: '清脆女聲',
+        edgeVoice: 'zh-TW-HsiaoYuNeural',
+        nativeMatch: /HsiaoYu|曉雨|Hanhan|涵涵|Ting-Ting|Tingting|Sin-ji|Sinji/i,
+        fallbackPitch: 1.18
+      }
+    };
+
+    // 預設範例：純題目清單（不含大題標題或雜訊），完整示範 □唸框框、【】（）唸括弧、選項唸出 1. 2. 3. 4.、考注音防洩題
+    const DEMO_QUESTIONS = [
+      {
+        id: 'q-d1',
+        type: 'question',
+        isZhuyinQuiz: false,
+        stem: '1.（ ）下列哪一個算式的答案最大？',
+        options: ['1. 25 + 15', '2. 25 × 2', '3. 60 - 25', '4. 40 ÷ 2']
+      },
+      {
+        id: 'q-d2',
+        type: 'question',
+        isZhuyinQuiz: false,
+        stem: '2. 請在 □ 裡填入正確的數字： □ + 35 = 80',
+        options: []
+      },
+      {
+        id: 'q-d3',
+        type: 'question',
+        isZhuyinQuiz: false,
+        stem: '3. 【 】在學校走廊上看到地板濕滑時，我們應該【 】慢腳步小心行走。',
+        options: ['1. 放', '2. 快', '3. 跑', '4. 跳']
+      },
+      {
+        id: 'q-d4',
+        type: 'question',
+        isZhuyinQuiz: true,
+        stem: '4. 假日我們去逛熱「鬧」（ ）的夜市，還買了甜「蜜」（ ）的糖葫蘆。',
+        options: []
+      }
+    ];
+
+    /**************************************************************
+     * 2. 網頁初始化與多聲音選單載入
+     **************************************************************/
+    window.addEventListener('DOMContentLoaded', () => {
+      initVoices();
+      if (window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = initVoices;
+        // 某些行動裝置瀏覽器延遲回傳語音清單，補觸發一次確保完整列出
+        setTimeout(initVoices, 600);
+        setTimeout(initVoices, 1800);
+      }
+
+      document.getElementById('geminiApiKeyInput').value = state.geminiApiKey;
+      document.getElementById('freeEngineSelect').value = state.freeEngineMode;
+      document.getElementById('ttsProviderSelect').value = state.ttsProvider;
+      document.getElementById('customEdgeProxyInput').value = state.customEdgeProxy;
+
+      updateOcrEngineBadge();
+      updateTtsBadge();
+      initCanvasCropEvents();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const compressedExam = urlParams.get('exam');
+      if (compressedExam && window.LZString) {
+        try {
+          const jsonStr = LZString.decompressFromEncodedURIComponent(compressedExam);
+          if (jsonStr) {
+            const parsed = JSON.parse(jsonStr);
+            loadExamData(parsed);
+            return;
+          }
+        } catch (err) {
+          console.error('解析 QR Code 考卷參數失敗:', err);
+        }
+      }
+
+      const savedExam = localStorage.getItem('sped_current_exam_v5');
+      if (savedExam) {
+        try {
+          const parsed = JSON.parse(savedExam);
+          if (parsed && parsed.questions && parsed.questions.length > 0) {
+            state.examTitle = parsed.examTitle || state.examTitle;
+            state.questions = parsed.questions.filter(q => q.type !== 'section');
+            if (state.questions.length > 0) {
+              renderQuestions();
+              drawSampleExamCanvas();
+              updateLiveSpotlight(formatQuestionFullRawText(state.questions[0]), null, state.questions[0].isZhuyinQuiz);
+              return;
+            }
+          }
+        } catch (e) {}
+      }
+
+      loadDemoExam();
+    });
+
+    function formatQuestionFullRawText(q) {
+      if (!q) return '';
+      let txt = q.stem || '';
+      if (q.options && q.options.length > 0) {
+        txt += ' ' + q.options.join(' ');
+      }
+      return txt.trim();
+    }
+
+    function changeSelectedVoice(voiceId, playFeedback = true) {
+      state.selectedVoiceId = voiceId;
+      localStorage.setItem('sped_selected_voice_v4', voiceId);
+
+      const quickSel = document.getElementById('voiceQuickSelect');
+      const modalSel = document.getElementById('voiceModalSelect');
+      if (quickSel && quickSel.value !== voiceId) quickSel.value = voiceId;
+      if (modalSel && modalSel.value !== voiceId) modalSel.value = voiceId;
+      updateTtsBadge();
+
+      if (state.playingCardId) {
+        const currentQ = state.questions.find(q => q.id === state.playingCardId);
+        if (currentQ) {
+          if (state.playingOptionIdx !== null && currentQ.options[state.playingOptionIdx]) {
+            speakOption(currentQ.id, state.playingOptionIdx);
+          } else {
+            speakQuestionCard(currentQ.id, true);
+          }
+          return;
+        }
+      }
+
+      if (playFeedback) {
+        previewCurrentVoice();
+      }
+    }
+
+    function previewCurrentVoice() {
+      stopAllSpeech();
+      speakWithEdgeTTSAndHighlight('聲音已切換，一，二，三，四', [], null);
+    }
+
+    function updateTtsBadge() {
+      const badge = document.getElementById('ttsEngineStatusBadge');
+      if (!badge) return;
+      let label = '溫柔女聲';
+      if (VOICE_PRESETS[state.selectedVoiceId]) {
+        label = VOICE_PRESETS[state.selectedVoiceId].shortBadge;
+      } else if (state.selectedVoiceId.startsWith('native:')) {
+        const targetId = state.selectedVoiceId.slice(7);
+        const v = availableVoices.find(item => (item.voiceURI || item.name) === targetId);
+        if (v) label = formatCleanVoiceName(v);
+      }
+      badge.innerHTML = `<i class="fa-solid fa-headphones mr-1"></i>聲音：${escapeHtml(label)}`;
+    }
+
+    function testSelectedVoiceInModal() {
+      const tempVoice = document.getElementById('voiceModalSelect').value;
+      const tempProvider = document.getElementById('ttsProviderSelect').value;
+      const tempProxy = document.getElementById('customEdgeProxyInput').value.trim();
+      state.selectedVoiceId = tempVoice;
+      state.ttsProvider = tempProvider;
+      state.customEdgeProxy = tempProxy;
+      const quickSel = document.getElementById('voiceQuickSelect');
+      if (quickSel) quickSel.value = tempVoice;
+      updateTtsBadge();
+
+      state.liveSpotlightForceZhuyinMode = 'auto';
+      updateLiveSpotlight('1. 【 】請在 □ 裡填入正確答案：1. 蘋果 2. 香蕉 3. 橘子 4. 西瓜');
+      speakLiveSpotlightText();
+    }
+
+    function focusCropCanvas() {
+      if (!state.regionCropMode) {
+        toggleRegionReadMode();
+      }
+      const el = document.getElementById('canvasPanel');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function setTextDirection(dir) {
+      state.textDirection = dir;
+      document.querySelectorAll('.dir-btn').forEach(btn => {
+        btn.className = 'dir-btn px-2.5 py-1 rounded-lg font-bold text-slate-600 hover:text-slate-900 transition';
+      });
+      const active = document.getElementById(`dirBtn-${dir}`);
+      if (active) {
+        active.className = 'dir-btn px-2.5 py-1 rounded-lg font-bold bg-indigo-600 text-white transition';
+      }
+    }
+
+    function loadExamData(data) {
+      state.examTitle = data.title || '評量試卷';
+      state.questions = (data.questions || []).filter(q => q.type !== 'section');
+      renderQuestions();
+      drawSampleExamCanvas();
+    }
+
+    function loadDemoExam() {
+      stopAllSpeech();
+      state.examTitle = '期中評量試卷';
+      state.questions = JSON.parse(JSON.stringify(DEMO_QUESTIONS));
+      saveCurrentExamToLocal();
+      renderQuestions();
+      drawSampleExamCanvas();
+      updateLiveSpotlight(formatQuestionFullRawText(state.questions[0]), null, false);
+    }
+
+    function clearAllQuestions() {
+      stopAllSpeech();
+      state.questions = [];
+      saveCurrentExamToLocal();
+      renderQuestions();
+    }
+
+    function saveCurrentExamToLocal() {
+      try {
+        localStorage.setItem('sped_current_exam_v5', JSON.stringify({
+          examTitle: state.examTitle,
+          questions: state.questions.filter(q => q.type !== 'section')
+        }));
+      } catch (e) {}
+    }
+
+    /**************************************************************
+     * 3. 報讀發音轉換核心：
+     *    - □ 唸「框框」
+     *    - 【】、（）唸「括弧」
+     *    - 選項數字如 (1)、(2)、（1）、① 清楚唸出數字「1、2」
+     *    - 自動清除配分等非題目雜訊，只唸題目
+     *    - 考注音題自動遮蔽目標字讀音（手動消音改用 {{字}} 避免干擾【】）
+     **************************************************************/
+    const ZHUYIN_CHARS_REGEX = /[\u3105-\u3129\u02CA\u02C7\u02CB\u02D9]/;
+
+    /**
+     * 移除題目中非考題內容的配分說明（例如：(每題2分，共10分)、(4分)、[3%]），確保只唸題目本身
+     */
+    function stripScoreAndMetaNotes(str) {
+      if (!str) return '';
+      let s = str;
+      // 移除括弧內的配分說明，例如：（每題2分，共20分）、(4分)、【每格1分】、(10%)
+      s = s.replace(/[\(（\[【]\s*(?:每[題格答小題]\s*\d+\s*分[^\)）\]】]*|共\s*\d+\s*分[^\)）\]】]*|\d+\s*[分%％])\s*[\)）\]】]/g, ' ');
+      s = s.replace(/每[題格答]\s*\d+\s*分[，,、\s]*(?:共\s*\d+\s*分)?[。.]?/g, ' ');
+      return s.replace(/\s+/g, ' ').trim();
+    }
+
+    function detectIsZhuyinQuizText(rawText, sectionContextIsZhuyin = false) {
+      if (!rawText) return false;
+      if (/\{\{[^}]+\}\}/.test(rawText)) return true;
+      if (/注音|讀音|字音|國字或注音|國字與注音/.test(rawText)) return true;
+      if (sectionContextIsZhuyin) return true;
+
+      // 偵測「國字 + 空白括弧」的國語寫注音結構（排除題號開頭的 `1.（ ）`、選項 `(1)` 與數學算式）
+      const inlineCharBeforeBracket = /([\u4e00-\u9fa5」』])\s*[\(（]\s*[\)）]/;
+      if (inlineCharBeforeBracket.test(rawText) && !/[=＝+\-×÷□]|多少|幾個|幾元|幾公|填入|適當/.test(rawText)) {
+        if (!/(?:正確|錯誤|何者|哪一個|為什麼|多少)[？?]?\s*[\(（]\s*[\)）]$/.test(rawText.trim())) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function analyzeZhuyinMaskTokens(rawText, forceZhuyinMode = 'auto', sectionIsZhuyin = false) {
+      const globalEnable = document.getElementById('maskZhuyinTargetToggle')?.checked ?? true;
+      if (!rawText) return [];
+
+      const shouldMask = forceZhuyinMode === 'on' || (forceZhuyinMode === 'auto' && globalEnable && detectIsZhuyinQuizText(rawText, sectionIsZhuyin));
+
+      const chars = Array.from(rawText);
+      const maskMap = new Array(chars.length).fill(false);
+      const hideBracketDelimiterMap = new Array(chars.length).fill(false);
+
+      // 規則 A：手動使用 {{字}} 包起來的字一律消音（保留【】給題目唸「括弧」！）
+      const manualRegex = /\{\{([^}]+)\}\}/g;
+      let m;
+      while ((m = manualRegex.exec(rawText)) !== null) {
+        const startIdx = Array.from(rawText.slice(0, m.index)).length;
+        const fullLen = Array.from(m[0]).length;
+        hideBracketDelimiterMap[startIdx] = true;
+        hideBracketDelimiterMap[startIdx + 1] = true;
+        hideBracketDelimiterMap[startIdx + fullLen - 2] = true;
+        hideBracketDelimiterMap[startIdx + fullLen - 1] = true;
+        for (let i = startIdx + 2; i < startIdx + fullLen - 2; i++) {
+          maskMap[i] = true;
+        }
+      }
+
+      if (shouldMask) {
+        // 規則 B：引號「X」後面緊接著空白括弧，如 熱「鬧」（ ） -> 遮蔽「鬧」
+        const quoteBracketRegex = /[「『]([\u4e00-\u9fa5]{1,2})[」』]\s*[\(（]\s*[\)）]/g;
+        while ((m = quoteBracketRegex.exec(rawText)) !== null) {
+          const quoteStart = Array.from(rawText.slice(0, m.index)).length;
+          const targetLen = Array.from(m[1]).length;
+          for (let i = quoteStart + 1; i <= quoteStart + targetLen; i++) {
+            maskMap[i] = true;
+          }
+        }
+
+        // 規則 C：考注音選擇題中的單字引號，如 (1)「朝」陽 -> 遮蔽「朝」
+        const quoteSingleCharRegex = /[「『]([\u4e00-\u9fa5])[」』]/g;
+        while ((m = quoteSingleCharRegex.exec(rawText)) !== null) {
+          const quoteStart = Array.from(rawText.slice(0, m.index)).length;
+          maskMap[quoteStart + 1] = true;
+        }
+
+        // 規則 D：國字緊接空白圓括弧（排除【】填充題），如 熱鬧（ ）的夜市 -> 遮蔽「鬧」
+        const plainCharBeforeBracketRegex = /([\u4e00-\u9fa5])(\s*[\(（]\s*[\)）])/g;
+        while ((m = plainCharBeforeBracketRegex.exec(rawText)) !== null) {
+          const charIdx = Array.from(rawText.slice(0, m.index)).length;
+          const targetChar = chars[charIdx];
+          if (!/[題選音確誤者列下何那哪是曰云在裡中內：:]/.test(targetChar)) {
+            maskMap[charIdx] = true;
+          }
+        }
+      }
+
+      return chars.map((ch, idx) => ({
+        char: ch,
+        masked: maskMap[idx],
+        isManualBracket: hideBracketDelimiterMap[idx]
+      }));
+    }
+
+    function numberToChineseReading(numStr) {
+      const map = {
+        '1': '一', '2': '二', '3': '三', '4': '四', '5': '五',
+        '6': '六', '7': '七', '8': '八', '9': '九', '10': '十'
+      };
+      return map[String(numStr)] || String(numStr);
+    }
+
+    function buildSpokenTextFromRaw(rawText, forceZhuyinMode = 'auto', sectionIsZhuyin = false) {
+      if (!rawText) return '';
+      const enableSymbolRead = document.getElementById('symbolReadToggle')?.checked ?? true;
+
+      // 先過濾掉配分說明，只留純題目與選項內容
+      const cleanQuestionOnly = stripScoreAndMetaNotes(rawText);
+      const tokens = analyzeZhuyinMaskTokens(cleanQuestionOnly, forceZhuyinMode, sectionIsZhuyin);
+
+      let maskedStr = '';
+      for (let i = 0; i < tokens.length; i++) {
+        if (tokens[i].isManualBracket) continue;
+        if (tokens[i].masked) {
+          const restStr = tokens.slice(i + 1).map(t => t.char).join('');
+          if (!/^[」』]?\s*[\(（\[【]/.test(restStr)) {
+            maskedStr += ' ， ';
+          }
+          continue;
+        }
+        maskedStr += tokens[i].char;
+      }
+
+      let text = maskedStr;
+
+      // 正規化全形數字為半形，確保（１）、(１)、１. 一律正確轉成數字讀音
+      text = text.replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0));
+      // 正規化帶括號單字元數字 ⑴~⑽
+      const parenNums = { '⑴':'(1)', '⑵':'(2)', '⑶':'(3)', '⑷':'(4)', '⑸':'(5)', '⑹':'(6)', '⑺':'(7)', '⑻':'(8)', '⑼':'(9)', '⑽':'(10)' };
+      for (const [k, v] of Object.entries(parenNums)) {
+        text = text.split(k).join(v);
+      }
+
+      // 移除空引號「」避免怪異停頓
+      text = text.replace(/[「『]\s*[，,]?\s*[」』]/g, ' ， ');
+
+      // ★ 若連續數字選項沒有空格（例如 OCR 辨識出 `1.25 2.30 3.35 4.40`），先補上空格以免被當成小數點！
+      text = text.replace(/(^|[\s？?：:。])1\.(\d+)\s+2\.(\d+)\s+3\.(\d+)(?:\s+4\.(\d+))?/g, (_, pre, a, b, c, d) => {
+        return `${pre}1. ${a} 2. ${b} 3. ${c}` + (d !== undefined ? ` 4. ${d}` : '');
+      });
+
+      // ★ 先處理真正的小數點讀音（必須數字緊貼小數點且無空格，如 `3.25` -> `3 點 2 5`；不會影響 `1. 蘋果` 或 `1. 25`）
+      text = text.replace(/(\d+)\.(\d+)/g, (_, intPart, decPart) => {
+        const decDigits = decPart.split('').join(' ');
+        return `${intPart} 點 ${decDigits}`;
+      });
+
+      // ★ 1. 題目出現 □ 一律唸「框框」！
+      text = text.replace(/[□▢◻⬜☐▫▭■▣]/g, ' 框框 ');
+
+      // ★ 2. 題目出現空白【】、（）或 ()、[]、〔〕（含底線如（___）），一律唸「括弧」！
+      text = text.replace(/[\(（\[【〔｛\{]\s*[＿_\s]*[\)）\]】〕｝\}]/g, ' 括弧，');
+
+      // ★ 3. 選項數字：無論考卷寫成 `1. 2. 3. 4.`、`(1) (2) (3) (4)`、`（1）（2）`、`① ② ③ ④` 或 `1、 2、 3、 4、`，
+      //    一律轉為清晰國語讀音「一、二、三、四」（避免 TTS 唸成「一點」或「幺」或跳過不唸！）
+      text = text.replace(/[\(（\[【]\s*([1-9]|10)\s*[\)）\]】]/g, (_, n) => ` ，${numberToChineseReading(n)}，`);
+      const circledNums = { '①':'一', '②':'二', '③':'三', '④':'四', '⑤':'五', '⑥':'六', '⑦':'七', '⑧':'八', '⑨':'九', '⑩':'十' };
+      for (const [sym, zhNum] of Object.entries(circledNums)) {
+        text = text.split(sym).join(` ，${zhNum}，`);
+      }
+      // 處理 `1. 2. 3. 4.` 或 `1． 2．`（前面已排除真正小數點，故此處 `1.`、`2.`、`3.`、`4.` 100% 為題號或選項編號！）
+      text = text.replace(/(?<![\d])([1-9]|10)\s*[.．]\s*/g, (_, n) => ` ，${numberToChineseReading(n)}，`);
+      // 處理單一選項按鈕或連續選項以頓號標示如 `1、蘋果 2、香蕉`
+      if (/(?:^|\s)1\s*、.+2\s*、/.test(text)) {
+        text = text.replace(/(?<![\d])([1-6])\s*、\s*/g, (_, n) => ` ，${numberToChineseReading(n)}，`);
+      } else {
+        text = text.replace(/^\s*([1-9]|10)\s*、\s*/, (_, n) => `${numberToChineseReading(n)}，`);
+      }
+      // 若選項為 (A)(B)(C)(D) 或 (甲)(乙)(丙)(丁) 或 A. B. C. D.，也清楚唸出代號
+      text = text.replace(/[\(（\[【]\s*([A-Da-d甲乙丙丁])\s*[\)）\]】]/g, ' ，$1，');
+      text = text.replace(/(?:^|\s)([A-D])\s*[.．]\s+/g, ' ，$1，');
+
+      // ★ 4. 若題目中有非空白的【詞語】或（詞語），或單獨出現未配對的【】（）符號也唸括弧
+      text = text.replace(/[【】（）]/g, ' 括弧 ');
+
+      // 5. 帶分數與真分數讀音
+      text = text.replace(/(\d+)\s*又\s*(\d+)\s*[\/／]\s*(\d+)/g, '$1又$3分之$2');
+      text = text.replace(/(?<![\d\/])(\d{1,3})\s*[\/／]\s*(\d{1,3})(?![\d\/])/g, '$2分之$1');
+
+      const unicodeFractions = {
+        '½': '二分之一', '⅓': '三分之一', '⅔': '三分之二',
+        '¼': '四分之一', '¾': '四分之三', '⅕': '五分之一',
+        '⅖': '五分之二', '⅗': '五分之三', '⅘': '五分之四',
+        '⅙': '六分之一', '⅚': '六分之五', '⅛': '八分之一',
+        '⅜': '八分之三', '⅝': '八分之五', '⅞': '八分之七'
+      };
+      for (const [sym, read] of Object.entries(unicodeFractions)) {
+        text = text.split(sym).join(` ${read} `);
+      }
+
+      if (enableSymbolRead) {
+        text = text.replace(/_{2,}|＿{2,}/g, ' 括弧，');
+        text = text.replace(/○|◯/g, ' 圈 ');
+
+        text = text.replace(/km²|km2/gi, ' 平方公里 ');
+        text = text.replace(/m²|m2/gi, ' 平方公尺 ');
+        text = text.replace(/cm²|cm2/gi, ' 平方公分 ');
+        text = text.replace(/mm²|mm2/gi, ' 平方公釐 ');
+        text = text.replace(/m³|m3/gi, ' 立方公尺 ');
+        text = text.replace(/cm³|cm3/gi, ' 立方公分 ');
+        text = text.replace(/(?<=\d\s*)km(?![a-zA-Z])/gi, ' 公里 ');
+        text = text.replace(/(?<=\d\s*)cm(?![a-zA-Z])/gi, ' 公分 ');
+        text = text.replace(/(?<=\d\s*)mm(?![a-zA-Z])/gi, ' 公釐 ');
+        text = text.replace(/(?<=\d\s*)kg(?![a-zA-Z])/gi, ' 公斤 ');
+        text = text.replace(/(?<=\d\s*)ml(?![a-zA-Z])/gi, ' 毫升 ');
+        text = text.replace(/°C|℃/g, ' 攝氏度 ');
+        text = text.replace(/°/g, ' 度 ');
+
+        text = text.replace(/∠/g, ' 角 ');
+        text = text.replace(/△|▲/g, ' 三角形 ');
+        text = text.replace(/⊥/g, ' 垂直 ');
+        text = text.replace(/∥|\/\//g, ' 平行 ');
+        text = text.replace(/≅/g, ' 全等 ');
+        text = text.replace(/∼|～/g, ' 到 ');
+        text = text.replace(/√/g, ' 根號 ');
+        text = text.replace(/π/g, ' 圓周率 ');
+        text = text.replace(/%/g, ' 百分之 ');
+
+        text = text.replace(/(\d|\)|）|框框|括弧|\s)\s*[×✕]\s*(\d|\(|（|框框|括弧|\s)/g, '$1 乘以 $2');
+        text = text.replace(/×|✕|✗/g, ' 叉 ');
+
+        text = text.replace(/\+|＋/g, ' 加 ');
+        text = text.replace(/(?<=\d|\)|）|框框|括弧|\s)[－−-](?=\s*\d|\(|（|框框|括弧)/g, ' 減 ');
+        text = text.replace(/÷|／/g, ' 除以 ');
+        text = text.replace(/±/g, ' 正負 ');
+        text = text.replace(/≠/g, ' 不等於 ');
+        text = text.replace(/≈|≒/g, ' 約等於 ');
+        text = text.replace(/≤|≦/g, ' 小於或等於 ');
+        text = text.replace(/≥|≧/g, ' 大於或等於 ');
+        text = text.replace(/=/g, ' 等於 ');
+        text = text.replace(/>|＞/g, ' 大於 ');
+        text = text.replace(/<|＜/g, ' 小於 ');
+        text = text.replace(/(?<=\d)\s*:\s*(?=\d)/g, ' 比 ');
+      } else {
+        text = text.replace(/_{2,}|＿{2,}/g, ' ');
+      }
+
+      // 清理多餘連續逗號與空白（並移除開頭多餘逗號）
+      text = text.replace(/([，,]\s*){2,}/g, '，').replace(/\s+/g, ' ').trim().replace(/^[，,]\s*/, '');
+      return text;
+    }
+
+    /**************************************************************
+     * 4. 置頂「即時框選/點選報讀看板」功能
+     **************************************************************/
+    function toggleSpotlightZhuyinQuizMode() {
+      const order = ['auto', 'on', 'off'];
+      const nextIdx = (order.indexOf(state.liveSpotlightForceZhuyinMode) + 1) % order.length;
+      state.liveSpotlightForceZhuyinMode = order[nextIdx];
+      updateSpotlightZhuyinBadgeUI();
+      updateLiveSpotlight(state.liveSpotlightText);
+    }
+
+    function updateSpotlightZhuyinBadgeUI() {
+      const btn = document.getElementById('spotlightZhuyinBadge');
+      const txt = document.getElementById('spotlightZhuyinBadgeText');
+      if (state.liveSpotlightForceZhuyinMode === 'on') {
+        btn.className = 'px-2.5 py-1 rounded-lg text-xs font-black border transition flex items-center gap-1 bg-rose-600 text-white border-rose-700 shadow-sm';
+        txt.textContent = '考注音消音：強制開啟 (不唸目標字)';
+      } else if (state.liveSpotlightForceZhuyinMode === 'off') {
+        btn.className = 'px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center gap-1 bg-slate-200 text-slate-600 border-slate-300';
+        txt.textContent = '考注音消音：已關閉 (全部照唸)';
+      } else {
+        btn.className = 'px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center gap-1 bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100';
+        txt.textContent = '考注音消音：自動偵測';
+      }
+    }
+
+    function updateLiveSpotlight(text, cropThumbDataUrl = null, sectionIsZhuyin = false) {
+      state.liveSpotlightText = text;
+      const display = document.getElementById('liveSpotlightDisplay');
+      display.style.fontSize = `${Math.max(24, state.fontSize + 4)}px`;
+      display.innerHTML = wrapCharsWithZhuyinMask(text, 'spotlight-word-span', state.liveSpotlightForceZhuyinMode, sectionIsZhuyin);
+
+      const spokenPreview = buildSpokenTextFromRaw(text, state.liveSpotlightForceZhuyinMode, sectionIsZhuyin);
+      const previewEl = document.getElementById('actualSpokenPreview');
+      if (previewEl) {
+        previewEl.textContent = spokenPreview || '（無發音內容）';
+      }
+
+      const thumb = document.getElementById('lastCropThumb');
+      if (cropThumbDataUrl) {
+        thumb.src = cropThumbDataUrl;
+        thumb.classList.remove('hidden');
+      }
+    }
+
+    function speakLiveSpotlightText() {
+      if (!state.liveSpotlightText) return;
+      stopAllSpeech();
+      const card = document.getElementById('liveSpotlightCard');
+      card.classList.add('card-playing');
+      const spans = Array.from(document.querySelectorAll('.spotlight-word-span'));
+      const spoken = buildSpokenTextFromRaw(state.liveSpotlightText, state.liveSpotlightForceZhuyinMode, false);
+      document.getElementById('actualSpokenPreview').textContent = spoken;
+
+      speakWithEdgeTTSAndHighlight(spoken, spans, () => {
+        card.classList.remove('card-playing');
+        clearAllHighlights();
+      });
+    }
+
+    function toggleSpotlightEdit() {
+      const wrap = document.getElementById('liveSpotlightEditorWrap');
+      const input = document.getElementById('liveSpotlightInput');
+      if (wrap.classList.contains('hidden')) {
+        input.value = state.liveSpotlightText;
+        wrap.classList.remove('hidden');
+        input.focus();
+      } else {
+        wrap.classList.add('hidden');
+      }
+    }
+
+    function saveSpotlightEdit() {
+      const val = document.getElementById('liveSpotlightInput').value.trim();
+      document.getElementById('liveSpotlightEditorWrap').classList.add('hidden');
+      if (!val) return;
+      updateLiveSpotlight(val);
+      if (state.questions.length > 0 && state.questions[0].isCropped) {
+        state.questions[0].stem = val;
+        saveCurrentExamToLocal();
+        renderQuestions();
+      }
+      speakLiveSpotlightText();
+    }
+
+    /**************************************************************
+     * 5. 繪製範例考卷畫布、縮放與旋轉支援
+     **************************************************************/
+    function drawSampleExamCanvas() {
+      const canvas = document.getElementById('examCanvas');
+      const overlay = document.getElementById('overlayCanvas');
+
+      canvas.width = 760;
+      canvas.height = 920;
+      overlay.width = 760;
+      overlay.height = 920;
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 28px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(state.examTitle, canvas.width / 2, 70);
+
+      ctx.beginPath();
+      ctx.moveTo(40, 95);
+      ctx.lineTo(canvas.width - 40, 95);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.textAlign = 'left';
+      let y = 140;
+      state.questions.forEach((q) => {
+        if (y > canvas.height - 60) return;
+        ctx.font = '21px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+        ctx.fillStyle = '#0f172a';
+        y = wrapCanvasText(ctx, q.stem, 50, y, canvas.width - 100, 34);
+
+        if (q.options && q.options.length > 0) {
+          ctx.font = '19px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+          ctx.fillStyle = '#1e293b';
+          const optText = '   ' + q.options.join('    ');
+          y = wrapCanvasText(ctx, optText, 55, y, canvas.width - 110, 30);
+        }
+        y += 22;
+      });
+    }
+
+    function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
+      const chars = text.split('');
+      let line = '';
+      for (let i = 0; i < chars.length; i++) {
+        const testLine = line + chars[i];
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && i > 0) {
+          ctx.fillText(line, x, y);
+          line = chars[i];
+          y += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, x, y);
+      return y + lineHeight;
+    }
+
+    function zoomCanvas(delta) {
+      state.canvasZoom = Math.min(2.5, Math.max(0.6, state.canvasZoom + delta));
+      const wrapper = document.getElementById('canvasWrapper');
+      wrapper.style.transform = `scale(${state.canvasZoom})`;
+    }
+
+    function rotateCurrentCanvas(degrees = 90) {
+      const canvas = document.getElementById('examCanvas');
+      const overlay = document.getElementById('overlayCanvas');
+      if (!canvas || !canvas.width) return;
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+      if (degrees === 90 || degrees === -90) {
+        canvas.width = tempCanvas.height;
+        canvas.height = tempCanvas.width;
+        overlay.width = canvas.width;
+        overlay.height = canvas.height;
+      }
+
+      const ctx = canvas.getContext('2d');
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((degrees * Math.PI) / 180);
+      ctx.drawImage(tempCanvas, -tempCanvas.width / 2, -tempCanvas.height / 2);
+      ctx.restore();
+
+      if (state.pages[state.currentPageIndex]) {
+        state.pages[state.currentPageIndex].dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      }
+    }
+
+    /**************************************************************
+     * 6. 多語音選擇與合成引擎（支援推薦男女聲線 + 裝置內建所有中文語音）
+     **************************************************************/
+    let availableVoices = [];
+    let highlightTimer = null;
+
+    function formatCleanVoiceName(v) {
+      return v.name
+        .replace(/Microsoft\s+/i, '')
+        .replace(/Online\s*\(Natural\)\s*-\s*/i, 'Neural ')
+        .replace(/-\s*Chinese\s*\(Traditional,\s*Taiwan\)/i, '(台灣)')
+        .replace(/-\s*Chinese\s*\([^)]*\)/i, '')
+        .trim();
+    }
+
+    function initVoices() {
+      if (!window.speechSynthesis) return;
+      const voices = window.speechSynthesis.getVoices() || [];
+      if (voices.length > 0) {
+        availableVoices = voices;
+        populateVoiceDropdowns();
+        updateTtsBadge();
+      }
+    }
+
+    function populateVoiceDropdowns() {
+      const selects = [
+        document.getElementById('voiceQuickSelect'),
+        document.getElementById('voiceModalSelect')
+      ].filter(Boolean);
+
+      // 篩選出中文語音（台灣繁中優先排序）
+      const zhVoices = availableVoices
+        .filter(v => /^(zh|cmn|yue)/i.test(v.lang) || /Chinese|國語|臺灣|台灣|普通話|粵語|Hsiao|YunJhe|Yating|Hanhan|Zhiwei|Meijia/i.test(v.name))
+        .sort((a, b) => {
+          const aTW = /tw|taiwan|臺灣|台灣/i.test(a.lang + a.name) ? 0 : 1;
+          const bTW = /tw|taiwan|臺灣|台灣/i.test(b.lang + b.name) ? 0 : 1;
+          if (aTW !== bTW) return aTW - bTW;
+          const aNat = /Natural|Neural/i.test(a.name) ? 0 : 1;
+          const bNat = /Natural|Neural/i.test(b.name) ? 0 : 1;
+          return aNat - bNat;
+        });
+
+      selects.forEach(sel => {
+        let html = `<optgroup label="🌟 推薦台灣聲線（平板/電腦皆可切換）">`;
+        for (const [id, info] of Object.entries(VOICE_PRESETS)) {
+          html += `<option value="${id}">${escapeHtml(info.label)}</option>`;
+        }
+        html += `</optgroup>`;
+
+        if (zhVoices.length > 0) {
+          html += `<optgroup label="💻 本機裝置內建語音（可直接點選）">`;
+          zhVoices.forEach(v => {
+            const vId = `native:${v.voiceURI || v.name}`;
+            const tag = /tw|taiwan/i.test(v.lang) ? '🇹🇼' : '🎙️';
+            html += `<option value="${escapeHtml(vId)}">${tag} ${escapeHtml(formatCleanVoiceName(v))}</option>`;
+          });
+          html += `</optgroup>`;
+        }
+
+        sel.innerHTML = html;
+
+        // 若原本儲存的語音存在於選單中則還原，否則退回預設溫柔女聲
+        const exists = Array.from(sel.options).some(opt => opt.value === state.selectedVoiceId);
+        sel.value = exists ? state.selectedVoiceId : 'preset:female_warm';
+      });
+
+      if (!VOICE_PRESETS[state.selectedVoiceId] && !state.selectedVoiceId.startsWith('native:')) {
+        state.selectedVoiceId = 'preset:female_warm';
+      }
+    }
+
+    function resolveNativeVoiceAndPitch() {
+      if (!availableVoices.length && window.speechSynthesis) {
+        availableVoices = window.speechSynthesis.getVoices() || [];
+      }
+
+      // 1. 使用者直接指定某一個裝置內建語音
+      if (state.selectedVoiceId.startsWith('native:')) {
+        const targetUri = state.selectedVoiceId.slice(7);
+        const exact = availableVoices.find(v => (v.voiceURI || v.name) === targetUri);
+        if (exact) return { voice: exact, pitch: 1.0 };
+      }
+
+      // 2. 使用者選擇推薦聲線 (溫柔女聲 / 清晰男聲 / 清脆女聲)
+      const preset = VOICE_PRESETS[state.selectedVoiceId] || VOICE_PRESETS['preset:female_warm'];
+      const matchedVoice = availableVoices.find(v => preset.nativeMatch.test(v.name));
+      if (matchedVoice) {
+        // 找到對應真人男/女聲，直接使用原音高 1.0
+        return { voice: matchedVoice, pitch: 1.0 };
+      }
+
+      // 3. 若裝置僅有單一預設台灣語音（例如部分平板），搭配音高差異化讓男聲/女聲/清脆聲依然明顯可分辨！
+      const baseTwVoice =
+        availableVoices.find(v => /zh[-_]TW/i.test(v.lang) && /Natural|Microsoft|Google|Meijia/i.test(v.name)) ||
+        availableVoices.find(v => /zh[-_]TW/i.test(v.lang)) ||
+        availableVoices.find(v => /^zh/i.test(v.lang)) ||
+        null;
+
+      return { voice: baseTwVoice, pitch: preset.fallbackPitch };
+    }
+
+    function setSpeechRate(rate) {
+      state.speechRate = rate;
+      document.querySelectorAll('.rate-btn').forEach(btn => {
+        btn.className = 'rate-btn px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-indigo-900/50 text-indigo-200 hover:bg-indigo-700';
+      });
+      const activeBtn = document.getElementById(`rateBtn-${rate}`);
+      if (activeBtn) {
+        activeBtn.className = 'rate-btn px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-amber-400 text-indigo-950 shadow';
+      }
+      if (currentHtmlAudio && !currentHtmlAudio.paused) {
+        currentHtmlAudio.playbackRate = rate;
+        return;
+      }
+      if (state.playingCardId) {
+        const currentQ = state.questions.find(q => q.id === state.playingCardId);
+        if (currentQ) {
+          if (state.playingOptionIdx !== null && currentQ.options[state.playingOptionIdx]) {
+            speakOption(currentQ.id, state.playingOptionIdx);
+          } else {
+            speakQuestionCard(currentQ.id, true);
+          }
+        }
+      }
+    }
+
+    function stopAllSpeech() {
+      currentPlaybackSessionId++;
+      if (currentHtmlAudio) {
+        currentHtmlAudio.pause();
+        currentHtmlAudio.currentTime = 0;
+        currentHtmlAudio = null;
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (highlightTimer) {
+        clearInterval(highlightTimer);
+        highlightTimer = null;
+      }
+      document.getElementById('ttsSynthesizingSpinner')?.classList.add('hidden');
+      state.playingCardId = null;
+      state.playingOptionIdx = null;
+      clearAllHighlights();
+    }
+
+    function clearAllHighlights() {
+      document.querySelectorAll('.card-playing').forEach(el => el.classList.remove('card-playing'));
+      document.querySelectorAll('.word-active').forEach(el => el.classList.remove('word-active'));
+    }
+
+    function toggleCardZhuyinMode(questionId) {
+      const q = state.questions.find(item => item.id === questionId);
+      if (!q) return;
+      q.isZhuyinQuiz = !isQuestionInZhuyinMode(q);
+      saveCurrentExamToLocal();
+      renderQuestions();
+    }
+
+    function isQuestionInZhuyinMode(q) {
+      if (typeof q.isZhuyinQuiz === 'boolean') return q.isZhuyinQuiz;
+      return detectIsZhuyinQuizText(q.stem, false);
+    }
+
+    function speakQuestionCard(questionId, includeOptions = true) {
+      stopAllSpeech();
+      const q = state.questions.find(item => item.id === questionId);
+      if (!q) return;
+
+      state.playingCardId = questionId;
+      state.playingOptionIdx = null;
+
+      const cardEl = document.getElementById(`card-${questionId}`);
+      if (cardEl) {
+        cardEl.classList.add('card-playing');
+      }
+
+      const qZhuyinMode = isQuestionInZhuyinMode(q) ? 'on' : 'auto';
+      state.liveSpotlightForceZhuyinMode = qZhuyinMode;
+      updateSpotlightZhuyinBadgeUI();
+
+      let rawText = q.stem;
+      if (includeOptions && q.options && q.options.length > 0) {
+        rawText += ' ' + q.options.join(' ');
+      }
+
+      updateLiveSpotlight(rawText, q.cropThumb || null, isQuestionInZhuyinMode(q));
+
+      const spokenText = buildSpokenTextFromRaw(rawText, qZhuyinMode, isQuestionInZhuyinMode(q));
+      const wordSpans = cardEl
+        ? Array.from(cardEl.querySelectorAll(includeOptions ? '.stem-word-span, .opt-word-span' : '.stem-word-span'))
+        : [];
+
+      speakWithEdgeTTSAndHighlight(spokenText, wordSpans, () => {
+        clearAllHighlights();
+        state.playingCardId = null;
+      });
+    }
+
+    function speakOption(questionId, optionIndex) {
+      stopAllSpeech();
+      const q = state.questions.find(item => item.id === questionId);
+      if (!q || !q.options || !q.options[optionIndex]) return;
+
+      state.playingCardId = questionId;
+      state.playingOptionIdx = optionIndex;
+
+      const cardEl = document.getElementById(`card-${questionId}`);
+      if (cardEl) cardEl.classList.add('card-playing');
+
+      const qZhuyinMode = isQuestionInZhuyinMode(q) ? 'on' : 'auto';
+      state.liveSpotlightForceZhuyinMode = qZhuyinMode;
+      updateSpotlightZhuyinBadgeUI();
+
+      const optText = q.options[optionIndex];
+      updateLiveSpotlight(optText, null, isQuestionInZhuyinMode(q));
+
+      const optContainer = document.getElementById(`opt-${questionId}-${optionIndex}`);
+      const wordSpans = optContainer ? Array.from(optContainer.querySelectorAll('.opt-word-span')) : [];
+
+      const spokenText = buildSpokenTextFromRaw(optText, qZhuyinMode, isQuestionInZhuyinMode(q));
+      speakWithEdgeTTSAndHighlight(spokenText, wordSpans, () => {
+        clearAllHighlights();
+        state.playingCardId = null;
+        state.playingOptionIdx = null;
+      });
+    }
+
+    async function speakWithEdgeTTSAndHighlight(spokenText, spanElements, onFinish) {
+      if (!spokenText) {
+        if (onFinish) onFinish();
+        return;
+      }
+      const sessionId = ++currentPlaybackSessionId;
+      const spinner = document.getElementById('ttsSynthesizingSpinner');
+      const spotlightSpans = Array.from(document.querySelectorAll('.spotlight-word-span'));
+
+      const { voice: nativeVoice, pitch: targetPitch } = resolveNativeVoiceAndPitch();
+
+      // 若使用者直接點選「本機裝置語音」、或選「純本機模式」、或系統已有對應語音且非強制雲端，直接零延遲播放！
+      const isDirectNativeChoice = state.selectedVoiceId.startsWith('native:');
+      const preset = VOICE_PRESETS[state.selectedVoiceId];
+      const hasExactNativeForPreset = preset && nativeVoice && preset.nativeMatch.test(nativeVoice.name);
+
+      const shouldTryOnlineEdge =
+        !isDirectNativeChoice &&
+        preset &&
+        state.ttsProvider !== 'native_only' &&
+        (Boolean(state.customEdgeProxy) || (!hasExactNativeForPreset && !edgeDirectWsBlocked && state.ttsProvider === 'edge_ws_only'));
+
+      if (!shouldTryOnlineEdge) {
+        speakWithNativeWebSpeech(spokenText, spanElements, spotlightSpans, nativeVoice, targetPitch, sessionId, onFinish);
+        return;
+      }
+
+      try {
+        spinner?.classList.remove('hidden');
+        const edgeVoiceName = preset.edgeVoice;
+        const cacheKey = `${edgeVoiceName}_${spokenText}`;
+        let cachedData = edgeAudioCache.get(cacheKey);
+
+        if (!cachedData) {
+          cachedData = await synthesizeViaEdgeOnline(spokenText, edgeVoiceName);
+          if (cachedData && cachedData.audioUrl) {
+            edgeAudioCache.set(cacheKey, cachedData);
+          }
+        }
+
+        if (sessionId !== currentPlaybackSessionId) return;
+        spinner?.classList.add('hidden');
+
+        if (cachedData && cachedData.audioUrl) {
+          await playEdgeAudioWithHighlight(cachedData.audioUrl, cachedData.boundaries, spokenText, spanElements, spotlightSpans, sessionId, onFinish);
+          return;
+        }
+      } catch (edgeErr) {
+        if (!state.customEdgeProxy) {
+          edgeDirectWsBlocked = true;
+        }
+        spinner?.classList.add('hidden');
+      }
+
+      if (sessionId !== currentPlaybackSessionId) return;
+      speakWithNativeWebSpeech(spokenText, spanElements, spotlightSpans, nativeVoice, targetPitch, sessionId, onFinish);
+    }
+
+    async function synthesizeViaEdgeOnline(text, voiceShortName) {
+      if (state.customEdgeProxy) {
+        const resp = await fetch(state.customEdgeProxy, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'tts-1',
+            input: text,
+            voice: voiceShortName,
+            response_format: 'mp3',
+            speed: 1.0
+          })
+        });
+        if (!resp.ok) throw new Error('Custom Edge Proxy error ' + resp.status);
+        const blob = await resp.blob();
+        return {
+          audioUrl: URL.createObjectURL(blob),
+          boundaries: []
+        };
+      }
+
+      if (!window.EdgeTTSModule || !window.EdgeTTSModule.EdgeTTS) {
+        throw new Error('EdgeTTS module not loaded yet');
+      }
+
+      const { EdgeTTS } = window.EdgeTTSModule;
+      const tts = new EdgeTTS(text, voiceShortName, {
+        rate: '+0%',
+        volume: '+0%',
+        pitch: '+0Hz'
+      });
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Edge TTS WebSocket timeout')), 2500)
+      );
+
+      const result = await Promise.race([tts.synthesize(), timeoutPromise]);
+      if (!result || !result.audio || result.audio.size < 100) {
+        throw new Error('Empty audio received from Edge TTS');
+      }
+
+      return {
+        audioUrl: URL.createObjectURL(result.audio),
+        boundaries: result.subtitle || []
+      };
+    }
+
+    function playEdgeAudioWithHighlight(audioUrl, boundaries, spokenText, spanElements, spotlightSpans, sessionId, onFinish) {
+      return new Promise((resolve) => {
+        const audio = new Audio(audioUrl);
+        currentHtmlAudio = audio;
+        audio.playbackRate = state.speechRate;
+
+        const updateHighlightByProgress = () => {
+          if (sessionId !== currentPlaybackSessionId || audio.paused) return;
+          const duration = audio.duration || Math.max(1, spokenText.length * 0.22);
+          const ratio = Math.min(0.999, Math.max(0, audio.currentTime / duration));
+
+          if (spanElements.length > 0) {
+            const idx = Math.min(spanElements.length - 1, Math.floor(ratio * spanElements.length));
+            spanElements.forEach(s => s.classList.remove('word-active'));
+            if (spanElements[idx]) spanElements[idx].classList.add('word-active');
+          }
+          if (spotlightSpans.length > 0) {
+            const sIdx = Math.min(spotlightSpans.length - 1, Math.floor(ratio * spotlightSpans.length));
+            spotlightSpans.forEach(s => s.classList.remove('word-active'));
+            if (spotlightSpans[sIdx]) spotlightSpans[sIdx].classList.add('word-active');
+          }
+        };
+
+        highlightTimer = setInterval(updateHighlightByProgress, 60);
+
+        audio.onended = () => {
+          if (highlightTimer) clearInterval(highlightTimer);
+          if (onFinish) onFinish();
+          resolve();
+        };
+
+        audio.onerror = () => {
+          if (highlightTimer) clearInterval(highlightTimer);
+          if (onFinish) onFinish();
+          resolve();
+        };
+
+        audio.play().catch(() => {
+          if (highlightTimer) clearInterval(highlightTimer);
+          const { voice: nv, pitch: tp } = resolveNativeVoiceAndPitch();
+          speakWithNativeWebSpeech(spokenText, spanElements, spotlightSpans, nv, tp, sessionId, onFinish);
+          resolve();
+        });
+      });
+    }
+
+    function speakWithNativeWebSpeech(spokenText, spanElements, spotlightSpans, preferredVoice, pitchVal, sessionId, onFinish) {
+      if (!window.speechSynthesis) {
+        if (onFinish) onFinish();
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(spokenText);
+      if (preferredVoice) {
+        utter.voice = preferredVoice;
+        utter.lang = preferredVoice.lang || 'zh-TW';
+      } else {
+        utter.lang = 'zh-TW';
+      }
+      utter.rate = state.speechRate;
+      utter.pitch = pitchVal || 1.0;
+
+      let boundaryTriggered = false;
+      const totalSpans = spanElements.length;
+      const totalSpotSpans = spotlightSpans.length;
+
+      const highlightAtRatio = (ratio) => {
+        if (totalSpans > 0) {
+          const idx = Math.min(totalSpans - 1, Math.floor(ratio * totalSpans));
+          spanElements.forEach(s => s.classList.remove('word-active'));
+          if (spanElements[idx]) spanElements[idx].classList.add('word-active');
+        }
+        if (totalSpotSpans > 0) {
+          const sIdx = Math.min(totalSpotSpans - 1, Math.floor(ratio * totalSpotSpans));
+          spotlightSpans.forEach(s => s.classList.remove('word-active'));
+          if (spotlightSpans[sIdx]) spotlightSpans[sIdx].classList.add('word-active');
+        }
+      };
+
+      const maxLen = Math.max(totalSpans, totalSpotSpans);
+      if (maxLen > 0) {
+        const msPerChar = Math.max(105, Math.round(210 / state.speechRate));
+        let step = 0;
+        highlightAtRatio(0);
+
+        highlightTimer = setInterval(() => {
+          if (sessionId !== currentPlaybackSessionId) {
+            clearInterval(highlightTimer);
+            return;
+          }
+          if (boundaryTriggered) return;
+          step++;
+          if (step < maxLen) {
+            highlightAtRatio(step / maxLen);
+          } else {
+            clearInterval(highlightTimer);
+          }
+        }, msPerChar);
+      }
+
+      utter.onboundary = (event) => {
+        if (event.name === 'word' || event.charIndex !== undefined) {
+          boundaryTriggered = true;
+          const ratio = Math.min(0.999, event.charIndex / Math.max(1, spokenText.length));
+          highlightAtRatio(ratio);
+        }
+      };
+
+      utter.onend = () => {
+        if (highlightTimer) clearInterval(highlightTimer);
+        if (onFinish) onFinish();
+      };
+
+      utter.onerror = () => {
+        if (highlightTimer) clearInterval(highlightTimer);
+        if (onFinish) onFinish();
+      };
+
+      window.speechSynthesis.speak(utter);
+    }
+
+    /**************************************************************
+     * 7. 渲染純文字報讀卡片（將被消音的考注音字加上紅色虛線底線視覺提示）
+     **************************************************************/
+    function wrapCharsWithZhuyinMask(text, className, forceZhuyinMode = 'auto', sectionIsZhuyin = false) {
+      const tokens = analyzeZhuyinMaskTokens(text, forceZhuyinMode, sectionIsZhuyin);
+      return tokens.map(t => {
+        if (t.isManualBracket) return '';
+        const escaped = t.char === '<' ? '&lt;' : t.char === '>' ? '&gt;' : t.char;
+        if (t.masked) {
+          return `<span class="word-span ${className} word-masked-zhuyin" title="考注音目標字：報讀時不唸出此字讀音">${escaped}</span>`;
+        }
+        return `<span class="word-span ${className}">${escaped}</span>`;
+      }).join('');
+    }
+
+    function renderQuestions() {
+      const container = document.getElementById('questionsList');
+      const countBadge = document.getElementById('questionCountBadge');
+      countBadge.textContent = `${state.questions.length} 筆`;
+
+      if (state.questions.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-6 text-center border border-slate-200">
+            <p class="text-slate-500 font-bold mb-3 text-sm">可在左側考卷圖片上「直接拉框報讀」，或拍照/貼上文字</p>
+            <button onclick="document.getElementById('cameraInput').click()" class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-xs mr-2">
+              <i class="fa-solid fa-camera mr-1"></i>拍照考卷
+            </button>
+            <button onclick="openPasteModal()" class="px-4 py-2 bg-amber-400 text-indigo-950 rounded-xl font-bold text-xs">
+              <i class="fa-solid fa-paste mr-1"></i>貼上文字
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = state.questions.map((q, idx) => {
+        if (state.teacherEditMode) {
+          const optionsInputs = (q.options || []).map((opt, optIdx) => `
+            <div class="flex items-center gap-2">
+              <input type="text" value="${escapeHtml(opt)}" 
+                onchange="updateOptionText('${q.id}', ${optIdx}, this.value)"
+                class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-medium focus:border-indigo-500 focus:outline-none">
+              <button onclick="removeOption('${q.id}', ${optIdx})" class="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          `).join('');
+
+          return `
+            <div class="bg-white rounded-2xl p-3.5 shadow-sm border-2 border-indigo-200 flex flex-col gap-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-bold text-indigo-700">編輯題目 #${idx + 1}（可用 {{字}} 包住不想唸出的考注音字）</span>
+                <div class="flex items-center gap-1">
+                  <button onclick="moveQuestion(${idx}, -1)" class="p-1 text-slate-500 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-arrow-up"></i></button>
+                  <button onclick="moveQuestion(${idx}, 1)" class="p-1 text-slate-500 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-arrow-down"></i></button>
+                  <button onclick="deleteQuestion('${q.id}')" class="p-1 text-rose-600 hover:bg-rose-50 rounded-lg ml-1"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </div>
+
+              <textarea rows="2" onchange="updateQuestionStem('${q.id}', this.value)"
+                class="w-full p-2.5 rounded-xl border border-slate-300 text-base font-medium focus:border-indigo-500 focus:outline-none">${escapeHtml(q.stem)}</textarea>
+
+              <div class="space-y-1.5 pl-2 border-l-2 border-indigo-100">
+                <div class="text-xs font-bold text-slate-500 flex items-center justify-between">
+                  <span>選項按鈕：</span>
+                  <button onclick="addOption('${q.id}')" class="text-indigo-600 hover:underline"><i class="fa-solid fa-plus mr-1"></i>新增選項</button>
+                </div>
+                ${optionsInputs}
+              </div>
+            </div>
+          `;
+        }
+
+        if (q.type === 'section') {
+          return '';
+        }
+
+        const inZhuyinMode = isQuestionInZhuyinMode(q);
+        const modeFlag = inZhuyinMode ? 'on' : 'auto';
+
+        const optionsHtml = (q.options && q.options.length > 0) ? `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-slate-100">
+            ${q.options.map((opt, optIdx) => `
+              <button id="opt-${q.id}-${optIdx}" onclick="event.stopPropagation(); speakOption('${q.id}', ${optIdx})"
+                class="text-left px-3.5 py-2.5 rounded-xl bg-slate-50 hover:bg-amber-50 active:bg-amber-100 border-2 border-slate-200 hover:border-amber-400 transition flex items-center justify-between gap-2 group">
+                <span class="font-bold text-slate-800 leading-snug" style="font-size: ${Math.max(16, state.fontSize - 2)}px;">
+                  ${wrapCharsWithZhuyinMask(opt, 'opt-word-span', modeFlag, inZhuyinMode)}
+                </span>
+                <i class="fa-solid fa-volume-low text-slate-400 group-hover:text-amber-600 text-base shrink-0"></i>
+              </button>
+            `).join('')}
+          </div>
+        ` : '';
+
+        return `
+          <div id="card-${q.id}" onclick="speakQuestionCard('${q.id}', true)"
+            class="cursor-pointer bg-white hover:bg-blue-50/40 rounded-2xl p-4 shadow-sm border-2 ${q.isCropped ? 'border-amber-400 bg-amber-50/20' : 'border-slate-200'} hover:border-blue-400 transition flex flex-col">
+            <div class="flex items-start justify-between gap-3">
+              <div class="font-bold text-slate-900 leading-relaxed flex-1" style="font-size: ${state.fontSize}px;">
+                ${q.isCropped ? '<span class="inline-block text-xs bg-amber-400 text-indigo-950 font-black px-2 py-0.5 rounded mr-1.5 align-middle">框選</span>' : ''}
+                ${inZhuyinMode ? '<span class="inline-block text-xs bg-rose-100 text-rose-800 border border-rose-300 font-black px-2 py-0.5 rounded mr-1.5 align-middle" title="已隱藏紅底線目標字讀音">考注音防洩題</span>' : ''}
+                ${wrapCharsWithZhuyinMask(q.stem, 'stem-word-span', modeFlag, inZhuyinMode)}
+              </div>
+
+              <div class="shrink-0 flex flex-col items-end gap-1.5">
+                <button onclick="event.stopPropagation(); speakQuestionCard('${q.id}', true)"
+                  class="w-11 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white shadow flex items-center justify-center transition" title="報讀整道題目">
+                  <i class="fa-solid fa-volume-high text-lg"></i>
+                </button>
+                <button onclick="event.stopPropagation(); toggleCardZhuyinMode('${q.id}')"
+                  class="px-2 py-0.5 rounded-md text-[11px] font-bold transition ${inZhuyinMode ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}"
+                  title="切換本題是否為「考注音題」（開啟時不唸出目標國字讀音）">
+                  ${inZhuyinMode ? '注音遮音中' : '一般報讀'}
+                </button>
+              </div>
+            </div>
+
+            ${optionsHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    /**************************************************************
+     * 8. 微調編輯與貼上文字功能
+     **************************************************************/
+    function openPasteModal() {
+      document.getElementById('pasteModal').classList.remove('hidden');
+    }
+
+    function closePasteModal() {
+      document.getElementById('pasteModal').classList.add('hidden');
+    }
+
+    function importPastedText(replaceAll = true) {
+      const raw = document.getElementById('pasteTextarea').value.trim();
+      if (!raw) {
+        alert('請先在輸入框貼上文字！');
+        return;
+      }
+      const parsed = parseRawTextIntoQuestions(raw);
+      if (parsed.length > 0) {
+        state.questions = replaceAll ? parsed : [...state.questions, ...parsed];
+        saveCurrentExamToLocal();
+        renderQuestions();
+        closePasteModal();
+        document.getElementById('pasteTextarea').value = '';
+        updateLiveSpotlight(parsed[0].stem, null, parsed[0].isZhuyinQuiz);
+      }
+    }
+
+    function toggleTeacherEditMode() {
+      stopAllSpeech();
+      state.teacherEditMode = !state.teacherEditMode;
+      const btn = document.getElementById('editModeBtn');
+      const text = document.getElementById('editModeText');
+      if (state.teacherEditMode) {
+        btn.className = 'px-2.5 py-1.5 rounded-xl bg-amber-400 text-indigo-950 text-xs font-black shadow transition flex items-center gap-1';
+        text.textContent = '完成編輯';
+      } else {
+        btn.className = 'px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1';
+        text.textContent = '編輯文字';
+        saveCurrentExamToLocal();
+      }
+      renderQuestions();
+    }
+
+    function changeFontSize(delta) {
+      state.fontSize = Math.min(36, Math.max(16, state.fontSize + delta));
+      document.getElementById('liveSpotlightDisplay').style.fontSize = `${Math.max(24, state.fontSize + 4)}px`;
+      renderQuestions();
+    }
+
+    function updateQuestionStem(id, val) {
+      const q = state.questions.find(i => i.id === id);
+      if (q) { q.stem = val; saveCurrentExamToLocal(); }
+    }
+
+    function updateOptionText(id, optIdx, val) {
+      const q = state.questions.find(i => i.id === id);
+      if (q && q.options) { q.options[optIdx] = val; saveCurrentExamToLocal(); }
+    }
+
+    function addOption(id) {
+      const q = state.questions.find(i => i.id === id);
+      if (q) {
+        if (!q.options) q.options = [];
+        const nextNum = q.options.length + 1;
+        q.options.push(`${nextNum}. 選項`);
+        saveCurrentExamToLocal();
+        renderQuestions();
+      }
+    }
+
+    function removeOption(id, optIdx) {
+      const q = state.questions.find(i => i.id === id);
+      if (q && q.options) {
+        q.options.splice(optIdx, 1);
+        saveCurrentExamToLocal();
+        renderQuestions();
+      }
+    }
+
+    function deleteQuestion(id) {
+      state.questions = state.questions.filter(i => i.id !== id);
+      saveCurrentExamToLocal();
+      renderQuestions();
+    }
+
+    function moveQuestion(index, direction) {
+      const target = index + direction;
+      if (target < 0 || target >= state.questions.length) return;
+      const temp = state.questions[index];
+      state.questions[index] = state.questions[target];
+      state.questions[target] = temp;
+      saveCurrentExamToLocal();
+      renderQuestions();
+    }
+
+    function addNewQuestionCard() {
+      const newQ = {
+        id: 'q-' + Date.now(),
+        type: 'question',
+        stem: '請輸入要報讀的題目文字...',
+        options: []
+      };
+      state.questions.unshift(newQ);
+      if (!state.teacherEditMode) {
+        toggleTeacherEditMode();
+      } else {
+        renderQuestions();
+      }
+    }
+
+    /**************************************************************
+     * 9. 進階卷積銳利化 (Unsharp Convolution) + 局部去陰影演算法（大幅提升拍照模糊字、括弧與引號偵測準確率！）
+     **************************************************************/
+    function showLoading(title, sub, progress = 30) {
+      document.getElementById('loadingOverlay').classList.remove('hidden');
+      document.getElementById('loadingTitle').textContent = title;
+      document.getElementById('loadingSub').textContent = sub || '';
+      document.getElementById('loadingBar').style.width = `${progress}%`;
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.add('hidden');
+    }
+
+    /**
+     * 升級版影像清晰化管線：
+     * 1. 智慧超解析放大 (小截圖放大至 2.4 倍，確保細小括弧（ ）與引號「」像素充足)
+     * 2. 輕量 3x3 銳利化卷積核 (增強筆畫邊緣清晰度，解決平板手震微糊)
+     * 3. 區域分塊紙張背景漂白 (消除桌面燈光局部陰影，同時保留灰階平滑過渡不傷筆畫)
+     */
+    function prepareCrystalClearImageForOcr(sourceDataUrl, targetMinWidth = 1100, targetMaxWidth = 2100) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width;
+          if (w < targetMinWidth) {
+            w = Math.min(targetMaxWidth, Math.round(img.width * 2.4));
+          } else if (w > targetMaxWidth) {
+            w = targetMaxWidth;
+          }
+          const h = Math.round((img.height * w) / img.width);
+
+          canvas.width = w;
+          canvas.height = h;
+
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+
+          const imgData = ctx.getImageData(0, 0, w, h);
+          const d = imgData.data;
+
+          // 先轉灰階陣列
+          const gray = new Float32Array(w * h);
+          let sumLum = 0;
+          for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+            const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+            gray[p] = g;
+            sumLum += g;
+          }
+
+          const avgPaperLum = Math.max(155, Math.min(242, (sumLum / (w * h)) * 1.05));
+          const blackPoint = avgPaperLum * 0.30;
+
+          // 套用溫和邊緣銳利化卷積 + 對比純淨化（保留細小選項數字 ①②③④ 與 1. 2. 3. 4. 筆畫內部白隙不糊成黑點）
+          for (let y = 1; y < h - 1; y++) {
+            const rowOffset = y * w;
+            for (let x = 1; x < w - 1; x++) {
+              const idx = rowOffset + x;
+              const center = gray[idx];
+              const neighbors = (gray[idx - 1] + gray[idx + 1] + gray[idx - w] + gray[idx + w]) * 0.25;
+              const sharpened = center + (center - neighbors) * 0.50;
+
+              let norm;
+              if (sharpened >= avgPaperLum) {
+                norm = 255;
+              } else if (sharpened <= blackPoint) {
+                norm = 0;
+              } else {
+                norm = Math.round(((sharpened - blackPoint) / (avgPaperLum - blackPoint)) * 255);
+              }
+
+              const rgbaIdx = idx * 4;
+              d[rgbaIdx] = norm;
+              d[rgbaIdx + 1] = norm;
+              d[rgbaIdx + 2] = norm;
+            }
+          }
+
+          ctx.putImageData(imgData, 0, 0);
+          // 使用 PNG 無損格式輸出（若體積過大再退回高畫質 JPEG），避免括弧邊緣出現 JPEG 壓縮噪點
+          const pngUrl = canvas.toDataURL('image/png');
+          if (pngUrl.length < 1300000) {
+            resolve(pngUrl);
+          } else {
+            resolve(canvas.toDataURL('image/jpeg', 0.94));
+          }
+        };
+        img.onerror = () => resolve(sourceDataUrl);
+        img.src = sourceDataUrl;
+      });
+    }
+
+    async function handleImageUpload(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+
+      stopAllSpeech();
+      state.pages = [];
+      state.currentPageIndex = 0;
+
+      showLoading('正在載入並銳利化考卷照片...', '載入後可直接用手指在考卷上拉框報讀，或自動拆題', 25);
+
+      for (const file of files) {
+        const dataUrl = await readFileAsDataUrl(file);
+        state.pages.push({ type: 'image', dataUrl });
+      }
+
+      updatePageControls();
+      await displayAndRecognizePage(0, true);
+      event.target.value = '';
+    }
+
+    async function handlePdfUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      stopAllSpeech();
+      showLoading('正在解析 PDF 考卷...', '提取 PDF 內嵌文字與高解析度考卷畫面', 20);
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        state.pages = [];
+        state.currentPageIndex = 0;
+
+        let allExtractedTextLines = [];
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          showLoading(`正在讀取 PDF 第 ${pageNum} / ${pdf.numPages} 頁...`, '渲染考卷頁面與擷取文字', Math.round((pageNum / pdf.numPages) * 75));
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 2.2 });
+
+          const offCanvas = document.createElement('canvas');
+          offCanvas.width = viewport.width;
+          offCanvas.height = viewport.height;
+          const ctx = offCanvas.getContext('2d');
+          await page.render({ canvasContext: ctx, viewport }).promise;
+
+          const textContent = await page.getTextContent();
+          const pageLines = reconstructPdfLinesSmart(textContent.items);
+          if (pageLines.length > 0) {
+            allExtractedTextLines.push(...pageLines);
+          }
+
+          state.pages.push({
+            type: 'pdfPage',
+            dataUrl: offCanvas.toDataURL('image/jpeg', 0.93),
+            extractedLines: pageLines
+          });
+        }
+
+        updatePageControls();
+        await renderPageToCanvas(0);
+
+        const combinedText = allExtractedTextLines.join('\n').trim();
+        if (combinedText.length > 15 && !state.geminiApiKey) {
+          state.questions = parseRawTextIntoQuestions(combinedText);
+          saveCurrentExamToLocal();
+          renderQuestions();
+          if (state.questions.length > 0) {
+            updateLiveSpotlight(state.questions[0].stem, null, state.questions[0].isZhuyinQuiz);
+          }
+          hideLoading();
+        } else {
+          await recognizePageImage(state.pages[0].dataUrl, true);
+        }
+      } catch (err) {
+        console.error('PDF 解析錯誤:', err);
+        alert('讀取 PDF 檔案時發生問題，請確認檔案未加密或改用拍照上傳。');
+        hideLoading();
+      }
+      event.target.value = '';
+    }
+
+    function reconstructPdfLinesSmart(items) {
+      if (!items || !items.length) return [];
+
+      const validItems = items
+        .map(it => ({
+          str: (it.str || '').trim(),
+          x: it.transform[4],
+          y: it.transform[5]
+        }))
+        .filter(it => it.str.length > 0);
+
+      if (validItems.length === 0) return [];
+
+      let isVertical = state.textDirection === 'vertical';
+      if (state.textDirection === 'auto') {
+        const singleCharCount = validItems.filter(it => it.str.length === 1).length;
+        const singleCharRatio = singleCharCount / validItems.length;
+        let verticalPairs = 0;
+        let horizontalPairs = 0;
+        for (let i = 1; i < validItems.length; i++) {
+          const dx = Math.abs(validItems[i].x - validItems[i - 1].x);
+          const dy = Math.abs(validItems[i].y - validItems[i - 1].y);
+          if (dx < 8 && dy > 5 && dy < 40) verticalPairs++;
+          if (dy < 6 && dx > 5 && dx < 100) horizontalPairs++;
+        }
+        if (singleCharRatio > 0.65 && verticalPairs > horizontalPairs * 1.2) {
+          isVertical = true;
+        }
+      }
+
+      if (isVertical) {
+        const cols = [];
+        const xTolerance = 10;
+        validItems.forEach(item => {
+          let col = cols.find(c => Math.abs(c.x - item.x) <= xTolerance);
+          if (!col) {
+            col = { x: item.x, items: [] };
+            cols.push(col);
+          }
+          col.items.push(item);
+        });
+        cols.sort((a, b) => b.x - a.x);
+        return cols.map(c => {
+          c.items.sort((a, b) => b.y - a.y);
+          return cleanMathAndChineseOcrText(c.items.map(i => i.str).join(''));
+        });
+      } else {
+        const rows = [];
+        const yTolerance = 6;
+        validItems.forEach(item => {
+          let row = rows.find(r => Math.abs(r.y - item.y) <= yTolerance);
+          if (!row) {
+            row = { y: item.y, items: [] };
+            rows.push(row);
+          }
+          row.items.push(item);
+        });
+        rows.sort((a, b) => b.y - a.y);
+        return rows.map(r => {
+          r.items.sort((a, b) => a.x - b.x);
+          return cleanMathAndChineseOcrText(r.items.map(i => i.str).join(' '));
+        });
+      }
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function updatePageControls() {
+      const nav = document.getElementById('pageNavControls');
+      const indicator = document.getElementById('pageIndicator');
+      if (state.pages.length > 1) {
+        nav.classList.remove('hidden');
+        indicator.textContent = `${state.currentPageIndex + 1} / ${state.pages.length}`;
+      } else {
+        nav.classList.add('hidden');
+      }
+    }
+
+    async function changePage(delta) {
+      const nextIdx = state.currentPageIndex + delta;
+      if (nextIdx < 0 || nextIdx >= state.pages.length) return;
+      state.currentPageIndex = nextIdx;
+      updatePageControls();
+      await renderPageToCanvas(nextIdx);
+    }
+
+    async function displayAndRecognizePage(pageIdx, replaceQuestions = true) {
+      await renderPageToCanvas(pageIdx);
+      const pageObj = state.pages[pageIdx];
+      if (pageObj) {
+        await recognizePageImage(pageObj.dataUrl, replaceQuestions);
+      }
+    }
+
+    function renderPageToCanvas(pageIdx) {
+      return new Promise((resolve) => {
+        const pageObj = state.pages[pageIdx];
+        if (!pageObj) return resolve();
+
+        const canvas = document.getElementById('examCanvas');
+        const overlay = document.getElementById('overlayCanvas');
+
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1650;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          }
+          canvas.width = w;
+          canvas.height = h;
+          overlay.width = w;
+          overlay.height = h;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve();
+        };
+        img.src = pageObj.dataUrl;
+      });
+    }
+
+    function reOcrCurrentPage() {
+      const canvas = document.getElementById('examCanvas');
+      if (!canvas || !canvas.width) return;
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.93);
+      recognizePageImage(dataUrl, true);
+    }
+
+    /**************************************************************
+     * 10. 雙引擎「平行對決評分」高精準文字辨識核心：
+     *     同時呼叫雲端繁中 Engine 1 與 Engine 2，計算繁體字有效密度、括弧完整度與雜訊懲罰分，自動挑出最準確的結果！
+     **************************************************************/
+    function scoreOcrCandidateText(text) {
+      if (!text) return -999;
+      const cjkMatches = text.match(/[\u4e00-\u9fa5]/g) || [];
+      const digitMatches = text.match(/\d/g) || [];
+      const bracketPairs = text.match(/（\s*）|\(\s*\)|【\s*】/g) || [];
+      const optionNums = text.match(/[\(（]\d{1,2}[\)）]|[①②③④⑤]/g) || [];
+      const squareBoxes = text.match(/□/g) || [];
+      const quotePairs = text.match(/「[^」]+」/g) || [];
+      const garbageMatches = text.match(/[¤§¨´µ¶¸º»¿|\\/_~`^]/g) || [];
+
+      return (cjkMatches.length * 3) + (digitMatches.length * 1.5) + (bracketPairs.length * 6) + (optionNums.length * 6) + (squareBoxes.length * 5) + (quotePairs.length * 5) - (garbageMatches.length * 8);
+    }
+
+    async function recognizeWithDualFreeCloudOcr(dataUrl, isVerticalHint = false) {
+      const callOcrSpace = async (engineNum) => {
+        const formData = new FormData();
+        formData.append('base64Image', dataUrl);
+        formData.append('language', 'cht');
+        formData.append('isOverlayRequired', 'true');
+        formData.append('OCREngine', String(engineNum));
+        formData.append('scale', 'true');
+        formData.append('detectOrientation', 'true');
+        formData.append('isTable', 'true');
+
+        const resp = await fetch('https://api.ocr.space/parse/image', {
+          method: 'POST',
+          headers: { 'apikey': 'helloworld' },
+          body: formData
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        if (data.IsErroredOnProcessing || !data.ParsedResults?.length) {
+          throw new Error('Empty result');
+        }
+        return data.ParsedResults[0];
+      };
+
+      const formatResult = (parsedResult) => {
+        const overlayLines = parsedResult?.TextOverlay?.Lines || [];
+        const useVert = isVerticalHint || state.textDirection === 'vertical';
+        if (overlayLines.length > 0 && useVert) {
+          const sortedVert = [...overlayLines].sort((a, b) => {
+            const ax = a.Words?.[0]?.Left || 0;
+            const bx = b.Words?.[0]?.Left || 0;
+            if (Math.abs(ax - bx) > 20) return bx - ax;
+            return (a.MinTop || 0) - (b.MinTop || 0);
+          });
+          return sortedVert.map(l => cleanMathAndChineseOcrText(l.LineText)).join('\n');
+        }
+        return cleanMathAndChineseOcrText(parsedResult.ParsedText || '');
+      };
+
+      // 平行發出 Engine 1 與 Engine 2 請求，評分擇優（大幅提升括弧、引號與繁體筆畫準確率！）
+      const results = await Promise.allSettled([callOcrSpace(2), callOcrSpace(1)]);
+      let candidates = [];
+
+      results.forEach(r => {
+        if (r.status === 'fulfilled' && r.value) {
+          const formatted = formatResult(r.value);
+          if (formatted) {
+            candidates.push({
+              text: formatted,
+              score: scoreOcrCandidateText(formatted)
+            });
+          }
+        }
+      });
+
+      if (candidates.length === 0) {
+        throw new Error('Both cloud OCR engines returned empty');
+      }
+
+      candidates.sort((a, b) => b.score - a.score);
+      return candidates[0].text;
+    }
+
+    async function recognizePageImage(dataUrl, replaceQuestions = true) {
+      try {
+        if (state.geminiApiKey) {
+          showLoading('正在使用 Gemini AI 視覺引擎精準辨識...', '自動標註括弧與考注音目標字', 45);
+          const aiQuestions = await recognizeWithGeminiVision(dataUrl);
+          if (aiQuestions && aiQuestions.length > 0) {
+            state.questions = replaceQuestions ? aiQuestions : [...state.questions, ...aiQuestions];
+            saveCurrentExamToLocal();
+            renderQuestions();
+            updateLiveSpotlight(state.questions[0].stem, null, state.questions[0].isZhuyinQuiz);
+            hideLoading();
+            return;
+          }
+        }
+
+        showLoading('正在執行卷積銳利化與去陰影強化...', '提升國字筆畫、括弧（ ）與引號「 」清晰度', 25);
+        const crystalDataUrl = await prepareCrystalClearImageForOcr(dataUrl, 1350, 1950);
+
+        if (state.freeEngineMode === 'cloud_plus_best') {
+          showLoading('正在使用雙雲端繁體中文引擎平行比對辨識...', '自動挑出括弧與中文字最精準的辨識結果', 55);
+          try {
+            const cloudText = await recognizeWithDualFreeCloudOcr(crystalDataUrl);
+            if (cloudText && cloudText.trim().length > 2) {
+              const parsedCloud = parseRawTextIntoQuestions(cloudText);
+              if (parsedCloud.length > 0) {
+                state.questions = replaceQuestions ? parsedCloud : [...state.questions, ...parsedCloud];
+                saveCurrentExamToLocal();
+                renderQuestions();
+                updateLiveSpotlight(parsedCloud[0].stem, null, parsedCloud[0].isZhuyinQuiz);
+                hideLoading();
+                return;
+              }
+            }
+          } catch (cloudErr) {
+            console.warn('切換至本機 Best 高精度模型:', cloudErr);
+          }
+        }
+
+        const isVert = state.textDirection === 'vertical';
+        const langModel = isVert ? 'chi_tra_vert' : 'chi_tra';
+        const psmMode = isVert ? '5' : '6';
+
+        showLoading(`正在使用本機 Best 最高精度中文模型辨識...`, '首次載入 Best 語言庫約需數秒', 50);
+        const worker = await Tesseract.createWorker(langModel, 1, {
+          langPath: TESSDATA_BEST_URL,
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              const pct = Math.round(50 + m.progress * 45);
+              showLoading('正在高精準解析文字與括弧...', `已完成 ${Math.round(m.progress * 100)}%`, pct);
+            }
+          }
+        });
+
+        await worker.setParameters({
+          tessedit_pageseg_mode: psmMode,
+          preserve_interword_spaces: '1'
+        });
+
+        const ret = await worker.recognize(crystalDataUrl);
+        await worker.terminate();
+
+        const reconstructedText = extractOrderedTextFromTesseractData(ret.data, isVert ? 'vertical' : 'horizontal');
+        const parsed = parseRawTextIntoQuestions(reconstructedText);
+
+        if (parsed.length > 0) {
+          state.questions = replaceQuestions ? parsed : [...state.questions, ...parsed];
+          saveCurrentExamToLocal();
+          renderQuestions();
+          updateLiveSpotlight(parsed[0].stem, null, parsed[0].isZhuyinQuiz);
+        } else {
+          updateLiveSpotlight('整頁字體較小，請直接在下方考卷圖片上「用手指畫框」框選想聽的題目，即可高精準辨識並報讀！');
+        }
+      } catch (err) {
+        console.error('OCR 辨識發生錯誤:', err);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function extractOrderedTextFromTesseractData(tessData, directionMode) {
+      if (!tessData) return '';
+      const lines = (tessData.lines || []).filter(l => {
+        const t = (l.text || '').trim();
+        if (!t) return false;
+        if (l.confidence !== undefined && l.confidence < 30 && t.length <= 2) return false;
+        return true;
+      });
+
+      if (lines.length === 0) {
+        return cleanMathAndChineseOcrText(tessData.text || '');
+      }
+
+      if (directionMode === 'vertical') {
+        const sortedLines = [...lines].sort((a, b) => {
+          const ax = (a.bbox.x0 + a.bbox.x1) / 2;
+          const bx = (b.bbox.x0 + b.bbox.x1) / 2;
+          if (Math.abs(ax - bx) > 22) return bx - ax;
+          return a.bbox.y0 - b.bbox.y0;
+        });
+        return sortedLines.map(l => cleanMathAndChineseOcrText(l.text)).join('\n');
+      } else {
+        const sortedLines = [...lines].sort((a, b) => {
+          const ay = (a.bbox.y0 + a.bbox.y1) / 2;
+          const by = (b.bbox.y0 + b.bbox.y1) / 2;
+          if (Math.abs(ay - by) > 14) return ay - by;
+          return a.bbox.x0 - b.bbox.x0;
+        });
+        return sortedLines.map(l => cleanMathAndChineseOcrText(l.text)).join('\n');
+      }
+    }
+
+    /**
+     * 強化版 OCR 文字修訂：
+     * 1. 優先修復選項數字 (1)(2)(3)(4) 常見誤判（如 (|)、(l)、(I)、（１）、⑴）
+     * 2. 修復考卷中的方框 □（如算式或填空中誤判為「口」）
+     * 3. 完整保留並修復空白【 】與（ ）
+     */
+    function cleanMathAndChineseOcrText(rawStr) {
+      if (!rawStr) return '';
+      let s = rawStr;
+
+      // 0. 全形數字轉半形，帶括號數字 ⑴~⑽ 轉 (1)~(10)
+      s = s.replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0));
+      const parenMap = { '⑴':'(1)', '⑵':'(2)', '⑶':'(3)', '⑷':'(4)', '⑸':'(5)', '⑹':'(6)', '⑺':'(7)', '⑻':'(8)', '⑼':'(9)', '⑽':'(10)' };
+      for (const [k, v] of Object.entries(parenMap)) {
+        s = s.split(k).join(v);
+      }
+
+      // ★ 重要：在刪除 | 雜訊之前，先將 OCR 把選項 `(1)` 誤讀為 `(|)`、`(l)`、`(I)`、`(丨)`、`(!)` 的情況精準還原為 `(1)`！
+      s = s.replace(/[\(（\[][\s]*[|｜lIｉＩ丨!][\s]*[\)）\]]/g, '(1)');
+      // 正規化選項括號內的空白如 `( 1 )` -> `(1)`、`（ 2 ）` -> `(2)`
+      s = s.replace(/[\(（]\s*(\d{1,2})\s*[\)）]/g, '($1)');
+
+      // 正規化各種方框符號為標準 □
+      s = s.replace(/[▢◻⬜☐▫▭▣]/g, '□');
+
+      // 清理亂碼符號（保留 □、數學符號與分數）
+      s = s.replace(/[|｜¦¬¤§¨°±²³´µ¶·¸¹º»¼½¾¿]/g, match => {
+        if (['°', '±', '²', '³', '¼', '½', '¾'].includes(match)) return match;
+        return '';
+      });
+
+      // 執行三輪消除連續中文字與全形標點之間的空格
+      for (let pass = 0; pass < 3; pass++) {
+        s = s.replace(/([\u4e00-\u9fa5，。！？、；：「」（）《》【】□])\s+([\u4e00-\u9fa5，。！？、；：「」（）《》【】□])/g, '$1$2');
+      }
+
+      // ★ 修復 OCR 將方框「□」誤認為國字「口」的情境（如：`在口裡填入`、`口 + 5 = 12`、`20 - 口 = 8`）
+      s = s.replace(/(在|於|將|把|填入|寫在)\s*口\s*(裡|中|內)/g, '$1□$2');
+      s = s.replace(/(\d|=|＝|\+|\-|×|÷|＞|＜|>|<)\s*口\s*(\d|=|＝|\+|\-|×|÷|＞|＜|>|<|$)/g, '$1 □ $2');
+      s = s.replace(/^(\s*(?:\d{1,2}[.、．]\s*)?)口\s*(\+|\-|×|÷|=|＝)/g, '$1□ $2');
+
+      // ★ 修復空白【 】與（ ）：
+      // 1. 保留【 】（若中間夾雜單一雜訊點如【 . 】修復為【 】）
+      s = s.replace(/【\s*[\.,·•`'":;、，。_＿]?\s*】/g, '【 】');
+      // 2. 圓括弧與方括弧中間夾雜雜訊點如 `( . )`、`（ 、 ）`、`{ }`、`[ ]` 修復為 `（ ）`
+      s = s.replace(/[\(（\{\[]\s*[\.,·•`'":;、，。_＿]?\s*[\)）\}\]]/g, '（ ）');
+      // 3. 題號前只有半邊括弧殘缺，例如 `( 1.` 或 `）1.` 修復為 `（ ）1.`
+      s = s.replace(/^[\(（\)）]\s*(\d{1,2}[.、．])/g, '（ ）$1');
+      // 4. 選項左括弧完整但右括弧漏掉，如 `(1 蘋果 (2) 香蕉`
+      s = s.replace(/\((\d)\s+(?=[\u4e00-\u9fa5A-Za-z\d])/g, '($1) ');
+      // 4b. 修復圓圈選項序列中某一個圓圈被 OCR 漏讀為純數字或符號（如 `① 25+15 ② 25×2 ③ 60-25 4 40÷2`）
+      s = s.replace(/(^|[\s？?：:。])[0O@◎●1]\s*(?=[^\s②]+?\s*②)/g, '$1① ');
+      s = s.replace(/(①[^②\n]+?)\s+2(?=\s+\S.*③)/g, '$1 ② ');
+      s = s.replace(/(②[^③\n]+?)\s+3(?=\s+\S.*④)/g, '$1 ③ ');
+      s = s.replace(/(③[^④\n]+?)\s+4(?=\s+\S)/g, '$1 ④ ');
+
+      // 5. 修復直角引號誤判
+      s = s.replace(/｢([^｣]+)｣/g, '「$1」');
+      s = s.replace(/\[([\u4e00-\u9fa5]{1,2})\]/g, '「$1」');
+
+      // 修復數學算式中的運算符號誤判
+      s = s.replace(/(\d)\s*[xX\*＊]\s*(\d)/g, '$1 × $2');
+      s = s.replace(/(\d)\s*[—―–─]\s*(\d)/g, '$1 - $2');
+      s = s.replace(/(\d)\s*＋\s*(\d)/g, '$1 + $2');
+      s = s.replace(/[=＝]\s*[\(（]\s*[\)）]/g, '= （ ）');
+      s = s.replace(/(\d\s*[\+\-×÷]\s*\d+)\s*二\s*(\d+|\（\s*\）|□)/g, '$1 = $2');
+
+      return stripScoreAndMetaNotes(s);
+    }
+
+    async function recognizeWithGeminiVision(dataUrl) {
+      const base64Data = dataUrl.split(',')[1];
+      const mimeType = dataUrl.substring(dataUrl.indexOf(':') + 1, dataUrl.indexOf(';')) || 'image/jpeg';
+
+      const prompt = `請仔細辨識這張考卷圖片中的「題目與選項」：
+1. 只擷取「題目本身與其選項」，完全忽略學校名稱、試卷標題、學年度、班級姓名座號得分欄、大題標題（如「一、選擇題」）、配分說明（如「每題2分」）、頁碼與翻頁提示。
+2. 完整保留題目中的方框「□」、括弧「【 】」與「（ ）」、引號「 」，以及所有選項數字如 (1)、(2)、(3)、(4)。
+3. 若該題是「考寫注音」或「考某個國字的注音/讀音」，請將 isZhuyinQuiz 設為 true，並把被考注音的那個目標國字用 {{}} 包起來（例如：熱{{鬧}}（ ）），避免報讀洩題。
+4. 請輸出純 JSON 陣列格式：
+[
+  {
+    "type": "question",
+    "isZhuyinQuiz": true 或 false,
+    "stem": "完整題幹文字",
+    "options": ["(1) 選項一", "(2) 選項二"]
+  }
+]`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(state.geminiApiKey)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: mimeType, data: base64Data } }
+            ]
+          }],
+          generationConfig: {
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini API (${response.status})`);
+      }
+
+      const result = await response.json();
+      const rawJson = result?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+      const parsed = JSON.parse(rawJson);
+
+      return parsed
+        .filter(item => item && item.type !== 'section' && String(item.stem || '').trim().length > 0)
+        .map((item, idx) => ({
+          id: `q-ai-${Date.now()}-${idx}`,
+          type: 'question',
+          isZhuyinQuiz: Boolean(item.isZhuyinQuiz),
+          stem: stripScoreAndMetaNotes(String(item.stem || '')),
+          options: Array.isArray(item.options) ? item.options.map(o => String(o).trim()).filter(Boolean) : []
+        }));
+    }
+
+    /**
+     * 判斷是否為「非題目」的考卷標題、學校學年、班級姓名座號、頁碼或注意事項
+     */
+    function isNonQuestionExamLine(line) {
+      if (!line) return true;
+      const t = line.trim();
+      if (!t) return true;
+
+      // 若本身是明確題號開頭（如 `1.`、`（ ）1.`、`【 】2.`），視為題目保留
+      const startsWithQNum = /^(?:[\(（\[【]\s*[\)）\]】]\s*)?\d{1,2}\s*[.、．\)）]/.test(t);
+      if (startsWithQNum) return false;
+
+      // 過濾班級、姓名、座號、得分、家長簽章、命題老師等欄位
+      if (/(?:班級|姓名|座號|得分|總分|家長簽|命題[者教師]|審題[者教師]|閱卷)/.test(t) && t.length < 45) return true;
+      if (/[_＿\s]{2,}年[_＿\s]{1,}班/.test(t)) return true;
+
+      // 過濾學校考卷抬頭標題（如：○○國民小學 114學年度 第一學期 期中定期評量 國語科試卷）
+      if (/(?:國民小學|國民中學|學年度|第[一二12]學期|期中評量|期末評量|定期評量|學習評量|平時測驗|隨堂測驗|[國數自社英生]語?科試[卷題])/.test(t) && !/[？?]/.test(t)) {
+        return true;
+      }
+
+      // 過濾頁碼、翻頁提示、配分列
+      if (/^(?:第\s*\d+\s*頁|共\s*\d+\s*頁|-\s*\d+\s*-|【?背面尚有|【?背面還有|請翻[頁背]面|試題結束|作答結束)/.test(t)) {
+        return true;
+      }
+
+      return false;
+    }
+
+    function parseRawTextIntoQuestions(rawText) {
+      if (!rawText || !rawText.trim()) return [];
+
+      const cleanedLines = rawText
+        .split(/\r?\n/)
+        .map(line => cleanMathAndChineseOcrText(line))
+        .filter(line => line.length > 0 && !isNonQuestionExamLine(line));
+
+      const sectionRegex = /^(?:第\s*[一二三四五六七八九十]+\s*大題|[一二三四五六七八九十壹貳參肆]+\s*[、.．])\s*(.+)/;
+      const questionStartRegex = /^(?:[\(（\[【]\s*[\)）\]】]\s*)?(?:[\(（]?(\d{1,2})[\)）.|、．])\s*(.+)/;
+      const bracketQuestionRegex = /^([\(（\[【]\s*[\)）\]】])\s*(?:(\d{1,2})[.|、．]?\s*)?(.+)/;
+
+      // 預先標記「逐行排列的 1. 2. 3. 4. 選項區塊」，避免單行 `1. 蘋果`、`2. 香蕉` 被誤拆成獨立題目
+      const multiLineOptionFlags = new Array(cleanedLines.length).fill(false);
+      const isPlainNumberedShortOption = (str, expectedNum) => {
+        if (!str || /[\(（\[【]\s*[\)）\]】]|[？?]/.test(str)) return false;
+        const re = new RegExp(`^(?:\\(${expectedNum}\\)|（${expectedNum}）|${expectedNum}\\s*[.、．])\\s*\\S`);
+        return re.test(str);
+      };
+      for (let i = 1; i < cleanedLines.length - 1; i++) {
+        if (multiLineOptionFlags[i]) continue;
+        if (
+          isPlainNumberedShortOption(cleanedLines[i], 1) &&
+          isPlainNumberedShortOption(cleanedLines[i + 1], 2) &&
+          (i + 2 < cleanedLines.length && isPlainNumberedShortOption(cleanedLines[i + 2], 3))
+        ) {
+          multiLineOptionFlags[i] = true;
+          multiLineOptionFlags[i + 1] = true;
+          multiLineOptionFlags[i + 2] = true;
+          if (i + 3 < cleanedLines.length && isPlainNumberedShortOption(cleanedLines[i + 3], 4)) {
+            multiLineOptionFlags[i + 3] = true;
+          }
+          if (i + 4 < cleanedLines.length && isPlainNumberedShortOption(cleanedLines[i + 4], 5)) {
+            multiLineOptionFlags[i + 4] = true;
+          }
+        }
+      }
+
+      const hasNumberedQuestions = cleanedLines.some((l, idx) => !multiLineOptionFlags[idx] && !sectionRegex.test(l) && (questionStartRegex.test(l) || bracketQuestionRegex.test(l)));
+
+      const questions = [];
+      let currentQ = null;
+      let currentSectionIsZhuyin = false;
+      let seenFirstSectionOrQuestion = false;
+
+      cleanedLines.forEach((line, idx) => {
+        const secMatch = line.match(sectionRegex);
+        if (secMatch && /題|看|算|選|填|讀|寫|連|圈|勾|配合|應用|注音|國字/.test(line)) {
+          if (currentQ) {
+            finalizeQuestionOptions(currentQ, currentSectionIsZhuyin);
+            questions.push(currentQ);
+            currentQ = null;
+          }
+          currentSectionIsZhuyin = /注音|字音|讀音/.test(line);
+          seenFirstSectionOrQuestion = true;
+          return;
+        }
+
+        // 判斷是否為緊接在題幹下方的選項列（支援 `1.蘋果 2.香蕉 3.桌椅 4.鉛筆`、`(1)蘋果 (2)香蕉`、`①蘋果 ②香蕉` 以及逐行選項）
+        const isInlineDotOptions = /^(?:1\s*[.、．])\S*.*(?:\s|[^\d])2\s*[.、．]/.test(line) && !/[\(（\[【]\s*[\)）\]】]/.test(line);
+        const isBracketOrCircleOptions = /^(?:[①②③④⑤⑥]|\([1-6A-Da-d甲乙丙丁]\))/.test(line) && !/^[\(（]\s*[\)）]/.test(line);
+
+        if (currentQ && (multiLineOptionFlags[idx] || isInlineDotOptions || isBracketOrCircleOptions)) {
+          currentQ.stem += ' ' + line;
+          return;
+        }
+
+        const qMatch = line.match(questionStartRegex);
+        const bMatch = !qMatch ? line.match(bracketQuestionRegex) : null;
+
+        if (qMatch || bMatch) {
+          seenFirstSectionOrQuestion = true;
+          if (currentQ) {
+            finalizeQuestionOptions(currentQ, currentSectionIsZhuyin);
+            questions.push(currentQ);
+          }
+          currentQ = {
+            id: `q-${Date.now()}-${idx}`,
+            type: 'question',
+            stem: line,
+            options: []
+          };
+          return;
+        }
+
+        if (currentQ) {
+          const needSpace = !(/[\u4e00-\u9fa5]$/.test(currentQ.stem) && /^[\u4e00-\u9fa5]/.test(line));
+          currentQ.stem += (needSpace ? ' ' : '') + line;
+        } else if (!hasNumberedQuestions || seenFirstSectionOrQuestion) {
+          currentQ = {
+            id: `q-${Date.now()}-${idx}`,
+            type: 'question',
+            stem: line,
+            options: []
+          };
+        }
+      });
+
+      if (currentQ) {
+        finalizeQuestionOptions(currentQ, currentSectionIsZhuyin);
+        questions.push(currentQ);
+      }
+
+      return questions;
+    }
+
+    function normalizeOptionDisplay(optStr) {
+      if (!optStr) return '';
+      let s = optStr.trim();
+      const circleToNum = { '①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5', '⑥': '6' };
+      if (circleToNum[s[0]]) {
+        return `${circleToNum[s[0]]}. ${s.slice(1).trim()}`;
+      }
+      const mParen = s.match(/^[\(（\[【]\s*([1-6])\s*[\)）\]】]\s*(.*)$/);
+      if (mParen) {
+        return `${mParen[1]}. ${mParen[2].trim()}`;
+      }
+      const mDot = s.match(/^([1-6])\s*[.、．]\s*(.*)$/);
+      if (mDot) {
+        return `${mDot[1]}. ${mDot[2].trim()}`;
+      }
+      return s;
+    }
+
+    function finalizeQuestionOptions(qObj, isZhuyinSection = false) {
+      if (!qObj || qObj.type !== 'question') return;
+
+      qObj.stem = stripScoreAndMetaNotes(qObj.stem);
+      // 若緊密數字選項漏了空白（如 `1.25 2.30 3.35 4.40`），先補上空白
+      qObj.stem = qObj.stem.replace(/(^|[\s？?：:。])1\.(\d+)\s+2\.(\d+)\s+3\.(\d+)(?:\s+4\.(\d+))?/g, (_, pre, a, b, c, d) => {
+        return `${pre}1. ${a} 2. ${b} 3. ${c}` + (d !== undefined ? ` 4. ${d}` : '');
+      });
+
+      // 1. 先嘗試切分圓圈或括號選項：① ② ③ ④、(1) (2) (3) (4)
+      const bracketOrCircleSplit = /(?=[①②③④⑤⑥]|[\(（][1-6A-Da-d甲乙丙丁][\)）])/g;
+      const bcParts = qObj.stem.split(bracketOrCircleSplit).map(p => p.trim()).filter(Boolean);
+
+      if (bcParts.length >= 3) {
+        const firstIsOpt = /^(?:[①]|\(1\)|（1）)/.test(bcParts[0]) && /^(?:[②]|\(2\)|（2）)/.test(bcParts[1]);
+        if (!firstIsOpt) {
+          qObj.stem = bcParts[0];
+          qObj.options = bcParts.slice(1).map(normalizeOptionDisplay);
+          qObj.isZhuyinQuiz = detectIsZhuyinQuizText(qObj.stem, isZhuyinSection);
+          return;
+        }
+      }
+
+      // 2. 切分 `1. 2. 3. 4.` 或 `1、 2、 3、 4、` 格式的選項（保留開頭題號如 `1.（ ）`，且不誤切 `1.5` 小數點）
+      const leadQMatch = qObj.stem.match(/^(?:[\(（\[【]\s*[\)）\]】]\s*)?\d{1,2}\s*[.、．]\s*(?:[\(（\[【]\s*[\)）\]】]\s*)?/);
+      const leadPrefix = leadQMatch ? leadQMatch[0] : '';
+      const bodyStr = qObj.stem.slice(leadPrefix.length);
+
+      if (/(?<![\d])1\s*[.、．](?!\d)[\s\S]*(?<![\d])2\s*[.、．](?!\d)[\s\S]*(?<![\d])3\s*[.、．](?!\d)/.test(bodyStr)) {
+        const dotSplitRegex = /(?=(?<![\d])[1-6]\s*[.、．](?!\d))/g;
+        const dotParts = bodyStr.split(dotSplitRegex).map(p => p.trim()).filter(Boolean);
+        if (dotParts.length >= 3) {
+          const firstIsOpt1 = /^1\s*[.、．]/.test(dotParts[0]) && /^2\s*[.、．]/.test(dotParts[1]);
+          if (!firstIsOpt1) {
+            qObj.stem = (leadPrefix + dotParts[0]).trim();
+            qObj.options = dotParts.slice(1).map(normalizeOptionDisplay);
+          } else if (leadPrefix) {
+            qObj.stem = leadPrefix.trim();
+            qObj.options = dotParts.map(normalizeOptionDisplay);
+          }
+        }
+      }
+
+      qObj.isZhuyinQuiz = detectIsZhuyinQuizText(qObj.stem, isZhuyinSection);
+    }
+
+    /**************************************************************
+     * 11. 強化版「手指框選即讀」互動畫布
+     **************************************************************/
+    let isDrawingCrop = false;
+    let cropStart = { x: 0, y: 0 };
+    let cropEnd = { x: 0, y: 0 };
+
+    function toggleRegionReadMode() {
+      state.regionCropMode = !state.regionCropMode;
+      const btn = document.getElementById('regionCropBtn');
+      const text = document.getElementById('regionCropBtnText');
+      const overlay = document.getElementById('overlayCanvas');
+      const banner = document.getElementById('cropHintBanner');
+
+      if (state.regionCropMode) {
+        btn.className = 'px-2.5 py-1 rounded-lg font-bold bg-amber-400 text-slate-950 hover:bg-amber-300 transition flex items-center gap-1 shadow';
+        text.textContent = '畫框報讀中';
+        overlay.classList.add('canvas-crop-cursor');
+        overlay.style.pointerEvents = 'auto';
+        banner.classList.remove('hidden');
+      } else {
+        btn.className = 'px-2.5 py-1 rounded-lg font-bold bg-slate-700 text-slate-300 hover:bg-slate-600 transition flex items-center gap-1';
+        text.textContent = '畫框已暫停';
+        overlay.classList.remove('canvas-crop-cursor');
+        overlay.style.pointerEvents = 'none';
+        banner.classList.add('hidden');
+      }
+    }
+
+    function initCanvasCropEvents() {
+      const overlay = document.getElementById('overlayCanvas');
+      if (!overlay) return;
+
+      const getCanvasCoords = (e) => {
+        const rect = overlay.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const scaleX = overlay.width / rect.width;
+        const scaleY = overlay.height / rect.height;
+        return {
+          x: Math.max(0, Math.min(overlay.width, (clientX - rect.left) * scaleX)),
+          y: Math.max(0, Math.min(overlay.height, (clientY - rect.top) * scaleY))
+        };
+      };
+
+      const startCrop = (e) => {
+        if (!state.regionCropMode) return;
+        e.preventDefault();
+        stopAllSpeech();
+        isDrawingCrop = true;
+        cropStart = getCanvasCoords(e);
+        cropEnd = { ...cropStart };
+      };
+
+      const moveCrop = (e) => {
+        if (!isDrawingCrop || !state.regionCropMode) return;
+        e.preventDefault();
+        cropEnd = getCanvasCoords(e);
+        drawCropBox();
+      };
+
+      const endCrop = async (e) => {
+        if (!isDrawingCrop || !state.regionCropMode) return;
+        isDrawingCrop = false;
+        const x = Math.min(cropStart.x, cropEnd.x);
+        const y = Math.min(cropStart.y, cropEnd.y);
+        const w = Math.abs(cropEnd.x - cropStart.x);
+        const h = Math.abs(cropEnd.y - cropStart.y);
+
+        if (w < 16 || h < 14) {
+          clearOverlayCanvas();
+          return;
+        }
+        await recognizeAndSpeakCroppedRegion(x, y, w, h);
+      };
+
+      overlay.addEventListener('mousedown', startCrop);
+      overlay.addEventListener('mousemove', moveCrop);
+      window.addEventListener('mouseup', endCrop);
+
+      overlay.addEventListener('touchstart', startCrop, { passive: false });
+      overlay.addEventListener('touchmove', moveCrop, { passive: false });
+      overlay.addEventListener('touchend', endCrop);
+    }
+
+    function drawCropBox() {
+      const overlay = document.getElementById('overlayCanvas');
+      const ctx = overlay.getContext('2d');
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+      const x = Math.min(cropStart.x, cropEnd.x);
+      const y = Math.min(cropStart.y, cropEnd.y);
+      const w = Math.abs(cropEnd.x - cropStart.x);
+      const h = Math.abs(cropEnd.y - cropStart.y);
+
+      const isTallCrop = (state.textDirection === 'vertical') || (state.textDirection === 'auto' && h > w * 1.45);
+
+      ctx.fillStyle = isTallCrop ? 'rgba(16, 185, 129, 0.25)' : 'rgba(250, 204, 21, 0.30)';
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = isTallCrop ? '#059669' : '#2563eb';
+      ctx.lineWidth = 3.5;
+      ctx.strokeRect(x, y, w, h);
+
+      if (w > 35 && h > 25) {
+        const tagText = isTallCrop ? '↕ 放開即讀直行文字' : '↔ 放開即讀框內文字';
+        ctx.fillStyle = isTallCrop ? '#059669' : '#2563eb';
+        ctx.fillRect(x, Math.max(0, y - 26), 145, 26);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 13px "Noto Sans TC", sans-serif';
+        ctx.fillText(tagText, x + 7, Math.max(17, y - 8));
+      }
+    }
+
+    function clearOverlayCanvas() {
+      const overlay = document.getElementById('overlayCanvas');
+      if (!overlay) return;
+      const ctx = overlay.getContext('2d');
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+    }
+
+    async function recognizeAndSpeakCroppedRegion(x, y, w, h) {
+      const examCanvas = document.getElementById('examCanvas');
+      const pad = 32;
+      const cropCanvas = document.createElement('canvas');
+      cropCanvas.width = w + pad * 2;
+      cropCanvas.height = h + pad * 2;
+      const cropCtx = cropCanvas.getContext('2d');
+      cropCtx.fillStyle = '#ffffff';
+      cropCtx.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
+      cropCtx.drawImage(examCanvas, x, y, w, h, pad, pad, w, h);
+
+      const rawCropUrl = cropCanvas.toDataURL('image/png');
+      const isVerticalCrop = (state.textDirection === 'vertical') || (state.textDirection === 'auto' && h > w * 1.45);
+
+      showLoading('正在銳利化並高精準辨識框選文字...', '自動偵測括弧與考注音防洩題，完成後立即報讀', 60);
+
+      try {
+        const crystalCropUrl = await prepareCrystalClearImageForOcr(rawCropUrl, 1000, 1700);
+        let recognizedText = '';
+
+        if (state.geminiApiKey) {
+          const base64Data = crystalCropUrl.split(',')[1];
+          const mimeType = crystalCropUrl.substring(crystalCropUrl.indexOf(':') + 1, crystalCropUrl.indexOf(';')) || 'image/png';
+          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(state.geminiApiKey)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: '請精準辨識這張局部截圖中的題目與選項文字（只輸出題目與選項，忽略配分或標題；完整保留方框「□」、括弧「【 】」與「（ ）」、引號「 」、以及選項數字如 (1)(2)(3)(4)；若某個國字後面緊接空白括弧是考寫注音，請把該字用 {{}} 包起來如 熱{{鬧}}（ ）），只輸出純文字本身，不要任何解釋：' },
+                  { inline_data: { mime_type: mimeType, data: base64Data } }
+                ]
+              }]
+            })
+          });
+          if (resp.ok) {
+            const json = await resp.json();
+            recognizedText = json?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+          }
+        }
+
+        if (!recognizedText && state.freeEngineMode === 'cloud_plus_best') {
+          try {
+            recognizedText = await recognizeWithDualFreeCloudOcr(crystalCropUrl, isVerticalCrop);
+          } catch (e) {}
+        }
+
+        if (!recognizedText) {
+          const lang = isVerticalCrop ? 'chi_tra_vert' : 'chi_tra';
+          const isSingleHorizontalLine = !isVerticalCrop && (w > h * 3.2);
+          const psm = isVerticalCrop ? '5' : (isSingleHorizontalLine ? '7' : '6');
+
+          const worker = await Tesseract.createWorker(lang, 1, {
+            langPath: TESSDATA_BEST_URL
+          });
+          await worker.setParameters({
+            tessedit_pageseg_mode: psm,
+            preserve_interword_spaces: '1'
+          });
+          const ret = await worker.recognize(crystalCropUrl);
+          await worker.terminate();
+
+          recognizedText = extractOrderedTextFromTesseractData(ret.data, isVerticalCrop ? 'vertical' : 'horizontal')
+            .replace(/\r?\n/g, ' ')
+            .trim();
+        }
+
+        recognizedText = cleanMathAndChineseOcrText(recognizedText.replace(/\r?\n/g, ' '));
+
+        if (recognizedText) {
+          const newId = 'q-crop-' + Date.now();
+          const newQ = {
+            id: newId,
+            type: 'question',
+            isCropped: true,
+            cropThumb: crystalCropUrl,
+            stem: recognizedText,
+            options: []
+          };
+          finalizeQuestionOptions(newQ, false);
+          state.questions.unshift(newQ);
+          saveCurrentExamToLocal();
+          renderQuestions();
+
+          state.liveSpotlightForceZhuyinMode = newQ.isZhuyinQuiz ? 'on' : 'auto';
+          updateSpotlightZhuyinBadgeUI();
+          updateLiveSpotlight(formatQuestionFullRawText(newQ), crystalCropUrl, newQ.isZhuyinQuiz);
+          speakLiveSpotlightText();
+        } else {
+          updateLiveSpotlight('框選範圍內未偵測到清晰文字，請將框選範圍稍微拉大一點再試一次。', crystalCropUrl);
+        }
+      } catch (e) {
+        console.error('局部框選辨識失敗:', e);
+      } finally {
+        hideLoading();
+        setTimeout(clearOverlayCanvas, 1000);
+      }
+    }
+
+    /**************************************************************
+     * 12. 版面檢視切換與 QR Code 模態框
+     **************************************************************/
+    function setLayoutMode(mode) {
+      const canvasPanel = document.getElementById('canvasPanel');
+      const cardsPanel = document.getElementById('cardsPanel');
+
+      document.querySelectorAll('.layout-btn').forEach(btn => {
+        btn.className = 'layout-btn px-3 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+      });
+      const activeBtn = document.getElementById(`layoutBtn-${mode}`);
+      if (activeBtn) {
+        activeBtn.className = 'layout-btn px-3 py-1 rounded-lg text-xs font-bold bg-white text-indigo-700 shadow-sm transition';
+      }
+
+      if (mode === 'split') {
+        canvasPanel.className = 'lg:col-span-7 bg-white rounded-2xl shadow-sm border-2 border-indigo-200 overflow-hidden flex flex-col';
+        cardsPanel.className = 'lg:col-span-5 flex flex-col gap-3';
+      } else if (mode === 'cards') {
+        canvasPanel.className = 'hidden';
+        cardsPanel.className = 'lg:col-span-12 max-w-4xl mx-auto w-full flex flex-col gap-3';
+      } else if (mode === 'canvas') {
+        canvasPanel.className = 'lg:col-span-12 bg-white rounded-2xl shadow-sm border-2 border-indigo-200 overflow-hidden flex flex-col';
+        cardsPanel.className = 'lg:col-span-12 flex flex-col gap-3';
+      }
+    }
+
+    function getBasePublicUrl() {
+      if (window.location.protocol.startsWith('http')) {
+        return window.location.href.split('?')[0];
+      }
+      return PUBLIC_SITE_URL;
+    }
+
+    function openQrModal() {
+      const modal = document.getElementById('qrModal');
+      modal.classList.remove('hidden');
+      renderQrCodeByMode(state.qrMode);
+    }
+
+    function switchQrMode(mode) {
+      state.qrMode = mode;
+      const tabClean = document.getElementById('qrTab-clean');
+      const tabExam = document.getElementById('qrTab-withExam');
+
+      if (mode === 'clean') {
+        tabClean.className = 'py-2 px-3 rounded-xl text-xs sm:text-sm font-black bg-white text-emerald-800 shadow transition';
+        tabExam.className = 'py-2 px-3 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition';
+      } else {
+        tabExam.className = 'py-2 px-3 rounded-xl text-xs sm:text-sm font-black bg-white text-emerald-800 shadow transition';
+        tabClean.className = 'py-2 px-3 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition';
+      }
+      renderQrCodeByMode(mode);
+    }
+
+    function renderQrCodeByMode(mode) {
+      const qrContainer = document.getElementById('qrcodeContainer');
+      const shareInput = document.getElementById('shareUrlInput');
+      const statusText = document.getElementById('qrStatusText');
+      qrContainer.innerHTML = '';
+
+      const baseUrl = getBasePublicUrl();
+      let targetUrl = baseUrl;
+
+      if (mode === 'clean') {
+        statusText.textContent = '學生掃描後直接進入「評量報讀系統」，可立即拍照考卷並以 Edge TTS 框選文字報讀';
+      } else {
+        const payload = {
+          title: state.examTitle,
+          questions: state.questions.map(q => ({
+            id: q.id,
+            type: q.type,
+            isZhuyinQuiz: q.isZhuyinQuiz,
+            stem: q.stem,
+            options: q.options
+          }))
+        };
+        const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
+        targetUrl = `${baseUrl}?exam=${compressed}`;
+        statusText.textContent = '已包含目前畫面上的文字卡（含考注音消音設定），學生掃描後可直接點選報讀';
+      }
+
+      shareInput.value = targetUrl;
+
+      try {
+        new QRCode(qrContainer, {
+          text: targetUrl,
+          width: 220,
+          height: 220,
+          colorDark: '#0f172a',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (e) {
+        qrContainer.innerHTML = '<div class="text-xs text-amber-700 p-4 text-center">題目字數較多，請切換至「模式一：學生掃碼後自己拍照」</div>';
+      }
+    }
+
+    function closeQrModal() {
+      document.getElementById('qrModal').classList.add('hidden');
+    }
+
+    function copyShareUrl() {
+      const input = document.getElementById('shareUrlInput');
+      input.select();
+      navigator.clipboard.writeText(input.value).then(() => {
+        alert('已複製評量報讀系統網址！');
+      });
+    }
+
+    function openSettingsModal() {
+      document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    function saveSettings() {
+      const key = document.getElementById('geminiApiKeyInput').value.trim();
+      const freeEngine = document.getElementById('freeEngineSelect').value;
+      const selectedVoice = document.getElementById('voiceModalSelect').value;
+      const ttsProvider = document.getElementById('ttsProviderSelect').value;
+      const customProxy = document.getElementById('customEdgeProxyInput').value.trim();
+
+      state.geminiApiKey = key;
+      state.freeEngineMode = freeEngine;
+      state.selectedVoiceId = selectedVoice;
+      state.ttsProvider = ttsProvider;
+      state.customEdgeProxy = customProxy;
+
+      localStorage.setItem('sped_exam_gemini_key', key);
+      localStorage.setItem('sped_exam_free_engine', freeEngine);
+      localStorage.setItem('sped_selected_voice_v4', selectedVoice);
+      localStorage.setItem('sped_tts_provider', ttsProvider);
+      localStorage.setItem('sped_custom_edge_proxy', customProxy);
+
+      const quickSel = document.getElementById('voiceQuickSelect');
+      if (quickSel) quickSel.value = selectedVoice;
+      updateOcrEngineBadge();
+      updateTtsBadge();
+      closeSettingsModal();
+    }
+
+    function updateOcrEngineBadge() {
+      const badge = document.getElementById('ocrEngineBadge');
+      if (state.geminiApiKey) {
+        badge.className = 'cursor-pointer text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 hover:bg-indigo-200';
+        badge.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Gemini AI 視覺高精準辨識';
+      } else if (state.freeEngineMode === 'cloud_plus_best') {
+        badge.className = 'cursor-pointer text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200';
+        badge.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i>銳利化多重繁中辨識';
+      } else {
+        badge.className = 'cursor-pointer text-xs font-bold px-2.5 py-1 rounded-full bg-white text-slate-700 border border-slate-300 hover:bg-slate-100';
+        badge.innerHTML = '<i class="fa-solid fa-microchip mr-1"></i>本機 Best 最高精度中文模型';
+      }
+    }
+  </script>
+</body>
+</html>
