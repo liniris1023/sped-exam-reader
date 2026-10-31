@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>
+<title>六上英語期中評量報讀</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Noto+Sans+TC:wght@500;700;900&display=swap">
+<style>
+/* Layout: one question per screen; sticky tool bar on top; big prev/next bar fixed at bottom (same frame as 自然/社會作業簿報讀, scaled up) */
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --fg:#101317; --muted:#424A57; --line:#B8C0CC;
+  --accent:#0A4DA3; --accent-fg:#FFFFFF; --sel:#DCE8FA; --listen:#6A1B9A; --listen-bg:#F1E6F8;
+  --ok:#1C7A33; --bad:#B3261E; --focus:#FF9F00; --reading:#FFF1B8; --stu:#C2410C; --stu-fg:#FFFFFF;
+  --zh:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Heiti TC",sans-serif;
+  --en:"Andika","Noto Sans TC","Arial Rounded MT Bold",Arial,sans-serif;
+  font-size:24px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0E1013; --surface:#1A1D22; --fg:#F5F7FA; --muted:#BCC3CD; --line:#4A525E;
+  --accent:#FFD54A; --accent-fg:#111111; --sel:#3B3414; --listen:#D7A6F2; --listen-bg:#2B1D33;
+  --ok:#7EDB91; --bad:#FF8F86; --focus:#FFD54A; --reading:#4A3F12; --stu:#FFA94D; --stu-fg:#111111; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E1013; --surface:#1A1D22; --fg:#F5F7FA; --muted:#BCC3CD; --line:#4A525E;
+  --accent:#FFD54A; --accent-fg:#111111; --sel:#3B3414; --listen:#D7A6F2; --listen-bg:#2B1D33;
+  --ok:#7EDB91; --bad:#FF8F86; --focus:#FFD54A; --reading:#4A3F12; --stu:#FFA94D; --stu-fg:#111111; color-scheme:dark }
+:root[data-contrast="hc"]{
+  --bg:#000000; --surface:#000000; --fg:#FFEB3B; --muted:#FFEB3B; --line:#FFEB3B;
+  --accent:#FFEB3B; --accent-fg:#000000; --sel:#3D3800; --listen:#FFFFFF; --listen-bg:#1A1A1A;
+  --ok:#5CFF8A; --bad:#FF7070; --focus:#FFFFFF; --reading:#3D3800; --stu:#FFEB3B; --stu-fg:#000000; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--zh);font-size:1rem;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-bottom:calc(7.5rem + env(safe-area-inset-bottom,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
+.wrap{max-width:52rem;margin:0 auto}
+.en{font-family:var(--en)}
+svg{flex:none}
+
+/* tool bar */
+.tools{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:2px solid var(--line);padding-block:.45rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.tool{border:2px solid var(--line);background:var(--surface);border-radius:.5rem;padding:.2rem .6rem;font-size:.75rem;font-weight:700;min-height:2.3rem}
+.tool[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.tools .grow{flex:1}
+.home{display:inline-flex;align-items:center;gap:.3rem;background:var(--fg);color:var(--bg);border:0;border-radius:.6rem;padding:.25rem .8rem .25rem .5rem;font-size:.95rem;font-weight:900;min-height:2.8rem}
+.home svg{width:1.6rem;height:1.6rem}
+.progress{font-size:.75rem;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* screens */
+.screen{padding-block:1.2rem;display:flex;flex-direction:column;gap:1rem}
+.eyebrow{font-size:.8rem;font-weight:700;color:var(--muted);letter-spacing:.05em;margin:0}
+h1{font-size:2rem;line-height:1.3;margin:0;font-weight:900;text-wrap:balance}
+.facts{display:flex;flex-wrap:wrap;gap:.5rem}
+.fact{border:2px solid var(--line);border-radius:.5rem;padding:.2rem .7rem;font-weight:700;background:var(--surface);font-size:.85rem}
+.help{margin:0;padding-left:1.3rem;color:var(--muted);font-size:.85rem;display:flex;flex-direction:column;gap:.2rem}
+.big{background:var(--accent);color:var(--accent-fg);border:0;border-radius:.8rem;font-size:1.3rem;font-weight:900;padding:.7rem 1.4rem;min-height:4rem}
+.big:disabled{opacity:.45;cursor:default}
+.ghost{background:var(--surface);border:3px solid var(--fg);border-radius:.8rem;font-size:1rem;font-weight:700;padding:.5rem 1.1rem;min-height:3.2rem}
+.row{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.8rem}
+.field{display:flex;flex-direction:column;gap:.3rem;min-width:0}
+.field label{font-weight:900;font-size:1rem}
+.input{font:inherit;font-size:1.4rem;font-weight:700;padding:.4rem .7rem;border:3px solid var(--fg);border-radius:.7rem;background:var(--surface);color:var(--fg);min-height:3.6rem;width:100%}
+.warnbox{border:3px solid var(--bad);border-radius:1rem;padding:1rem;background:var(--surface);display:flex;flex-direction:column;gap:.7rem}
+.warnbox p{margin:0;font-weight:900;color:var(--bad)}
+
+/* section head */
+.sec{padding-top:.9rem;display:flex;flex-direction:column;gap:.4rem}
+.sech{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .8rem}
+.sech b{font-size:1.25rem;font-weight:900;line-height:1.35}
+.sech .en{font-weight:700}
+.sech small{color:var(--muted);font-weight:700;font-size:.85rem}
+.tag{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.15rem .8rem .15rem .55rem;font-weight:900;font-size:.85rem;border:2px solid currentColor}
+.tag svg{width:1.3rem;height:1.3rem}
+.tag.listen{color:var(--listen);background:var(--listen-bg)}
+.tag.over{color:var(--ok)}
+
+/* speakers */
+.speaker{flex:none;width:4.6rem;height:4.6rem;border-radius:50%;border:4px solid var(--accent);background:var(--surface);color:var(--accent);display:grid;place-items:center}
+.speaker svg{width:2.6rem;height:2.6rem}
+.pill{width:auto;height:auto;min-height:3.6rem;border-radius:999px;display:inline-flex;align-items:center;gap:.4rem;padding:.3rem 1.2rem .3rem .8rem;font-size:1.05rem;font-weight:900}
+.pill svg{width:2rem;height:2rem}
+.reading{background:var(--reading)!important;outline:4px solid var(--accent);outline-offset:3px;border-radius:.6rem}
+
+/* passage / dialogue */
+.passage{border:3px solid var(--line);background:var(--surface);border-radius:1rem;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.5rem}
+.ptop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem}
+.ptop b{font-size:1.05rem;font-weight:900}
+.fig{margin:0;align-self:center;width:100%;max-width:30rem;background:#FFFFFF;border:3px solid var(--line);border-radius:.8rem;padding:.5rem}
+.fig img{display:block;width:100%;height:auto}
+.zoomable{cursor:zoom-in}
+.lnrow{display:flex;align-items:center;gap:.5rem}
+.lnspk{width:3.8rem;height:3.8rem;border-width:3px}
+.lnspk svg{width:2.2rem;height:2.2rem}
+.ln{display:block;flex:1;min-width:0;width:100%;text-align:left;background:transparent;border:0;border-radius:.5rem;padding:.25rem .35rem;font-family:var(--en);font-size:1.45rem;font-weight:700;line-height:2.1}
+.ln.cur{background:var(--sel)}
+.blank{cursor:pointer;display:inline-flex;align-items:baseline;gap:.25rem;min-width:4.2em;border-bottom:4px solid var(--fg);padding:0 .3rem;margin:0 .15rem;line-height:1.5;justify-content:center}
+.blank i{font-style:normal;font-family:var(--zh);font-size:.75em;font-weight:900;color:var(--muted)}
+.blank.filled{color:var(--accent)}
+.blank.cur{background:var(--reading);border-bottom-color:var(--accent);border-bottom-width:6px;outline:3px dashed var(--accent);outline-offset:2px;border-radius:.3rem .3rem 0 0}
+.vocab{display:flex;flex-wrap:wrap;gap:.4rem;border-top:2px dashed var(--line);padding-top:.6rem}
+.vocab button{border:2px solid var(--line);background:var(--bg);border-radius:.5rem;padding:.2rem .6rem;font-size:.95rem;font-weight:700;min-height:2.8rem}
+.vocab button .en{font-size:1.05rem}
+.vocab button{display:inline-flex;align-items:center;gap:.2rem}
+.vspk{display:inline-grid;place-items:center;width:2.2rem;height:2.2rem;margin-left:.3rem;border-radius:50%;border:3px solid var(--accent);color:var(--accent);background:var(--surface)}
+.vspk svg{width:1.3rem;height:1.3rem}
+.note{color:var(--muted);font-weight:700;font-size:.95rem;margin:0}
+
+/* question card */
+.card{background:var(--surface);border:3px solid var(--line);border-radius:1rem;padding:1rem;display:flex;flex-direction:column;gap:1rem}
+.qhead{display:flex;gap:.8rem;align-items:flex-start}
+.qnum{flex:none;font-weight:900;font-size:1.7rem;line-height:1.5;background:var(--fg);color:var(--bg);border-radius:.6rem;padding:.1rem .7rem;font-variant-numeric:tabular-nums;min-width:3rem;text-align:center}
+.stem{font-size:1.4rem;font-weight:700;line-height:1.7;margin:0;min-width:0;flex:1;border-radius:.4rem;padding:0 .2rem}
+.stem.en{font-size:1.6rem}
+.stem .ln{padding:0;font-size:1.6rem}
+.qhead{align-items:center;flex-wrap:wrap}
+.stemrow{display:flex}
+.opts.bigw .optbtn{font-size:3.4rem;min-height:7.5rem;letter-spacing:.03em}
+.wpop{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wcard{background:var(--surface);color:var(--fg);border:6px solid var(--accent);border-radius:1.4rem;padding:1.5rem 2rem;display:flex;flex-direction:column;align-items:center;gap:1rem;max-width:100%;min-width:min(30rem,100%)}
+.wno{width:6rem;height:6rem;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-family:var(--en);font-size:4rem;font-weight:700;line-height:1}
+.wword{font-family:var(--en);font-weight:700;font-size:clamp(4.5rem,20vw,10rem);line-height:1.1;letter-spacing:.04em;overflow-wrap:anywhere;text-align:center}
+.wsel{font-weight:900;font-size:1.3rem;color:var(--accent)}
+.pcard{width:min(44rem,100%);max-height:100%;overflow:auto;padding:1rem 1.2rem;gap:.7rem}
+.pcard .wno{width:4.6rem;height:4.6rem;font-size:3rem;flex:none}
+.pcard img{display:block;width:100%;max-height:52vh;object-fit:contain;background:#FFFFFF;border-radius:.6rem;border:3px solid var(--line)}
+.pcap{margin:0;font-weight:900;font-size:1.9rem;line-height:1.35;text-align:center;border-radius:.5rem;padding:0 .4rem}
+.pcap .en{font-size:2.3rem}
+.listenbox{display:flex;align-items:center;gap:.7rem;border:3px dashed var(--listen);color:var(--listen);background:var(--listen-bg);border-radius:.8rem;padding:.6rem .9rem;font-weight:900;font-size:1.1rem}
+.listenbox svg{width:2.6rem;height:2.6rem}
+
+.opts{display:flex;flex-direction:column;gap:.8rem}
+.opt{display:flex;gap:.6rem;align-items:stretch}
+.optbtn{flex:1;min-width:0;display:flex;gap:1rem;align-items:center;text-align:left;border:4px solid var(--line);background:var(--surface);border-radius:1rem;padding:.7rem 1rem;font-family:var(--en);font-size:1.7rem;font-weight:700;min-height:6rem;line-height:1.35}
+.optbtn .no{flex:none;width:5.2rem;height:5.2rem;border-radius:50%;border:6px solid currentColor;display:grid;place-items:center;font-family:var(--en);font-size:3.2rem;font-weight:700;line-height:1}
+.optbtn .box{flex:none;width:4.6rem;height:4.6rem;border-radius:.5rem;display:grid;place-items:center}
+.optbtn .box svg{width:3.4rem;height:3.4rem;visibility:hidden}
+.optbtn[aria-checked="true"]{border-color:var(--accent);background:var(--sel);outline:4px solid var(--accent)}
+.optbtn[aria-checked="true"] .no{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.optbtn[aria-checked="true"] .box{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.optbtn[aria-checked="true"] .box svg{visibility:visible}
+.opt .speaker{width:6rem;height:auto;min-height:6rem;border-radius:1rem}
+.opt .speaker svg{width:3.4rem;height:3.4rem}
+.words{display:grid;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));gap:.8rem}
+.words .opt{min-width:0}
+.words .optbtn{justify-content:center;text-align:center;font-size:2.2rem;min-height:6.4rem;padding:.5rem}
+.words .speaker{width:4.6rem;min-height:auto}
+.words .speaker svg{width:2.6rem;height:2.6rem}
+.pics{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
+.picbtn{position:relative;border:5px solid var(--line);background:#FFFFFF;color:#101317;border-radius:1rem;padding:.6rem .6rem .6rem 6.2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;min-height:13rem}
+.picbtn .cap{font-weight:900;font-size:1.15rem;line-height:1.3;text-align:center}
+.picbtn .cap .en{font-size:1.3rem}
+.picbtn img{display:block;width:100%;max-height:15rem;object-fit:contain}
+.picbtn .no{position:absolute;left:.6rem;top:.6rem;width:5.2rem;height:5.2rem;border-radius:50%;border:6px solid #101317;color:#101317;background:#FFFFFF;display:grid;place-items:center;font-family:var(--en);font-size:3.2rem;font-weight:700;line-height:1}
+.picbtn[aria-checked="true"]{border-color:var(--accent);outline:5px solid var(--accent);background:#EAF1FC}
+.picbtn[aria-checked="true"] .no{background:#0A4DA3;color:#FFFFFF;border-color:#0A4DA3}
+.bank{border:3px solid var(--fg);border-radius:.7rem;padding:.5rem .8rem;display:flex;flex-direction:column;gap:.3rem}
+.bank b{font-size:1.1rem}
+.bank div{display:flex;flex-wrap:wrap;gap:.4rem 1.6rem;font-size:1.6rem;font-weight:700}
+.psgfold{margin-top:0}
+.psgfold .passage{margin-bottom:.6rem}
+.paperdone{width:100%;min-height:5.2rem;font-size:1.5rem;background:var(--ok);color:#FFFFFF}
+:root[data-contrast="hc"] .paperdone{color:#000000}
+.paperbox{display:flex;align-items:center;gap:.9rem;border:4px dashed var(--accent);border-radius:1rem;padding:1rem 1.1rem;font-size:1.4rem;font-weight:900;line-height:1.5}
+.paperbox svg{width:3.4rem;height:3.4rem;color:var(--accent)}
+.chosen{font-weight:900;font-size:1.05rem;color:var(--accent);margin:0}
+
+/* navigator */
+details.nav{margin-top:1rem;border:2px solid var(--line);border-radius:.8rem;background:var(--surface);padding:.3rem .8rem}
+details.nav summary{font-weight:900;font-size:.95rem;cursor:pointer;padding:.4rem 0;min-height:2.6rem}
+.navsec{display:flex;flex-direction:column;gap:.3rem;padding-block:.4rem;border-top:1px solid var(--line)}
+.navsec b{font-size:.8rem}
+.grid{display:flex;flex-wrap:wrap;gap:.35rem}
+.grid button{border:2px solid var(--line);background:var(--bg);border-radius:.5rem;min-height:2.8rem;min-width:3.2rem;padding:0 .4rem;font-weight:900;font-size:.85rem;font-variant-numeric:tabular-nums}
+.grid button.done{background:var(--sel);border-color:var(--accent)}
+.grid button[aria-current="true"]{outline:4px solid var(--fg)}
+
+/* bottom bar */
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:3px solid var(--line);z-index:6;
+  padding:.6rem max(16px,env(safe-area-inset-right,0px)) calc(.6rem + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar .wrap{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.bar button{min-height:4.4rem;border-radius:.9rem;font-size:1.3rem;font-weight:900}
+.prev{background:var(--surface);border:3px solid var(--fg)}
+.next{background:var(--accent);color:var(--accent-fg);border:0}
+.next.finish{background:var(--stu);color:var(--stu-fg)}
+.bar button:disabled{opacity:.35;cursor:default}
+.next.locked{opacity:.4}
+@media (prefers-reduced-motion:no-preference){ .shake{animation:shake .35s} @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}} }
+
+/* check & done */
+.miss{display:flex;flex-wrap:wrap;gap:.5rem}
+.miss button{border:3px solid var(--bad);color:var(--bad);background:var(--surface);border-radius:.6rem;min-height:3rem;padding:0 .8rem;font-weight:900}
+.done-mark{font-size:4.5rem;line-height:1;color:var(--ok);font-weight:900}
+.status{font-weight:900;min-height:1.6em;margin:0}
+.status.bad{color:var(--bad)} .status.ok{color:var(--ok)}
+.qrbox{align-self:flex-start;background:#FFFFFF;color:#111111;border:4px solid var(--fg);border-radius:1rem;padding:1rem;display:flex;flex-direction:column;align-items:center;gap:.5rem;max-width:100%}
+.qrbox img,.qrbox canvas{display:block;max-width:100%;height:auto}
+.qrbox p{margin:0;font-weight:900;font-size:1rem;color:#111111;text-align:center}
+.sheetprev{display:flex;flex-direction:column;gap:.8rem;overflow-x:auto}
+.sheetprev img{width:100%;max-width:40rem;border:2px solid var(--line);background:#FFFFFF}
+
+/* zoom overlay */
+.zoom{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.zoom img{max-width:100%;max-height:100%;background:#FFFFFF;border-radius:.6rem}
+.zoom button{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));background:#FFFFFF;color:#101317;border:0;border-radius:999px;font-weight:900;font-size:1.1rem;min-height:3.4rem;padding:0 1.2rem}
+
+/* answer sheet for PDF (always printed light) */
+#report{position:absolute;left:-20000px;top:0}
+.pg{width:794px;height:1123px;padding:44px 48px;background:#FFFFFF;color:#111111;font-family:"Noto Sans TC",sans-serif;font-size:14px;line-height:1.45;overflow:hidden;display:flex;flex-direction:column;gap:14px}
+.pg h2{margin:0;font-size:19px;font-weight:900;text-align:center}
+.pg .sub{text-align:center;font-weight:700;font-size:14px;margin:0}
+.pg .who{display:flex;gap:22px;justify-content:center;font-size:15px;font-weight:700;flex-wrap:wrap}
+.pg .who span b{border-bottom:1.5px solid #111;padding:0 8px;font-weight:900}
+.pg table{border-collapse:collapse;width:100%}
+.pg th,.pg td{border:1.2px solid #444;padding:4px 7px;text-align:left;vertical-align:middle}
+.pg th{background:#ECEFF3;font-size:12.5px}
+.pg td.c{text-align:center}
+.pg .enr{font-family:"Andika","Noto Sans TC",sans-serif;font-size:15px}
+.pg .ok{color:#1C7A33;font-weight:900}
+.pg .no{color:#B3261E;font-weight:900}
+.pg .blankcell{color:#999}
+.pg h3{margin:0 0 5px;font-size:15px;font-weight:900}
+.pg .thumb{height:38px;vertical-align:middle;margin-left:8px;border:1px solid #999}
+.pg .foot{margin-top:auto;font-size:11px;color:#666;text-align:right}
+.pg .tot td{font-weight:900;font-size:15px}
+@media (max-width:520px){ :root{font-size:20px} .optbtn{font-size:1.45rem} .words .optbtn{font-size:1.8rem} .ln{font-size:1.25rem} .stem.en,.stem .ln{font-size:1.4rem} .pics{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:no-preference){ .optbtn,.picbtn{transition:background .15s} }
+</style>
+
+<div class="wrap">
+  <div class="tools" id="tools">
+    <button class="home" id="homeBtn" type="button" aria-label="回首頁"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>首頁</button>
+    <button class="tool" id="fsDown" type="button" aria-label="字變小">字−</button>
+    <button class="tool" id="fsUp" type="button" aria-label="字變大">字＋</button>
+    <button class="tool" id="hc" type="button" aria-pressed="false">黑底黃字</button>
+    <button class="tool" id="rate" type="button">語速：正常</button>
+    <span class="grow"></span>
+    <span class="progress" id="prog"></span>
+  </div>
+  <main id="main"></main>
+</div>
+<div class="bar" id="bar" hidden><div class="wrap">
+  <button class="prev" id="prevBtn" type="button">← 上一題</button>
+  <button class="next" id="nextBtn" type="button">下一題 →</button>
+</div></div>
+<div id="report" aria-hidden="true"></div>
+<div id="live" class="sr" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const DATA={"secs": [{"id": "s1", "no": "一", "en": "Listen and Choose", "zh": "請選出正確的發音單字", "pct": 12, "per": 2, "listen": true, "introSay": [["zh", "第一大題。"], ["en", "Listen and choose."], ["zh", "請選出正確的發音單字。題目請聽老師播放。"]], "items": [{"lab": "1", "stem": "請聽老師播放，選出你聽到的單字。", "stemSay": [["zh", "第1題。請聽老師播放，選出你聽到的單字。"]], "o": ["sharp", "sheep"], "oen": true, "optSay": null, "a": null}, {"lab": "2", "stem": "請聽老師播放，選出你聽到的單字。", "stemSay": [["zh", "第2題。請聽老師播放，選出你聽到的單字。"]], "o": ["curl", "cool"], "oen": true, "optSay": null, "a": null}, {"lab": "3", "stem": "請聽老師播放，選出你聽到的單字。", "stemSay": [["zh", "第3題。請聽老師播放，選出你聽到的單字。"]], "o": ["fart", "fort"], "oen": true, "optSay": null, "a": null}, {"lab": "4", "stem": "請聽老師播放，選出你聽到的單字。", "stemSay": [["zh", "第4題。請聽老師播放，選出你聽到的單字。"]], "o": ["stir", "star"], "oen": true, "optSay": null, "a": null}, {"lab": "5", "stem": "請聽老師播放，選出你聽到的單字。", "stemSay": [["zh", "第5題。請聽老師播放，選出你聽到的單字。"]], "o": ["vendor", "vendee"], "oen": true, "optSay": null, "a": null}, {"lab": "6", "stem": "請聽老師播放，選出你聽到的單字。", "stemSay": [["zh", "第6題。請聽老師播放，選出你聽到的單字。"]], "o": ["ready", "reader"], "oen": true, "optSay": null, "a": null}]}, {"id": "s2", "no": "二", "en": "Listen and Choose", "zh": "仔細聽，依句意選填相符圖片", "pct": 15, "per": 3, "listen": true, "introSay": [["zh", "第二大題。"], ["en", "Listen and choose."], ["zh", "仔細聽，依句意選出相符的圖片。題目請聽老師播放。"]], "items": [{"lab": "1", "stem": "請聽老師播放，選出相符的圖片。", "stemSay": [["zh", "第1題。請聽老師播放，選出相符的圖片。"]], "pics": ["q2_1A", "q2_1B", "q2_1C"], "a": null, "caps": ["一個小朋友撐著傘，正在下雨，旁邊寫著 70%", "一個小朋友撐著傘，正在下雨，旁邊寫著 60%", "一個小朋友撐著傘，正在下雨，旁邊寫著 50%"], "capSay": [[["zh", "一個小朋友撐著傘，正在下雨，旁邊寫著 百分之七十"]], [["zh", "一個小朋友撐著傘，正在下雨，旁邊寫著 百分之六十"]], [["zh", "一個小朋友撐著傘，正在下雨，旁邊寫著 百分之五十"]]], "alts": ["一個小朋友撐著傘，正在下雨，旁邊寫著 70%", "一個小朋友撐著傘，正在下雨，旁邊寫著 60%", "一個小朋友撐著傘，正在下雨，旁邊寫著 50%"]}, {"lab": "2", "stem": "請聽老師播放，選出相符的圖片。", "stemSay": [["zh", "第2題。請聽老師播放，選出相符的圖片。"]], "pics": ["q2_2A", "q2_2B", "q2_2C"], "a": null, "caps": ["印度國旗", "臺灣國旗", "澳洲國旗"], "capSay": [[["zh", "印度國旗"]], [["zh", "臺灣國旗"]], [["zh", "澳洲國旗"]]], "alts": ["印度國旗", "臺灣國旗", "澳洲國旗"]}, {"lab": "3", "stem": "請聽老師播放，選出相符的圖片。", "stemSay": [["zh", "第3題。請聽老師播放，選出相符的圖片。"]], "pics": ["q2_3A", "q2_3B", "q2_3C"], "a": null, "caps": ["一台機車", "捷運", "一個人在走路"], "capSay": [[["zh", "一台機車"]], [["zh", "捷運"]], [["zh", "一個人在走路"]]], "alts": ["一台機車", "捷運", "一個人在走路"]}, {"lab": "4", "stem": "請聽老師播放，選出相符的圖片。", "stemSay": [["zh", "第4題。請聽老師播放，選出相符的圖片。"]], "pics": ["q2_4A", "q2_4B", "q2_4C"], "a": null, "caps": ["一個小朋友戴著安全帽，騎腳踏車", "一個學生著急地從計程車下車，跑向學校", "一個小朋友搭捷運"], "capSay": [[["zh", "一個小朋友戴著安全帽，騎腳踏車"]], [["zh", "一個學生著急地從計程車下車，跑向學校"]], [["zh", "一個小朋友搭捷運"]]], "alts": ["一個小朋友戴著安全帽，騎腳踏車", "一個學生著急地從計程車下車，跑向學校", "一個小朋友搭捷運"]}, {"lab": "5", "stem": "請聽老師播放，選出相符的圖片。", "stemSay": [["zh", "第5題。請聽老師播放，選出相符的圖片。"]], "pics": ["q2_5A", "q2_5B", "q2_5C"], "a": null, "caps": ["新加坡國旗", "西班牙國旗", "日本國旗"], "capSay": [[["zh", "新加坡國旗"]], [["zh", "西班牙國旗"]], [["zh", "日本國旗"]]], "alts": ["新加坡國旗", "西班牙國旗", "日本國旗"]}]}, {"id": "s3", "no": "三", "en": "Listen and Choose", "zh": "聽問句，選答句", "pct": 15, "per": 3, "listen": true, "introSay": [["zh", "第三大題。"], ["en", "Listen and choose."], ["zh", "聽問句，選出正確的答句。問句請聽老師播放。"]], "items": [{"lab": "1", "stem": "請聽老師播放問句，選出正確的答句。", "stemSay": [["zh", "第1題。請聽老師播放問句，選出正確的答句。"]], "o": ["No, she isn’t. She’s not from Singapore.", "No, she isn’t. She’s from Singapore.", "No, she isn’t. She’s not in Japan."], "oen": true, "optSay": [[["en", "No, she isn’t. She’s not from Singapore."]], [["en", "No, she isn’t. She’s from Singapore."]], [["en", "No, she isn’t. She’s not in Japan."]]], "a": null}, {"lab": "2", "stem": "請聽老師播放問句，選出正確的答句。", "stemSay": [["zh", "第2題。請聽老師播放問句，選出正確的答句。"]], "o": ["Yes, please.", "Yes, he is.", "Yes, he does."], "oen": true, "optSay": [[["en", "Yes, please."]], [["en", "Yes, he is."]], [["en", "Yes, he does."]]], "a": null}, {"lab": "3", "stem": "請聽老師播放問句，選出正確的答句。", "stemSay": [["zh", "第3題。請聽老師播放問句，選出正確的答句。"]], "o": ["I’m in the library.", "I’m from Japan.", "I’m going to the bank."], "oen": true, "optSay": [[["en", "I’m in the library."]], [["en", "I’m from Japan."]], [["en", "I’m going to the bank."]]], "a": null}, {"lab": "4", "stem": "請聽老師播放問句，選出正確的答句。", "stemSay": [["zh", "第4題。請聽老師播放問句，選出正確的答句。"]], "o": ["They go to school by car.", "I go to the park by bike.", "We go to school by train."], "oen": true, "optSay": [[["en", "They go to school by car."]], [["en", "I go to the park by bike."]], [["en", "We go to school by train."]]], "a": null}, {"lab": "5", "stem": "請聽老師播放問句，選出正確的答句。", "stemSay": [["zh", "第5題。請聽老師播放問句，選出正確的答句。"]], "o": ["Yes, they’re from the USA.", "Yes, I’m from the USA.", "Yes, they’re in the USA."], "oen": true, "optSay": [[["en", "Yes, they’re from the USA."]], [["en", "Yes, I’m from the USA."]], [["en", "Yes, they’re in the USA."]]], "a": null}]}, {"id": "s4", "no": "四", "en": "Listen and Check", "zh": "仔細聽，根據對話內容，勾選正確答案", "pct": 8, "per": 2, "listen": true, "introSay": [["zh", "第四大題。"], ["en", "Listen and check."], ["zh", "仔細聽，根據對話內容，勾選正確答案。對話請聽老師播放。"]], "items": [{"lab": "1-a", "stem": "Where is Jeff from?", "sten": true, "check": true, "stemSay": [["zh", "第1題a。"], ["en", "Where is Jeff from?"]], "o": ["He’s from Taiwan.", "He’s from Japan."], "oen": true, "optSay": [[["en", "He’s from Taiwan."]], [["en", "He’s from Japan."]]], "a": null}, {"lab": "1-b", "stem": "Where is the Taj Mahal?", "sten": true, "check": true, "stemSay": [["zh", "第1題b。"], ["en", "Where is the Taj Mahal?"]], "o": ["It’s in Spain.", "It’s in India."], "oen": true, "optSay": [[["en", "It’s in Spain."]], [["en", "It’s in India."]]], "a": null}, {"lab": "2-a", "stem": "Does Eric go to school by bike?", "sten": true, "check": true, "stemSay": [["zh", "第2題a。"], ["en", "Does Eric go to school by bike?"]], "o": ["No. He goes to school by car.", "Yes. He goes to school by bike."], "oen": true, "optSay": [[["en", "No. He goes to school by car."]], [["en", "Yes. He goes to school by bike."]]], "a": null}, {"lab": "2-b", "stem": "How does Betty go to school?", "sten": true, "check": true, "stemSay": [["zh", "第2題b。"], ["en", "How does Betty go to school?"]], "o": ["She goes to school on foot.", "She goes to school by bike."], "oen": true, "optSay": [[["en", "She goes to school on foot."]], [["en", "She goes to school by bike."]]], "a": null}], "endListen": true}, {"id": "s5", "no": "五", "en": "Look and Write", "zh": "看圖選出正確的單字，完成句子", "pct": 12, "per": 2, "introSay": [["zh", "第五大題。"], ["en", "Look and write."], ["zh", "看圖，選出正確的單字，完成句子。"]], "bankTitle": "Word Bank", "groups": [{"img": "q5_1", "alt": "兩個男生拿著中華民國國旗，一人拿著飲料。", "lines": ["A: Andy and Hank like bubble tea.", "Are they from [1]?", "B: [2], they [3]."], "bank": ["leg", "Yes", "Taiwan", "car", "by", "are"], "title": "第1小題", "say": [[["en", "A: Andy and Hank like bubble tea."]], [["en", "Are they from"], ["zq", "框1"]], [["en", "B:"], ["zq", "框2"], ["en", ", they"], ["zq", "框3"]]], "bsay": [[["en", "leg"]], [["en", "Yes"]], [["en", "Taiwan"]], [["en", "car"]], [["en", "by"]], [["en", "are"]]]}, {"img": "q5_2", "alt": "女生坐著，腳受傷了；旁邊有一台汽車。", "lines": ["Maggie’s [4] hurts, so she is going to school", "[5] [6] today."], "bank": ["leg", "Yes", "Taiwan", "car", "by", "are"], "title": "第2小題", "say": [[["en", "Maggie’s"], ["zq", "框1"], ["en", "hurts, so she is going to school"]], [["zq", "框2"], ["zq", "框3"], ["en", "today."]]], "bsay": [[["en", "leg"]], [["en", "Yes"]], [["en", "Taiwan"]], [["en", "car"]], [["en", "by"]], [["en", "are"]]]}], "items": [{"lab": "1-①", "g": 0, "k": 1, "line": "Are they from [1]?", "o": ["leg", "Yes", "Taiwan", "car", "by", "are"], "oen": true, "word": true, "stemSay": [["zh", "第1小題，框1。"], ["en", "Are they from"], ["zq", "框1"]], "optSay": [[["en", "leg"]], [["en", "Yes"]], [["en", "Taiwan"]], [["en", "car"]], [["en", "by"]], [["en", "are"]]], "a": 2}, {"lab": "1-②", "g": 0, "k": 2, "line": "B: [2], they [3].", "o": ["leg", "Yes", "Taiwan", "car", "by", "are"], "oen": true, "word": true, "stemSay": [["zh", "第1小題，框2。"], ["en", "B:"], ["zq", "框2"], ["en", ", they"]], "optSay": [[["en", "leg"]], [["en", "Yes"]], [["en", "Taiwan"]], [["en", "car"]], [["en", "by"]], [["en", "are"]]], "a": 1}, {"lab": "1-③", "g": 0, "k": 3, "line": "B: [2], they [3].", "o": ["leg", "Yes", "Taiwan", "car", "by", "are"], "oen": true, "word": true, "stemSay": [["zh", "第1小題，框3。"], ["en", "they"], ["zq", "框3"]], "optSay": [[["en", "leg"]], [["en", "Yes"]], [["en", "Taiwan"]], [["en", "car"]], [["en", "by"]], [["en", "are"]]], "a": 5}, {"lab": "2-①", "g": 1, "k": 4, "line": "Maggie’s [4] hurts, so she is going to school", "o": ["leg", "Yes", "Taiwan", "car", "by", "are"], "oen": true, "word": true, "stemSay": [["zh", "第2小題，框1。"], ["en", "Maggie’s"], ["zq", "框1"], ["en", "hurts, so she is going to school"]], "optSay": [[["en", "leg"]], [["en", "Yes"]], [["en", "Taiwan"]], [["en", "car"]], [["en", "by"]], [["en", "are"]]], "a": 0}, {"lab": "2-②", "g": 1, "k": 5, "line": "[5] [6] today.", "o": ["leg", "Yes", "Taiwan", "car", "by", "are"], "oen": true, "word": true, "stemSay": [["zh", "第2小題，框2。"], ["zq", "框2"]], "optSay": [[["en", "leg"]], [["en", "Yes"]], [["en", "Taiwan"]], [["en", "car"]], [["en", "by"]], [["en", "are"]]], "a": 4}, {"lab": "2-③", "g": 1, "k": 6, "line": "[5] [6] today.", "o": ["leg", "Yes", "Taiwan", "car", "by", "are"], "oen": true, "word": true, "stemSay": [["zh", "第2小題，框3。"], ["zq", "框3"], ["en", "today."]], "optSay": [[["en", "leg"]], [["en", "Yes"]], [["en", "Taiwan"]], [["en", "car"]], [["en", "by"]], [["en", "are"]]], "a": 3}]}, {"id": "s6", "no": "六", "en": "Read and Write", "zh": "依提示完成句子", "pct": 18, "per": 2, "introSay": [["zh", "第六大題。"], ["en", "Read and write."], ["zh", "依照提示的單字，完成句子。"]], "bankTitle": "提示", "groups": [{"title": "第1小題", "note": "＊map 地圖　live 住", "bank": ["Singapore", "goes", "on", "train", "go"], "lines": ["A: Miss Wu, look at the map. What country is this?", "B: It’s [1]. Many students [2] to school [3] foot there.", "A: Do they walk to school on rainy days?", "B: Well, my friend Julia lives in Singapore.", "She [4] to school by [5] on rainy days."], "say": [[["en", "A: Miss Wu, look at the map. What country is this?"]], [["en", "B: It’s"], ["zq", "框1"], ["en", ". Many students"], ["zq", "框2"], ["en", "to school"], ["zq", "框3"], ["en", "foot there."]], [["en", "A: Do they walk to school on rainy days?"]], [["en", "B: Well, my friend Julia lives in Singapore."]], [["en", "She"], ["zq", "框4"], ["en", "to school by"], ["zq", "框5"], ["en", "on rainy days."]]], "nsay": [["en", "map"], ["zh", "地圖。"], ["en", "live"], ["zh", "住。"]], "bsay": [[["en", "Singapore"]], [["en", "goes"]], [["en", "on"]], [["en", "train"]], [["en", "go"]]]}, {"title": "第2小題", "bank": ["Let’s", "by", "He’s", "from"], "lines": ["A: Hi, Eva. It’s sunny. Let’s go to the park.", "B: Hi, Leo. This is my new friend, Max.", "[6] [7] Taiwan.", "A: Nice to meet you, Max. I’m Leo. Can you ride a bike?", "C: Sure. I go to school [8] bike in Taiwan.", "A: Great! [9] go to the park together."], "say": [[["en", "A: Hi, Eva. It’s sunny. Let’s go to the park."]], [["en", "B: Hi, Leo. This is my new friend, Max."]], [["zq", "框6"], ["zq", "框7"], ["en", "Taiwan."]], [["en", "A: Nice to meet you, Max. I’m Leo. Can you ride a bike?"]], [["en", "C: Sure. I go to school"], ["zq", "框8"], ["en", "bike in Taiwan."]], [["en", "A: Great!"], ["zq", "框9"], ["en", "go to the park together."]]], "bsay": [[["en", "Let’s"]], [["en", "by"]], [["en", "He’s"]], [["en", "from"]]]}], "items": [{"lab": "❶", "g": 0, "k": 1, "line": "B: It’s [1]. Many students [2] to school [3] foot there.", "o": ["Singapore", "goes", "on", "train", "go"], "oen": true, "word": true, "stemSay": [["zh", "第1格。"], ["en", "B: It’s"], ["zq", "框1"], ["en", ". Many students"]], "optSay": [[["en", "Singapore"]], [["en", "goes"]], [["en", "on"]], [["en", "train"]], [["en", "go"]]], "a": 0}, {"lab": "❷", "g": 0, "k": 2, "line": "B: It’s [1]. Many students [2] to school [3] foot there.", "o": ["Singapore", "goes", "on", "train", "go"], "oen": true, "word": true, "stemSay": [["zh", "第2格。"], ["en", "Many students"], ["zq", "框2"], ["en", "to school"]], "optSay": [[["en", "Singapore"]], [["en", "goes"]], [["en", "on"]], [["en", "train"]], [["en", "go"]]], "a": 4}, {"lab": "❸", "g": 0, "k": 3, "line": "B: It’s [1]. Many students [2] to school [3] foot there.", "o": ["Singapore", "goes", "on", "train", "go"], "oen": true, "word": true, "stemSay": [["zh", "第3格。"], ["en", "to school"], ["zq", "框3"], ["en", "foot there."]], "optSay": [[["en", "Singapore"]], [["en", "goes"]], [["en", "on"]], [["en", "train"]], [["en", "go"]]], "a": 2}, {"lab": "❹", "g": 0, "k": 4, "line": "She [4] to school by [5] on rainy days.", "o": ["Singapore", "goes", "on", "train", "go"], "oen": true, "word": true, "stemSay": [["zh", "第4格。"], ["en", "She"], ["zq", "框4"], ["en", "to school by"]], "optSay": [[["en", "Singapore"]], [["en", "goes"]], [["en", "on"]], [["en", "train"]], [["en", "go"]]], "a": 1}, {"lab": "❺", "g": 0, "k": 5, "line": "She [4] to school by [5] on rainy days.", "o": ["Singapore", "goes", "on", "train", "go"], "oen": true, "word": true, "stemSay": [["zh", "第5格。"], ["en", "to school by"], ["zq", "框5"], ["en", "on rainy days."]], "optSay": [[["en", "Singapore"]], [["en", "goes"]], [["en", "on"]], [["en", "train"]], [["en", "go"]]], "a": 3}, {"lab": "❻", "g": 1, "k": 6, "line": "[6] [7] Taiwan.", "o": ["Let’s", "by", "He’s", "from"], "oen": true, "word": true, "stemSay": [["zh", "第6格。"], ["zq", "框6"]], "optSay": [[["en", "Let’s"]], [["en", "by"]], [["en", "He’s"]], [["en", "from"]]], "a": 2}, {"lab": "❼", "g": 1, "k": 7, "line": "[6] [7] Taiwan.", "o": ["Let’s", "by", "He’s", "from"], "oen": true, "word": true, "stemSay": [["zh", "第7格。"], ["zq", "框7"], ["en", "Taiwan."]], "optSay": [[["en", "Let’s"]], [["en", "by"]], [["en", "He’s"]], [["en", "from"]]], "a": 3}, {"lab": "❽", "g": 1, "k": 8, "line": "C: Sure. I go to school [8] bike in Taiwan.", "o": ["Let’s", "by", "He’s", "from"], "oen": true, "word": true, "stemSay": [["zh", "第8格。"], ["en", "C: Sure. I go to school"], ["zq", "框8"], ["en", "bike in Taiwan."]], "optSay": [[["en", "Let’s"]], [["en", "by"]], [["en", "He’s"]], [["en", "from"]]], "a": 1}, {"lab": "❾", "g": 1, "k": 9, "line": "A: Great! [9] go to the park together.", "o": ["Let’s", "by", "He’s", "from"], "oen": true, "word": true, "stemSay": [["zh", "第9格。"], ["en", "A: Great!"], ["zq", "框9"], ["en", "go to the park together."]], "optSay": [[["en", "Let’s"]], [["en", "by"]], [["en", "He’s"]], [["en", "from"]]], "a": 0}]}, {"id": "s7", "no": "七", "en": "Read and Choose", "zh": "讀短文，填選正確的答案", "pct": 12, "per": 2, "introSay": [["zh", "第七大題。"], ["en", "Read and choose."], ["zh", "讀短文，選出正確的答案。"]], "groups": [{"title": "短文", "lines": ["It’s Monday today.", "Mina goes to her new (1) by scooter.", "There are eleven students in her class.", "Three students (2) to school by metro.", "Four students go to school by train.", "Ken and Paul are good friends.", "(3) do they go to school?", "(4) go to school (5) foot together every day.", "Doris is Mina’s new friend.", "She’s from Spain.", "She (6) to school by bike."], "prose": true, "say": [[["en", "It’s Monday today."]], [["en", "Mina goes to her new"], ["zq", "框1"], ["en", "by scooter."]], [["en", "There are eleven students in her class."]], [["en", "Three students"], ["zq", "框2"], ["en", "to school by metro."]], [["en", "Four students go to school by train."]], [["en", "Ken and Paul are good friends."]], [["zq", "框3"], ["en", "do they go to school?"]], [["zq", "框4"], ["en", "go to school"], ["zq", "框5"], ["en", "foot together every day."]], [["en", "Doris is Mina’s new friend."]], [["en", "She’s from Spain."]], [["en", "She"], ["zq", "框6"], ["en", "to school by bike."]]], "bsay": []}], "items": [{"lab": "1", "g": 0, "k": 1, "line": "Mina goes to her new (1) by scooter.", "o": ["bedroom", "school", "park"], "oen": true, "stemSay": [["zh", "第1題，第1格。"], ["en", "Mina goes to her new"], ["zq", "框1"], ["en", "by scooter."]], "optSay": [[["en", "bedroom"]], [["en", "school"]], [["en", "park"]]], "a": 1}, {"lab": "2", "g": 0, "k": 2, "line": "Three students (2) to school by metro.", "o": ["go", "goes", "are"], "oen": true, "stemSay": [["zh", "第2題，第2格。"], ["en", "Three students"], ["zq", "框2"], ["en", "to school by metro."]], "optSay": [[["en", "go"]], [["en", "goes"]], [["en", "are"]]], "a": 0}, {"lab": "3", "g": 0, "k": 3, "line": "(3) do they go to school?", "o": ["Who", "What", "How"], "oen": true, "stemSay": [["zh", "第3題，第3格。"], ["zq", "框3"], ["en", "do they go to school?"]], "optSay": [[["en", "Who"]], [["en", "What"]], [["en", "How"]]], "a": 2}, {"lab": "4", "g": 0, "k": 4, "line": "(4) go to school (5) foot together every day.", "o": ["They’re", "There", "They"], "oen": true, "stemSay": [["zh", "第4題，第4格。"], ["zq", "框4"], ["en", "go to school"]], "optSay": [[["en", "They’re"]], [["en", "There"]], [["en", "They"]]], "a": 2}, {"lab": "5", "g": 0, "k": 5, "line": "(4) go to school (5) foot together every day.", "o": ["by", "on", "in"], "oen": true, "stemSay": [["zh", "第5題，第5格。"], ["en", "go to school"], ["zq", "框5"], ["en", "foot together every day."]], "optSay": [[["en", "by"]], [["en", "on"]], [["en", "in"]]], "a": 1}, {"lab": "6", "g": 0, "k": 6, "line": "She (6) to school by bike.", "o": ["go", "goes", "going"], "oen": true, "stemSay": [["zh", "第6題，第6格。"], ["en", "She"], ["zq", "框6"], ["en", "to school by bike."]], "optSay": [[["en", "go"]], [["en", "goes"]], [["en", "going"]]], "a": 1}]}, {"id": "s8", "no": "八", "en": "Reading", "zh": "閱讀測驗", "pct": 8, "per": 2, "introSay": [["zh", "第八大題，閱讀測驗。讀文章，選出正確的答案。"]], "groups": [{"title": "文章", "img": "q8", "alt": "學校前面有各國國旗，兩個學生拿著地圖在參觀。", "lines": ["Our school has an International Day.", "Students from different countries come to visit our school.", "Hi! I'm Kevin.", "I'm from Taiwan.", "I go to school by bus.", "My friend, Emma, is from Australia.", "She goes to school by car.", "Look at other students!", "- Aki is from Japan. He goes to school by bike.", "- Mia is from India. She goes to school by train.", "- Peter is from the UK. He walks to school.", "We are different, but we are good friends!"], "prose": true, "vocab": [["international day", "國際交流日"], ["transportation", "交通工具"], ["different", "不同的"], ["visit", "拜訪"], ["other", "其他"]], "say": [[["en", "Our school has an International Day."]], [["en", "Students from different countries come to visit our school."]], [["en", "Hi! I'm Kevin."]], [["en", "I'm from Taiwan."]], [["en", "I go to school by bus."]], [["en", "My friend, Emma, is from Australia."]], [["en", "She goes to school by car."]], [["en", "Look at other students!"]], [["en", "Aki is from Japan. He goes to school by bike."]], [["en", "Mia is from India. She goes to school by train."]], [["en", "Peter is from the UK. He walks to school."]], [["en", "We are different, but we are good friends!"]]], "vsay": [[["en", "international day"], ["zh", "國際交流日"]], [["en", "transportation"], ["zh", "交通工具"]], [["en", "different"], ["zh", "不同的"]], [["en", "visit"], ["zh", "拜訪"]], [["en", "other"], ["zh", "其他"]]], "bsay": []}], "items": [{"lab": "1", "g": 0, "stem": "How does Emma go to school?", "sten": true, "stemSay": [["zh", "第1題。"], ["en", "How does Emma go to school?"]], "o": ["By bus.", "By bike.", "By car.", "On foot."], "oen": true, "optSay": [[["en", "By bus."]], [["en", "By bike."]], [["en", "By car."]], [["en", "On foot."]]], "a": 2}, {"lab": "2", "g": 0, "stem": "Which student goes to school by train?", "sten": true, "stemSay": [["zh", "第2題。"], ["en", "Which student goes to school by train?"]], "o": ["Kevin", "Aki", "Mia", "Peter"], "oen": true, "optSay": [[["en", "Kevin"]], [["en", "Aki"]], [["en", "Mia"]], [["en", "Peter"]]], "a": 2}, {"lab": "3", "g": 0, "stem": "Which is TRUE according to (根據) the reading?", "sten": true, "stemSay": [["zh", "第3題。"], ["en", "Which is TRUE according to the reading?"], ["zh", "根據文章，哪一個是對的？"]], "o": ["Kevin is from Australia.", "Aki goes to school by bus.", "Peter is from the UK.", "Mia goes to school by car."], "oen": true, "optSay": [[["en", "Kevin is from Australia."]], [["en", "Aki goes to school by bus."]], [["en", "Peter is from the UK."]], [["en", "Mia goes to school by car."]]], "a": 2}, {"lab": "4", "g": 0, "stem": "Peter lives near his school. He doesn’t need to take any transportation. How does he go to school?", "sten": true, "stemSay": [["zh", "第4題。"], ["en", "Peter lives near his school. He doesn’t need to take any transportation. How does he go to school?"]], "o": ["By bike.", "On foot.", "By metro.", "By scooter."], "oen": true, "optSay": [[["en", "By bike."]], [["en", "On foot."]], [["en", "By metro."]], [["en", "By scooter."]]], "a": 1}]}], "extra": [["zh", "你選的是A"], ["zh", "你選的是B"], ["zh", "你選的是C"], ["zh", "你選的是D"], ["zh", "你選的是第1個"], ["zh", "你選的是第2個"], ["zh", "你選的是"], ["zh", "請先選一個答案，才能到下一題。"], ["zh", "聽力測驗已經結束，請繼續作答。"], ["zh", "請先選一個答案。"], ["zh", "還有題目沒寫，要回去檢查嗎？"], ["zh", "全部寫完了，可以交卷。"], ["zh", "已經交卷，請把作答紀錄交給老師。"]], "aud": {"zh|第一大題。": "a/32709006a0.mp3", "en|Listen and choose.": "a/bb2dabda86.mp3", "zh|請選出正確的發音單字。題目請聽老師播放。": "a/a11706354a.mp3", "zh|第1題。請聽老師播放，選出你聽到的單字。": "a/3fc792b597.mp3", "zh|第2題。請聽老師播放，選出你聽到的單字。": "a/d2c341b439.mp3", "zh|第3題。請聽老師播放，選出你聽到的單字。": "a/315d716185.mp3", "zh|第4題。請聽老師播放，選出你聽到的單字。": "a/4a9b45d227.mp3", "zh|第5題。請聽老師播放，選出你聽到的單字。": "a/abf1da8018.mp3", "zh|第6題。請聽老師播放，選出你聽到的單字。": "a/cbe4ff5ae6.mp3", "zh|第二大題。": "a/803c611921.mp3", "zh|仔細聽，依句意選出相符的圖片。題目請聽老師播放。": "a/13d4f3f888.mp3", "zh|第1題。請聽老師播放，選出相符的圖片。": "a/214148d06b.mp3", "zh|一個小朋友撐著傘，正在下雨，旁邊寫著 百分之七十": "a/cfae46df50.mp3", "zh|一個小朋友撐著傘，正在下雨，旁邊寫著 百分之六十": "a/95179a66fd.mp3", "zh|一個小朋友撐著傘，正在下雨，旁邊寫著 百分之五十": "a/a5b4a3d5b4.mp3", "zh|第2題。請聽老師播放，選出相符的圖片。": "a/bda575cf87.mp3", "zh|印度國旗": "a/cb10616e2d.mp3", "zh|臺灣國旗": "a/48d6acbb16.mp3", "zh|澳洲國旗": "a/aa63310be2.mp3", "zh|第3題。請聽老師播放，選出相符的圖片。": "a/8fe3d6b470.mp3", "zh|一台機車": "a/96a929dcc8.mp3", "zh|捷運": "a/31734f4075.mp3", "zh|一個人在走路": "a/9a8ff53c6b.mp3", "zh|第4題。請聽老師播放，選出相符的圖片。": "a/fc132d2b71.mp3", "zh|一個小朋友戴著安全帽，騎腳踏車": "a/78d8dc2429.mp3", "zh|一個學生著急地從計程車下車，跑向學校": "a/e0ea5cf0ee.mp3", "zh|一個小朋友搭捷運": "a/8352ee9b15.mp3", "zh|第5題。請聽老師播放，選出相符的圖片。": "a/283e4fbb48.mp3", "zh|新加坡國旗": "a/779224e310.mp3", "zh|西班牙國旗": "a/27a74ae60e.mp3", "zh|日本國旗": "a/4a00cc26c3.mp3", "zh|第三大題。": "a/5c379c51f4.mp3", "zh|聽問句，選出正確的答句。問句請聽老師播放。": "a/fb8555a4e9.mp3", "zh|第1題。請聽老師播放問句，選出正確的答句。": "a/1605f4a728.mp3", "en|No, she isn’t. She’s not from Singapore.": "a/eb6d89f96d.mp3", "en|No, she isn’t. She’s from Singapore.": "a/5ce7099a03.mp3", "en|No, she isn’t. She’s not in Japan.": "a/0151cc8a42.mp3", "zh|第2題。請聽老師播放問句，選出正確的答句。": "a/3a9b1c28a3.mp3", "en|Yes, please.": "a/687731523c.mp3", "en|Yes, he is.": "a/b7e1af2d6c.mp3", "en|Yes, he does.": "a/2d1067b149.mp3", "zh|第3題。請聽老師播放問句，選出正確的答句。": "a/03d805b69a.mp3", "en|I’m in the library.": "a/030aa5f99f.mp3", "en|I’m from Japan.": "a/a187944274.mp3", "en|I’m going to the bank.": "a/543a005592.mp3", "zh|第4題。請聽老師播放問句，選出正確的答句。": "a/9a24cfd89a.mp3", "en|They go to school by car.": "a/e174b76b40.mp3", "en|I go to the park by bike.": "a/cd17cd0a82.mp3", "en|We go to school by train.": "a/b4bc1e705c.mp3", "zh|第5題。請聽老師播放問句，選出正確的答句。": "a/7462a35580.mp3", "en|Yes, they’re from the USA.": "a/430fb72c7c.mp3", "en|Yes, I’m from the USA.": "a/d756f9e7cb.mp3", "en|Yes, they’re in the USA.": "a/e5c816ad98.mp3", "zh|第四大題。": "a/f38ee801ab.mp3", "en|Listen and check.": "a/e392534971.mp3", "zh|仔細聽，根據對話內容，勾選正確答案。對話請聽老師播放。": "a/b2c3f75e62.mp3", "zh|第1題a。": "a/48217d98a9.mp3", "en|Where is Jeff from?": "a/3ef8d812ab.mp3", "en|He’s from Taiwan.": "a/fa8d1b1cd6.mp3", "en|He’s from Japan.": "a/734d6a4887.mp3", "zh|第1題b。": "a/b8b40fb184.mp3", "en|Where is the Taj Mahal?": "a/aced3b252c.mp3", "en|It’s in Spain.": "a/049df49a3f.mp3", "en|It’s in India.": "a/1fbdb31092.mp3", "zh|第2題a。": "a/14035f9dcb.mp3", "en|Does Eric go to school by bike?": "a/f24e3a77ad.mp3", "en|No. He goes to school by car.": "a/f1c999295b.mp3", "en|Yes. He goes to school by bike.": "a/36a51e5243.mp3", "zh|第2題b。": "a/e6c3f24ff5.mp3", "en|How does Betty go to school?": "a/dcbe62742e.mp3", "en|She goes to school on foot.": "a/faaaa99521.mp3", "en|She goes to school by bike.": "a/8b4fab2adc.mp3", "zh|第五大題。": "a/314a775d70.mp3", "en|Look and write.": "a/001ba3e1d8.mp3", "zh|看圖，選出正確的單字，完成句子。": "a/032a75ca6d.mp3", "en|A: Andy and Hank like bubble tea.": "a/8bd7d3d92c.mp3", "en|Are they from": "a/362ebe925e.mp3", "zq|框1": "a/ce774d1026.mp3", "en|B:": "a/c829d5cd31.mp3", "zq|框2": "a/8927d6ebcd.mp3", "en|, they": "a/90a1e63efb.mp3", "zq|框3": "a/45dc156edb.mp3", "en|leg": "a/f0a3d156db.mp3", "en|Yes": "a/8f9cc00818.mp3", "en|Taiwan": "a/6907e5cce8.mp3", "en|car": "a/13e090829b.mp3", "en|by": "a/e610c633e6.mp3", "en|are": "a/78396882e5.mp3", "en|Maggie’s": "a/cefe5e5c2d.mp3", "en|hurts, so she is going to school": "a/b347173e9e.mp3", "en|today.": "a/b80b02c8e1.mp3", "zh|第1小題，框1。": "a/1c23a021e9.mp3", "zh|第1小題，框2。": "a/173dd96701.mp3", "zh|第1小題，框3。": "a/6ecd51a4f4.mp3", "en|they": "a/ad4f5f5f49.mp3", "zh|第2小題，框1。": "a/f1334e7cd5.mp3", "zh|第2小題，框2。": "a/8acea04161.mp3", "zh|第2小題，框3。": "a/79a6e034de.mp3", "zh|第六大題。": "a/c70d68437c.mp3", "en|Read and write.": "a/cdd87fc0a6.mp3", "zh|依照提示的單字，完成句子。": "a/8d3819cf38.mp3", "en|A: Miss Wu, look at the map. What country is this?": "a/db2321f21d.mp3", "en|B: It’s": "a/4100d46cdd.mp3", "en|. Many students": "a/b1f1e8ae40.mp3", "en|to school": "a/944e1c8b17.mp3", "en|foot there.": "a/e406d41cf1.mp3", "en|A: Do they walk to school on rainy days?": "a/35f4acb7ec.mp3", "en|B: Well, my friend Julia lives in Singapore.": "a/23968d5a99.mp3", "en|She": "a/488ac27261.mp3", "zq|框4": "a/8a5d9b52f0.mp3", "en|to school by": "a/d58324f9dd.mp3", "zq|框5": "a/481986f1d4.mp3", "en|on rainy days.": "a/f145974f8f.mp3", "en|map": "a/b9bd9f66b8.mp3", "zh|地圖。": "a/e0b0e87412.mp3", "en|live": "a/2323ba9000.mp3", "zh|住。": "a/d115092405.mp3", "en|Singapore": "a/c2234d48cb.mp3", "en|goes": "a/73624bfdec.mp3", "en|on": "a/bd693224e1.mp3", "en|train": "a/29cf0f68e3.mp3", "en|go": "a/fcaf7a69d8.mp3", "en|A: Hi, Eva. It’s sunny. Let’s go to the park.": "a/eb4c4c00a1.mp3", "en|B: Hi, Leo. This is my new friend, Max.": "a/103a9f1764.mp3", "zq|框6": "a/8fb7f5f4a6.mp3", "zq|框7": "a/a322e201e8.mp3", "en|Taiwan.": "a/050afa543e.mp3", "en|A: Nice to meet you, Max. I’m Leo. Can you ride a bike?": "a/8575cf89fc.mp3", "en|C: Sure. I go to school": "a/6ee63bf0ee.mp3", "zq|框8": "a/c49d3288b0.mp3", "en|bike in Taiwan.": "a/c66b54a9be.mp3", "en|A: Great!": "a/be943c8c81.mp3", "zq|框9": "a/1eaec059a3.mp3", "en|go to the park together.": "a/2e8aa737ce.mp3", "en|Let’s": "a/6510e2ba37.mp3", "en|He’s": "a/71efea7fe4.mp3", "en|from": "a/f1c34f44df.mp3", "zh|第1格。": "a/b85ac61059.mp3", "zh|第2格。": "a/b58255b3f0.mp3", "en|Many students": "a/dd94684d9f.mp3", "zh|第3格。": "a/a8cd5db67f.mp3", "zh|第4格。": "a/ace804828e.mp3", "zh|第5格。": "a/73de9ed752.mp3", "zh|第6格。": "a/27e51f8b56.mp3", "zh|第7格。": "a/bb2faa7b46.mp3", "zh|第8格。": "a/30075f1366.mp3", "zh|第9格。": "a/49c13399f3.mp3", "zh|第七大題。": "a/1c96de2b7f.mp3", "en|Read and choose.": "a/d5fcaf39e1.mp3", "zh|讀短文，選出正確的答案。": "a/512f3fd729.mp3", "en|It’s Monday today.": "a/3b60c46a6c.mp3", "en|Mina goes to her new": "a/51a4362a92.mp3", "en|by scooter.": "a/190ea39de4.mp3", "en|There are eleven students in her class.": "a/d2ba7d42fc.mp3", "en|Three students": "a/b7a41ab5c9.mp3", "en|to school by metro.": "a/d91f3c429b.mp3", "en|Four students go to school by train.": "a/76606357e2.mp3", "en|Ken and Paul are good friends.": "a/220854f5b8.mp3", "en|do they go to school?": "a/ae22d4cc45.mp3", "en|go to school": "a/eddc3856a8.mp3", "en|foot together every day.": "a/55ed82497f.mp3", "en|Doris is Mina’s new friend.": "a/c0e55b3364.mp3", "en|She’s from Spain.": "a/e44ccb4ecd.mp3", "en|to school by bike.": "a/f5120ac9f0.mp3", "zh|第1題，第1格。": "a/caee9661bf.mp3", "en|bedroom": "a/37acbbcf3f.mp3", "en|school": "a/d38155c681.mp3", "en|park": "a/11b23e82f0.mp3", "zh|第2題，第2格。": "a/1f68aad634.mp3", "zh|第3題，第3格。": "a/f37dddee97.mp3", "en|Who": "a/5dd12dc1c4.mp3", "en|What": "a/34452d5a36.mp3", "en|How": "a/445ada5c0c.mp3", "zh|第4題，第4格。": "a/97ad94c931.mp3", "en|They’re": "a/4d0d83b3f6.mp3", "en|There": "a/031dda001a.mp3", "en|They": "a/ead1c567d0.mp3", "zh|第5題，第5格。": "a/f9f5c56a60.mp3", "en|in": "a/5290707173.mp3", "zh|第6題，第6格。": "a/87151cbe15.mp3", "en|going": "a/1351e94d5c.mp3", "zh|第八大題，閱讀測驗。讀文章，選出正確的答案。": "a/db7c753fcf.mp3", "en|Our school has an International Day.": "a/2527f98cf5.mp3", "en|Students from different countries come to visit our school.": "a/d424cd9e00.mp3", "en|Hi! I'm Kevin.": "a/795875a28e.mp3", "en|I'm from Taiwan.": "a/0ed91010ec.mp3", "en|I go to school by bus.": "a/80faca7f5f.mp3", "en|My friend, Emma, is from Australia.": "a/4c14cb1bfb.mp3", "en|She goes to school by car.": "a/41ae940c34.mp3", "en|Look at other students!": "a/be605b3b17.mp3", "en|Aki is from Japan. He goes to school by bike.": "a/810cbe5df9.mp3", "en|Mia is from India. She goes to school by train.": "a/be7693fc63.mp3", "en|Peter is from the UK. He walks to school.": "a/8e177f18a3.mp3", "en|We are different, but we are good friends!": "a/e8d499a40d.mp3", "en|international day": "a/d5ab0e3d56.mp3", "zh|國際交流日": "a/c369efa7f7.mp3", "en|transportation": "a/c698493437.mp3", "zh|交通工具": "a/f17ba12434.mp3", "en|different": "a/274564a828.mp3", "zh|不同的": "a/a93c590807.mp3", "en|visit": "a/b4812712fd.mp3", "zh|拜訪": "a/2eda7f58f5.mp3", "en|other": "a/d70aa7291a.mp3", "zh|其他": "a/2b0396bf0b.mp3", "zh|第1題。": "a/3cf181da9a.mp3", "en|How does Emma go to school?": "a/a086f18fde.mp3", "en|By bus.": "a/4d3cff531f.mp3", "en|By bike.": "a/e0b436cc9c.mp3", "en|By car.": "a/2a606a14da.mp3", "en|On foot.": "a/79d4a26eb2.mp3", "zh|第2題。": "a/3932d4d159.mp3", "en|Which student goes to school by train?": "a/c4f48ce96b.mp3", "en|Kevin": "a/ded3436fff.mp3", "en|Aki": "a/723a770d6c.mp3", "en|Mia": "a/8418a63ef9.mp3", "en|Peter": "a/b242758bb6.mp3", "zh|第3題。": "a/92c8c04fbc.mp3", "en|Which is TRUE according to the reading?": "a/a8e9f48b28.mp3", "zh|根據文章，哪一個是對的？": "a/56e15d68a8.mp3", "en|Kevin is from Australia.": "a/3386863fc0.mp3", "en|Aki goes to school by bus.": "a/e7a3b10325.mp3", "en|Peter is from the UK.": "a/5317a2008d.mp3", "en|Mia goes to school by car.": "a/5b951b3062.mp3", "zh|第4題。": "a/43780bd4cd.mp3", "en|Peter lives near his school. He doesn’t need to take any transportation. How does he go to school?": "a/3e09d65c0a.mp3", "en|By metro.": "a/c8d65c877f.mp3", "en|By scooter.": "a/69d7eb26b5.mp3", "zh|你選的是A": "a/f74ba2af84.mp3", "zh|你選的是B": "a/c58061fd71.mp3", "zh|你選的是C": "a/9c742e13c8.mp3", "zh|你選的是D": "a/ac1a6eafe0.mp3", "zh|你選的是第1個": "a/f365bbdf7a.mp3", "zh|你選的是第2個": "a/9c622073e2.mp3", "zh|你選的是": "a/b44d69ecab.mp3", "zh|請先選一個答案，才能到下一題。": "a/3906e89a4a.mp3", "zh|聽力測驗已經結束，請繼續作答。": "a/184e4ea5a2.mp3", "zh|請先選一個答案。": "a/a225bedfed.mp3", "zh|還有題目沒寫，要回去檢查嗎？": "a/72c0f64b89.mp3", "zh|全部寫完了，可以交卷。": "a/e9ed176f7e.mp3", "zh|已經交卷，請把作答紀錄交給老師。": "a/c6993ffd12.mp3"}};
+const SECS=DATA.secs, AUD=DATA.aud, LET="ABCD";
+const ITEMS=[];
+SECS.forEach((s,si)=>s.items.forEach((it,ii)=>{it.id=s.id+"_"+ii; it.si=si; it.ii=ii; ITEMS.push(it);}));
+const $=id=>document.getElementById(id);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SPK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+const EAR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="7" rx="1.5" fill="currentColor"/><rect x="17" y="14" width="4" height="7" rx="1.5" fill="currentColor"/></svg>';
+const TICK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>';
+const FS=[20,24,28,32], RATES=[["慢",0.8],["正常",1],["快",1.2]];
+const KEY="en6-mid-1151-pub";
+
+let st={ans:{},i:0,fs:1,hc:false,rate:1,cls:"",seat:"",name:"",t0:null,t1:null};
+try{const x=JSON.parse(localStorage.getItem(KEY)||"null"); if(x&&typeof x==="object")st=Object.assign(st,x);}catch(e){}
+const SITE_URL="https://liniris1023.github.io/sped-exam-reader/en6-midterm/";
+let TEACHER=false;
+function save(){ if(TEACHER)return; try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){} }
+/* result code for the teacher's QR: r-<one char per item>-<submit time>-<minutes> */
+function encodeRes(){ const a=ITEMS.map(it=>st.ans[it.id]==null?"x":String(st.ans[it.id])).join("");
+  const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):0;
+  return "r-"+a+"-"+Math.floor((st.t1||Date.now())/60000).toString(36)+"-"+mins.toString(36); }
+function decodeRes(h){ const m=/^r-([0-9x]+)-([0-9a-z]+)-([0-9a-z]+)$/.exec(h); if(!m||m[1].length!==ITEMS.length)return null;
+  const ans={}; ITEMS.forEach((it,i)=>{ const c=m[1][i]; if(c!=="x")ans[it.id]=+c; });
+  const t1=parseInt(m[2],36)*60000, mins=parseInt(m[3],36); return {ans,t1,t0:mins?t1-mins*60000:null}; }
+function drawQR(el,text,size){ el.innerHTML=""; if(!window.QRCode){ el.textContent=text; return; }
+  try{ new QRCode(el,{text,width:size,height:size,colorDark:"#000000",colorLight:"#FFFFFF",correctLevel:QRCode.CorrectLevel.M}); }catch(e){ el.textContent=text; } }
+let view="home";
+
+/* ---------- speech: edge-tts clips first, browser voice as backup ---------- */
+const synth=window.speechSynthesis; let vZh=null,vEn=null;
+function pickVoice(){ if(!synth)return; const v=synth.getVoices();
+  vZh=v.find(x=>/zh[-_]TW/i.test(x.lang))||v.find(x=>/^zh/i.test(x.lang))||null;
+  vEn=v.find(x=>/en[-_]US/i.test(x.lang)&&/Natural|Online|Samantha|Google/i.test(x.name))||v.find(x=>/en[-_]US/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||null; }
+if(synth){pickVoice(); synth.onvoiceschanged=pickVoice;}
+const urls={}; const player=new Audio(); let playTok=0;
+function clipURL(seg){ const p=AUD[seg[0]+"|"+seg[1]]; if(!p)return Promise.resolve(null);
+  if(!urls[p]) urls[p]=fetch(p).then(r=>{if(!r.ok)throw 0; return r.blob();}).then(b=>URL.createObjectURL(b)).catch(()=>{delete urls[p]; return null;});
+  return urls[p]; }
+function prefetch(list){ list.forEach(s=>clipURL(s)); }
+function audioSay(url,tok){ return new Promise(res=>{ if(tok!==playTok){res();return;} let done=false; const fin=()=>{if(!done){done=true;res();}};
+  player.onended=fin; player.onerror=fin; player.src=url; player.playbackRate=RATES[st.rate][1]; player.preservesPitch=true;
+  const p=player.play(); if(p&&p.catch)p.catch(fin); }); }
+function synthSay(seg,tok){ return new Promise(res=>{ if(!synth||tok!==playTok){ $("live").textContent=seg[1]; res(); return; }
+  const u=new SpeechSynthesisUtterance(seg[1]); u.lang=seg[0]==="en"?"en-US":"zh-TW"; const v=seg[0]==="en"?vEn:vZh; if(v)u.voice=v;
+  u.rate=RATES[st.rate][1]*(seg[0]==="en"?0.85:0.95); let done=false; const fin=()=>{if(!done){done=true;res();}};
+  u.onend=fin; u.onerror=fin; synth.speak(u); setTimeout(fin,Math.max(4000,seg[1].length*260)); }); }
+function clearReading(){document.querySelectorAll(".reading").forEach(e=>e.classList.remove("reading"));}
+async function speak(parts){
+  const tok=++playTok; try{player.pause();}catch(e){} if(synth)synth.cancel(); clearReading();
+  for(const p of parts){ if(tok!==playTok)return; clearReading(); if(p.el){p.el.classList.add("reading"); follow(p.el);}
+    for(const seg of p.segs){ if(tok!==playTok)return; const url=await clipURL(seg); if(tok!==playTok)return;
+      if(url) await audioSay(url,tok); else await synthSay(seg,tok); }
+    if(tok===playTok) await new Promise(r=>setTimeout(r,250)); }
+  if(tok===playTok)clearReading(); }
+function stopSpeak(){ playTok++; try{player.pause();}catch(e){} if(synth)synth.cancel(); clearReading(); }
+function follow(el){ try{ const r=el.getBoundingClientRect(), top=$("tools").offsetHeight+12, bar=$("bar"), bottom=window.innerHeight-(bar.hidden?0:bar.offsetHeight)-12;
+  if(r.top>=top&&r.bottom<=bottom)return; const smooth=!matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({top:Math.max(0,window.scrollY+r.top-top-Math.max(0,(bottom-top-r.height)/2)),behavior:smooth?"smooth":"auto"}); }catch(e){} }
+
+/* ---------- settings ---------- */
+function applySettings(){ document.documentElement.style.fontSize=FS[st.fs]+"px";
+  if(st.hc)document.documentElement.setAttribute("data-contrast","hc"); else document.documentElement.removeAttribute("data-contrast");
+  $("hc").setAttribute("aria-pressed",String(!!st.hc)); $("rate").textContent="語速："+RATES[st.rate][0]; }
+$("fsDown").onclick=()=>{st.fs=Math.max(0,st.fs-1);save();applySettings();};
+$("fsUp").onclick=()=>{st.fs=Math.min(FS.length-1,st.fs+1);save();applySettings();};
+$("hc").onclick=()=>{st.hc=!st.hc;save();applySettings();};
+$("rate").onclick=()=>{st.rate=(st.rate+1)%RATES.length;save();applySettings();};
+$("homeBtn").onclick=()=>{stopSpeak(); if(TEACHER){ try{history.replaceState(null,"",location.pathname+location.search);}catch(e){} leaveTeacher(); show("home"); } else show("home");};
+
+/* ---------- helpers ---------- */
+const isDone=it=>st.ans[it.id]!=null;
+const answered=()=>ITEMS.filter(isDone).length;
+function shortLab(it){ return it.lab.includes("-")&&SECS[it.si].id==="s5" ? it.lab.split("-")[1] : it.lab; }
+function findK(s,k){ return s.items.find(x=>x.k===k||(x.ks&&x.ks.includes(k))); }
+function wordFor(s,k){ const it=s.items.find(x=>x.k===k); if(!it)return null; const a=st.ans[it.id]; return a==null?null:it.o[a]; }
+function labFor(s,k){ const it=findK(s,k); if(it&&it.ks) return "①②③④⑤⑥"[it.ks.indexOf(k)]; return it?shortLab(it):k; }
+function lineHTML(line,s,curK){
+  return esc(line).replace(/\[(\d+)\]|\((\d)\)/g,(m,a,b)=>{ const k=+(a||b), w=wordFor(s,k), cur=k===curK;
+    return `<span class="blank${cur?" cur":""}${w?" filled":""}" data-bk="${k}"><i>${esc(labFor(s,k))}</i>${w?esc(w):"&nbsp;&nbsp;&nbsp;"}</span>`; }); }
+function setProgress(){ $("prog").textContent = view==="q" ? `第 ${st.i+1} / ${ITEMS.length} 題　已答 ${answered()}` : `已答 ${answered()} / ${ITEMS.length}`; }
+function show(v){ view=v; $("bar").hidden = v!=="q"; ({home:renderHome,q:renderQ,check:renderCheck,done:renderDone})[v](); setProgress(); if(v!=="q")window.scrollTo(0,0); }
+
+/* ---------- home ---------- */
+function renderHome(){
+  const started=answered()>0||st.t0;
+  $("main").innerHTML=`<section class="screen">
+    <p class="eyebrow">彰化縣伸東國小 115 學年度第一學期 期中學業評量</p>
+    <h1>六年級 英語科<br>報讀作答</h1>
+    <div class="facts"><span class="fact">8 大題</span><span class="fact">${ITEMS.length} 小題</span><span class="fact">滿分 100 分</span><span class="fact">一～四大題是聽力</span></div>
+    <p style="margin:0;font-size:1.6rem;font-weight:900">六年丙班</p>
+    <div class="row">
+      <button class="big" id="startBtn" type="button" style="font-size:1.8rem;min-height:5.5rem;padding-inline:2.4rem">${started?"繼續作答":"開始作答"}</button>
+      ${started?'<button class="ghost" id="resetBtn" type="button">清除答案，重新作答</button>':""}
+    </div>
+    <ol class="help">
+      <li>按 <b>藍色喇叭</b> 聽題目和選項，可以一直重聽。</li>
+      <li>聽力題（一～四大題）的題目請聽老師播放。</li>
+      <li>點一下答案就選好了，可以改。</li>
+      <li>寫完按「交卷」，再按「下載作答 PDF」交給老師。</li>
+    </ol>
+    <div id="resetBox"></div>
+    <div class="qrbox"><div id="homeQR"></div><p>掃描 QR Code 打開這個報讀網站</p></div>
+  </section>`;
+  drawQR($("homeQR"),SITE_URL,220);
+  $("startBtn").onclick=()=>{ if(!st.t0){st.t0=Date.now();save();} show(st.t1?"done":"q"); window.scrollTo(0,0);};
+  if($("resetBtn")) $("resetBtn").onclick=()=>{ $("resetBox").innerHTML=`<div class="warnbox"><p>確定要清除全部答案嗎？清除後不能復原。</p>
+      <div class="row"><button class="big" id="yesReset" type="button" style="background:var(--bad);color:#fff">確定清除</button><button class="ghost" id="noReset" type="button">不要清除</button></div></div>`;
+    $("noReset").onclick=()=>{$("resetBox").innerHTML="";};
+    $("yesReset").onclick=()=>{ st.ans={}; st.i=0; st.t0=null; st.t1=null; save(); renderHome(); setProgress(); }; };
+}
+
+/* ---------- question ---------- */
+function secHead(s,it){
+  const first=it.ii===0;
+  return `<div class="sec">
+    ${s.id==="s5"?'<span class="tag over">聽力測驗已經結束，請繼續作答</span>':""}
+    <div class="sech"><b>${s.no}、<span class="en">${esc(s.en)}</span>　${esc(s.zh)}</b><small>（${s.pct}%，${s.perNote||"每題 "+s.per+" 分"}）</small></div>
+    <div class="row">${s.listen?`<span class="tag listen">${EAR}聽力題</span>`:""}
+      <button class="speaker pill" id="secSpk" type="button" aria-label="唸大題說明">${SPK}大題說明</button></div>
+  </div>`;
+}
+function groupHTML(s,g,it){
+  let h=`<div class="passage" id="psg"><div class="ptop"><b>${esc(g.title||"")}</b>
+     <button class="speaker pill" id="allSpk" type="button" aria-label="唸全部">${SPK}唸全部</button></div>`;
+  if(g.img) h+=`<figure class="fig"><img class="zoomable" src="img/${g.img}.png" alt="${esc(g.alt||"")}"></figure>`;
+  g.lines.forEach((l,i)=>{ const cur=it.line&&l===it.line; h+=`<div class="lnrow"><button class="ln${cur?" cur":""}" type="button" data-l="${i}">${lineHTML(l,s,it.k)}</button><button class="speaker lnspk" type="button" data-ls="${i}" aria-label="唸這一句">${SPK}</button></div>`; });
+  if(g.note) h+=`<p class="note">${esc(g.note)}</p>`;
+  if(g.showBank) h+=`<div class="bank"><b class="en">★${esc(s.bankTitle||"Word Bank")}:</b><div>${g.bank.map(w=>`<span class="en">${esc(w)}</span>`).join("")}</div></div>`;
+  if(g.vocab) h+=`<div class="vocab">${g.vocab.map((v,i)=>`<button type="button" data-v="${i}"><span class="en">${esc(v[0])}</span>　${esc(v[1])}<span class="vspk" aria-hidden="true">${SPK}</span></button>`).join("")}</div>`;
+  return h+`</div>`;
+}
+function renderQ(keepScroll){
+  const y=window.scrollY; const it=ITEMS[st.i], s=SECS[it.si], g=s.groups?s.groups[it.g]:null, a=st.ans[it.id];
+  let h=`<section class="screen" style="gap:.8rem">`+secHead(s,it);
+  if(g){ const first=s.items.find(x=>x.g===it.g)===it;
+    if(["s5","s6","s7","s8"].includes(s.id)&&!first) h+=`<details class="nav psgfold"><summary>${s.id==="s8"?"看整篇文章和補充單字":g.img?"看圖片和整段句子":"看整段"+(s.id==="s7"?"短文":"對話")}</summary>${groupHTML(s,g,it)}</details>`;
+    else h+=groupHTML(s,g,it); }
+  h+=`<div class="card"><div class="qhead"><span class="qnum">${esc(it.lab)}</span><button class="speaker pill" id="stemSpk" type="button" aria-label="唸題目">${SPK}唸題目</button></div><div class="stemrow">`;
+  if(it.line) h+=`<div class="stem en" id="stem">${lineHTML(it.line,s,it.k)}</div>`;
+  else h+=`<p class="stem${it.sten?" en":""}" id="stem">${esc(it.stem)}</p>`;
+  h+=`</div>`;
+  if(it.paper){
+    h+=`<button class="big paperdone" id="paperDone" type="button">${a!=null?"✓ ":""}我在答案紙寫好答案了，下一題 →</button>`;
+  } else if(it.pics){
+    h+=`<div class="pics" role="radiogroup" aria-label="選項">`+it.pics.map((p,k)=>`<button class="picbtn" type="button" role="radio" aria-checked="${a===k}" data-k="${k}"><span class="no">${LET[k]}</span><img src="img/${p}.png" alt="${esc((it.alts||[])[k]||"圖"+LET[k])}">${it.caps?`<span class="cap">${esc(it.caps[k])}</span>`:""}</button>`).join("")+`</div>`;
+    if(a!=null) h+=`<p class="chosen">你選了 ${LET[a]}</p>`;
+  } else {
+    h+=`<div class="${it.word?"words":"opts"}${s.id==="s1"?" bigw":""}" role="radiogroup" aria-label="選項">`+it.o.map((o,k)=>{
+      const mark = it.word ? "" : it.check ? (a===k?`<span class="box">${TICK}</span>`:"") : `<span class="no">${LET[k]}</span>`;
+      return `<div class="opt"><button class="optbtn" type="button" role="radio" aria-checked="${a===k}" data-k="${k}">${mark}<span>${esc(o)}</span></button>${it.optSay?`<button class="speaker" type="button" data-s="${k}" aria-label="唸選項 ${esc(o)}">${SPK}</button>`:""}</div>`;
+    }).join("")+`</div>`;
+  }
+  h+=`</div>`;
+  h+=`<details class="nav" id="navd"><summary>全部題目（點題號可跳題）</summary>`+SECS.map(sx=>`<div class="navsec"><b>${sx.no}、${esc(sx.zh)}</b><div class="grid">${sx.items.map(x=>{const n=ITEMS.indexOf(x);return `<button type="button" data-go="${n}" class="${isDone(x)?"done":""}" aria-current="${n===st.i}"${n>reach()?" disabled":""}>${esc(x.lab)}</button>`;}).join("")}</div></div>`).join("")+`</details>`;
+  h+=`</section>`;
+  const navOpen=$("navd")&&$("navd").open;
+  $("main").innerHTML=h; if(navOpen)$("navd").open=true;
+  // wire
+  $("secSpk").onclick=()=>speak([{segs:s.introSay}]);
+  const stemParts=()=>[{segs:it.stemSay,el:$("stem")}];
+  $("stemSpk").onclick=()=>speak(stemParts());
+  document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>choose(+b.dataset.k));
+  if($("paperDone")) $("paperDone").onclick=()=>{ st.ans[it.id]=1; if(st.t1)st.t1=null; save(); if(st.i===ITEMS.length-1){stopSpeak(); show("check");} else go(st.i+1); };
+  document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const k=+b.dataset.s; speak([{segs:it.optSay[k],el:b.previousElementSibling}]);});
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(+b.dataset.go));
+  if(g){
+    document.querySelectorAll(".ln[data-l]").forEach(b=>b.onclick=e=>{ const bk=e.target.closest("[data-bk]");
+      if(bk){ jumpBlank(s,+bk.dataset.bk); return; } speak([{segs:g.say[+b.dataset.l],el:b}]); });
+    document.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>speak([{segs:g.vsay[+b.dataset.v],el:b}]));
+    document.querySelectorAll("[data-ls]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.ls; speak([{segs:g.say[i],el:document.querySelector(`.ln[data-l="${i}"]`)}]); });
+    $("allSpk").onclick=()=>{ const lns=[...document.querySelectorAll(".ln[data-l]")]; const parts=lns.map((b,i)=>({segs:g.say[i],el:b}));
+      if(g.vocab){ document.querySelectorAll("[data-v]").forEach(b=>parts.push({segs:g.vsay[+b.dataset.v],el:b})); parts.push({segs:it.stemSay,el:$("stem")}); }
+      speak(parts); };
+  }
+  document.querySelectorAll(".zoomable").forEach(im=>im.onclick=()=>zoom(im.src,im.alt));
+  // bottom bar
+  $("prevBtn").disabled=st.i===0;
+  $("nextBtn").classList.toggle("locked",!isDone(it));
+  const last=st.i===ITEMS.length-1; $("nextBtn").textContent=last?"檢查並交卷 →":"下一題 →"; $("nextBtn").classList.toggle("finish",last);
+  prefetch([...it.stemSay,...(it.optSay||[]).flat(),...s.introSay]);
+  setProgress();
+  if(keepScroll) window.scrollTo(0,y); else window.scrollTo(0,0);
+}
+function jumpBlank(s,k){ const it=findK(s,k); if(!it)return; const n=ITEMS.indexOf(it);
+  if(n>reach()){ speak([{segs:[["zh","請先選一個答案，才能到下一題。"]]}]); return; }
+  if(n!==st.i){ stopSpeak(); st.i=n; save(); renderQ(); }
+  const c=document.querySelector(".card"); if(c){ const smooth=!matchMedia("(prefers-reduced-motion: reduce)").matches; c.scrollIntoView({behavior:smooth?"smooth":"auto",block:"start"}); window.scrollBy(0,-($("tools").offsetHeight+12)); }
+  speak([{segs:it.stemSay,el:$("stem")}]); }
+function reach(){ const n=ITEMS.findIndex(x=>!isDone(x)); return n<0?ITEMS.length-1:n; }
+function sayChoice(it,k){ let segs;
+  if(it.word){ segs=[["zh","你選的是"],...it.optSay[k]]; }
+  else if(it.check){ segs=[["zh","你選的是第"+(k+1)+"個"]]; }
+  else segs=[["zh","你選的是"+LET[k]]];
+  return speak([{segs}]); }
+let advSeq=0;
+function choose(k){ const it=ITEMS[st.i]; st.ans[it.id]=k; if(st.t1)st.t1=null; save(); renderQ(true); const said=sayChoice(it,k);
+  if(it.k){ const my=++advSeq, at=st.i; said.then(()=>new Promise(r=>setTimeout(r,300))).then(()=>{ if(my!==advSeq||st.i!==at||view!=="q")return;
+      if(st.i===ITEMS.length-1){ stopSpeak(); show("check"); } else go(st.i+1); }); }
+  if(SECS[it.si].id==="s1") wordPop(LET[k],it.o[k]);
+  if(it.pics) picPop(it,k); }
+function picPop(it,k){ const d=document.createElement("div"); d.className="wpop"; d.setAttribute("role","dialog"); d.setAttribute("aria-label","放大的圖片");
+  const c=it.caps?it.caps[k]:null;
+  d.innerHTML=`<div class="wcard pcard"><div class="row" style="justify-content:center"><span class="wno">${LET[k]}</span>${it.capSay?`<button type="button" class="speaker pill" data-pc>${SPK}唸圖片說明</button>`:""}</div>
+    <img src="img/${it.pics[k]}.png" alt="${esc((it.alts||[])[k]||"")}">
+    ${c?`<p class="pcap">${esc(c)}</p>`:""}
+    <button type="button" class="big" data-close>關閉</button>
+    <span class="wsel">你選了 ${LET[k]}</span></div>`;
+  d.onclick=e=>{ if(e.target.closest("[data-pc]")){ e.stopPropagation(); speak([{segs:it.capSay[k],el:d.querySelector(".pcap")}]); return; } stopSpeak(); d.remove(); };
+  document.body.appendChild(d); d.querySelector("[data-close]").focus(); }
+function wordPop(l,w){ const d=document.createElement("div"); d.className="wpop"; d.setAttribute("role","dialog"); d.setAttribute("aria-label","放大的單字");
+  d.innerHTML=`<div class="wcard"><span class="wno">${l}</span><span class="wword">${esc(w)}</span><span class="wsel">你選了 ${l}</span><button type="button" class="big">關閉</button></div>`;
+  d.onclick=()=>d.remove(); document.body.appendChild(d); d.querySelector("button").focus(); }
+function go(n){ stopSpeak(); st.i=Math.max(0,Math.min(ITEMS.length-1,n)); save(); show("q"); }
+$("prevBtn").onclick=()=>go(st.i-1);
+$("nextBtn").onclick=()=>{ const it=ITEMS[st.i];
+  if(!isDone(it)){ speak([{segs:[["zh","請先選一個答案，才能到下一題。"]]}]); const b=$("nextBtn"); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); return; }
+  if(st.i===ITEMS.length-1){stopSpeak(); show("check");} else go(st.i+1); };
+document.addEventListener("keydown",e=>{ if(view!=="q"||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
+  if(e.key==="ArrowRight")$("nextBtn").click(); if(e.key==="ArrowLeft"&&st.i>0)go(st.i-1); });
+function zoom(src,alt){ const d=document.createElement("div"); d.className="zoom"; d.innerHTML=`<img src="${src}" alt="${esc(alt)}"><button type="button">關閉 ✕</button>`;
+  d.onclick=()=>d.remove(); document.body.appendChild(d); d.querySelector("button").focus(); }
+
+/* ---------- check & submit ---------- */
+function renderCheck(){
+  const miss=ITEMS.filter(it=>!isDone(it));
+  $("main").innerHTML=`<section class="screen">
+    <h1>檢查一下</h1>
+    ${miss.length?`<div class="warnbox"><p>還有 ${miss.length} 題沒有選答案：</p><div class="miss">${miss.map(it=>`<button type="button" data-go="${ITEMS.indexOf(it)}">${SECS[it.si].no}-${esc(it.lab)}</button>`).join("")}</div></div>`
+      :`<p style="margin:0;font-weight:900;font-size:1.3rem;color:var(--ok)">全部 ${ITEMS.length} 題都寫完了！</p>`}
+    <div class="row">
+      <button class="big" id="submitBtn" type="button" style="background:var(--stu);color:var(--stu-fg)"${miss.length?" disabled":""}>${miss.length?"寫完才能交卷":"交卷"}</button>
+      <button class="ghost" id="backBtn" type="button">回去檢查題目</button>
+    </div></section>`;
+  speak([{segs:[miss.length?["zh","還有題目沒寫，要回去檢查嗎？"]:["zh","全部寫完了，可以交卷。"]]}]);
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(+b.dataset.go));
+  $("backBtn").onclick=()=>go(st.i);
+  $("submitBtn").onclick=()=>{ if(ITEMS.some(it=>!isDone(it)))return; st.t1=Date.now(); save(); show("done"); };
+}
+let pdfBlob=null, pages=[];
+function renderDone(){
+  $("main").innerHTML=`<section class="screen">
+    <div class="done-mark" aria-hidden="true">✓</div>
+    <h1>${TEACHER?"老師批改：作答紀錄":"交卷完成"}</h1>
+    <p style="margin:0;font-weight:700">六年丙班　已答 ${answered()} / ${ITEMS.length} 題　交卷 ${fmt(st.t1)}</p>
+    <div class="row"><button class="big" id="pdfBtn" type="button" disabled>正在製作作答 PDF…</button>
+      ${TEACHER?'<button class="ghost" id="leaveBtn" type="button">離開批改畫面</button>':'<button class="ghost" id="reviewBtn" type="button">回去修改答案</button>'}</div>
+    <p class="status" id="pdfStatus" role="status"></p>
+    ${TEACHER?"":`<div class="qrbox"><div id="resQR"></div><p>老師用手機掃描，就能看到作答並下載 PDF</p></div>`}
+    <details class="nav"${TEACHER?" open":""}><summary>看作答紀錄（PDF 內容）</summary><div class="sheetprev" id="sheetPrev"></div></details>
+  </section>`;
+  if(!TEACHER){ speak([{segs:[["zh","已經交卷，請把作答紀錄交給老師。"]]}]); drawQR($("resQR"),SITE_URL+"#"+encodeRes(),260);
+    $("reviewBtn").onclick=()=>{ st.t1=null; save(); go(st.i); }; }
+  else $("leaveBtn").onclick=()=>{ try{history.replaceState(null,"",location.pathname+location.search);}catch(e){} location.hash=""; leaveTeacher(); };
+  buildPDF().then(ok=>{ const b=$("pdfBtn"); if(!b)return;
+    if(ok){ b.disabled=false; b.textContent="下載作答 PDF 給老師"; b.onclick=downloadPDF; }
+    else { b.textContent="PDF 製作失敗"; $("pdfStatus").className="status bad"; $("pdfStatus").textContent="PDF 沒有做出來。請老師打開下方「看作答紀錄」直接批改，或重新整理頁面再試一次。"; renderSheetFallback(); } });
+}
+
+/* ---------- answer sheet (PDF) ---------- */
+function ansText(it,a){ if(a==null)return null; return it.pics ? LET[a] : (it.word ? it.o[a] : (it.check?"☑ ":LET[a]+"  ")+it.o[a]); }
+function scoreSec(s){ let n=0; s.items.forEach(it=>{ if(it.a!=null&&st.ans[it.id]===it.a)n++; }); return n; }
+function fmt(t){ if(!t)return "—"; const d=new Date(t), p=x=>String(x).padStart(2,"0"); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function sheetBlocks(){
+  const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):null;
+  const B=[];
+  B.push(`<div><h2>彰化縣伸東國小 115 學年度第一學期期中學業評量　英語科</h2><p class="sub">作答紀錄（報讀版・學生平板作答）</p></div>
+    <div class="who"><span>六年 <b>丙</b> 班</span><span>姓名 <b>　　　　　</b></span></div>
+    <div class="who" style="font-size:12.5px;font-weight:500"><span>交卷時間：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span><span>已作答：${answered()} / ${ITEMS.length} 題</span></div>`);
+  let auto=0;
+  let autoMax=0;
+  const rows=SECS.map(s=>{ if(s.listen) return `<tr><td>${s.no}、<span class="enr">${esc(s.en)}</span>（聽力）</td><td class="c">${s.pct}</td><td class="c blankcell">請老師依聽力題本批改</td><td class="c">______ 分</td></tr>`;
+    if(s.paper) return `<tr><td>${s.no}、<span class="enr">${esc(s.en)}</span>（寫在答案紙）</td><td class="c">${s.pct}</td><td class="c blankcell">請老師批改答案紙</td><td class="c">______ 分</td></tr>`;
+    autoMax+=s.pct;
+    const n=scoreSec(s), p=n*s.per; auto+=p; return `<tr><td>${s.no}、<span class="enr">${esc(s.en)}</span></td><td class="c">${s.pct}</td><td class="c">對 ${n} / ${s.items.length} 題　<b>${p}</b> 分</td><td class="c">______ 分</td></tr>`; }).join("");
+  B.push(`<div><h3>成績</h3><table><tr><th>大題</th><th style="width:60px">配分</th><th>電腦批改</th><th style="width:120px">老師批改得分</th></tr>${rows}
+    <tr class="tot"><td>合計</td><td class="c">100</td><td class="c">電腦批改 ${auto} / ${autoMax} 分；老師批改 ______ / ${100-autoMax} 分</td><td class="c">總分 ______</td></tr></table></div>`);
+  SECS.forEach(s=>{
+    const head=`<tr><th style="width:56px">題號</th><th>學生作答</th><th style="width:${s.listen?150:200}px">${s.listen?"正確答案（老師填）":"正確答案"}</th><th style="width:70px">批改</th></tr>`;
+    if(s.paper){ const body=s.items.map(it=>{ const g=s.groups[it.g];
+        return `<tr><td class="c"><b>${esc(it.lab)}</b></td><td><div class="enr" style="font-size:12.5px;color:#555">${g.lines.map(l=>esc(l.replace(/\[(\d+)\]/g,(m,k)=>"__"+labFor(s,+k)+"__"))).join("<br>")}</div>寫在答案紙上</td><td class="enr">${it.keys.map((w,i)=>"①②③"[i]+" "+esc(w)).join("<br>")}</td><td class="c"><span style="color:#999">___ 分</span></td></tr>`; }).join("");
+      B.push(`<div><h3>${s.no}、<span class="enr">${esc(s.en)}</span>　${esc(s.zh)}（${s.perNote}，寫在答案紙上）</h3><table>${head}${body}</table></div>`); return; }
+    const body=s.items.map(it=>{ const a=st.ans[it.id], t=ansText(it,a);
+      const ansCell = t==null ? `<span class="no">（未作答）</span>` : `<span class="enr">${esc(t)}</span>${it.pics?`<img class="thumb" src="img/${it.pics[a]}.png" alt="">`:""}`;
+      let key="", mark="";
+      if(it.a==null){ key=""; mark=`<span style="color:#999">○　✕</span>`; }
+      else { key=`<span class="enr">${esc(it.word?it.o[it.a]:LET[it.a]+"  "+it.o[it.a])}</span>`; mark = a===it.a?`<span class="ok">○</span>`:`<span class="no">✕</span>`; }
+      const ctx = it.line ? `<div class="enr" style="font-size:12.5px;color:#555">${esc(it.line.replace(/\[(\d+)\]/g,(m,k)=>"__"+labFor(s,+k)+"__"))}</div>` : (it.sten?`<div class="enr" style="font-size:12.5px;color:#555">${esc(it.stem)}</div>`:"");
+      return `<tr><td class="c"><b>${esc(it.lab)}</b></td><td>${ctx}${ansCell}</td><td>${key}</td><td class="c">${mark}</td></tr>`; }).join("");
+    B.push(`<div><h3>${s.no}、<span class="enr">${esc(s.en)}</span>　${esc(s.zh)}（每題 ${s.per} 分）</h3><table>${head}${body}</table></div>`);
+  });
+  return B;
+}
+function layoutPages(){
+  const host=$("report"); host.innerHTML=""; const blocks=sheetBlocks(); const out=[];
+  let pg=null; const newPage=()=>{ pg=document.createElement("div"); pg.className="pg"; host.appendChild(pg); out.push(pg); };
+  newPage();
+  blocks.forEach(html=>{ const d=document.createElement("div"); d.innerHTML=html; while(d.firstChild){ const n=d.firstChild; pg.appendChild(n);
+      if(pg.scrollHeight>1123 && pg.children.length>1){ pg.removeChild(n); newPage(); pg.appendChild(n); } } });
+  out.forEach((p,i)=>{ const f=document.createElement("div"); f.className="foot"; f.textContent=`第 ${i+1} / ${out.length} 頁`; p.appendChild(f); });
+  return out;
+}
+async function buildPDF(){
+  try{
+    if(!window.html2canvas||!window.jspdf) return false;
+    try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,3000))]); }catch(e){}
+    pages=layoutPages();
+    await Promise.all([...$("report").querySelectorAll("img")].map(im=>im.complete?0:new Promise(r=>{im.onload=im.onerror=r;})));
+    const doc=new window.jspdf.jsPDF({unit:"pt",format:"a4",compress:true}); const prev=$("sheetPrev");
+    for(let i=0;i<pages.length;i++){
+      const c=await html2canvas(pages[i],{scale:2,backgroundColor:"#FFFFFF",useCORS:true,logging:false});
+      const url=c.toDataURL("image/jpeg",0.9);
+      if(i)doc.addPage(); doc.addImage(url,"JPEG",0,0,595.28,841.89);
+      if(prev){ const im=new Image(); im.src=url; im.alt=`作答紀錄第 ${i+1} 頁`; prev.appendChild(im); }
+    }
+    pdfBlob=doc.output("blob"); return true;
+  }catch(e){ console.error(e); return false; }
+}
+function renderSheetFallback(){ const prev=$("sheetPrev"); if(!prev)return; prev.innerHTML=""; layoutPages().forEach(p=>{ const c=p.cloneNode(true); c.style.height="auto"; const w=document.createElement("div"); w.style.overflowX="auto"; w.appendChild(c); prev.appendChild(w); }); }
+async function downloadPDF(){
+  const s=$("pdfStatus"); s.className="status"; s.textContent="";
+  const safe=x=>String(x||"").replace(/[\\/:*?"<>|\s]/g,"");
+  const fname="六上英語期中評量_六丙.pdf";
+  try{
+    const file=new File([pdfBlob],fname,{type:"application/pdf"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})&&/iPad|iPhone|Android/i.test(navigator.userAgent)){
+      try{ await navigator.share({files:[file],title:fname}); s.className="status ok"; s.textContent="已送出："+fname; return; }catch(e){ if(e&&e.name==="AbortError"){ s.textContent="沒有下載。想下載時再按一次按鈕。"; return; } }
+    }
+    const url=URL.createObjectURL(pdfBlob), a=document.createElement("a"); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000); s.className="status ok"; s.textContent="已下載："+fname+"，請交給老師。"; return;
+  }catch(e){}
+  let dl=null;
+  if(!dl){ s.className="status bad"; s.textContent="這個畫面不能下載檔案。請老師打開下方「看作答紀錄」直接批改，或用 Claude App 打開這個網頁再下載。"; return; }
+  try{ await dl.save({filename:fname,data:pdfBlob}); s.className="status ok"; s.textContent="已下載："+fname+"，請交給老師。"; }
+  catch(e){ const c=e&&e.code; s.className="status bad";
+    s.textContent = c==="declined"?"沒有下載。想下載時再按一次按鈕。" : c==="rate_limited"?"下載視窗已經開著，請先完成或關掉它。" : "這個畫面不能下載檔案。請老師打開下方「看作答紀錄」直接批改。"; }
+}
+
+let saved=null;
+function checkHash(){ const h=(location.hash||"").slice(1); const r=decodeRes(h);
+  if(r){ if(!TEACHER){ saved=st; } TEACHER=true; st=Object.assign({},saved||st,{ans:r.ans,t0:r.t0,t1:r.t1,i:0}); stopSpeak(); show("done"); return true; }
+  return false; }
+function leaveTeacher(){ if(!TEACHER)return; TEACHER=false; if(saved)st=saved; saved=null; show(st.t1?"done":"home"); }
+window.addEventListener("hashchange",()=>{ if(!checkHash()) leaveTeacher(); });
+applySettings();
+if(!checkHash()) show(st.t1?"done":"home");
+</script>
+
+</body></html>
