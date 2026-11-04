@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>評量報讀小幫手｜老師端</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* 版面：和學生端同一套顏色。上方連線狀態 → 上傳區 → 已上傳考卷清單（依科目分組） */
+:root{
+  --desk:#e6ecef; --paper:#ffffff; --ink:#1c2a33; --muted:#5a6a74; --line:#cfd8dd;
+  --accent:#0f7b6c; --accent-ink:#ffffff; --accent-soft:#d6efe9;
+  --mark:rgba(255,212,59,.45); --mark-edge:#e0a800; --danger:#b3361f; --ok:#1f7a3a;
+  --font-display:"Huninn","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --r:14px; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --desk:#11181d; --paper:#1a242b; --ink:#e5edf1; --muted:#97a7b0; --line:#2c3a43;
+  --accent:#3cc2a9; --accent-ink:#0b1a17; --accent-soft:#1d3b36;
+  --mark:rgba(255,212,59,.35); --mark-edge:#ffd43b; --danger:#ff8a70; --ok:#6fd38e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --desk:#11181d; --paper:#1a242b; --ink:#e5edf1; --muted:#97a7b0; --line:#2c3a43;
+  --accent:#3cc2a9; --accent-ink:#0b1a17; --accent-soft:#1d3b36;
+  --mark:rgba(255,212,59,.35); --mark-edge:#ffd43b; --danger:#ff8a70; --ok:#6fd38e; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--desk);color:var(--ink);font:16px/1.6 var(--font-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--mark-edge);outline-offset:2px}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+a.btn{text-decoration:none;color:inherit}
+.wrap{max-width:980px;margin:0 auto;display:grid;gap:18px}
+
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding-block:18px 4px}
+h1{font-family:var(--font-display);font-weight:400;font-size:1.7rem;margin:0;flex:1 1 auto;letter-spacing:.04em}
+h1 small{display:block;font-family:var(--font-body);font-size:.85rem;color:var(--muted);letter-spacing:0}
+.card{background:var(--paper);border-radius:var(--r);padding:18px 20px;display:grid;gap:12px;min-width:0}
+.card h2{font-family:var(--font-display);font-weight:400;font-size:1.3rem;margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.note{color:var(--muted);font-size:.9rem;margin:0}
+.warn{color:var(--danger);font-size:.9rem;margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid var(--line);background:var(--paper);font-family:var(--font-display);font-size:1rem;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.sm{min-height:38px;padding:0 12px;font-size:.95rem}
+.btn.del.arm{background:var(--danger);border-color:var(--danger);color:var(--paper)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+input[type=text],input[type=password],select{min-height:44px;border-radius:10px;border:2px solid var(--line);background:var(--desk);padding:0 10px;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:.85rem;padding:2px 10px;border-radius:999px;background:var(--desk);color:var(--muted)}
+.pill.ok{background:var(--accent-soft);color:var(--ok)}
+.pill.bad{color:var(--danger)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+
+.steps{margin:0;padding-left:1.4em;color:var(--muted);max-width:68ch;display:grid;gap:4px}
+.steps b{color:var(--ink)}
+code{background:var(--desk);border-radius:6px;padding:0 6px;font-size:.92em}
+
+.drop{border:3px dashed var(--line);border-radius:var(--r);padding:26px 16px;display:grid;gap:4px;place-items:center;text-align:center;cursor:pointer;font-family:var(--font-display);font-size:1.3rem;transition:background .15s,border-color .15s}
+.drop span{font-family:var(--font-body);font-size:.92rem;color:var(--muted)}
+.drop.over,.drop:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+.queue{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.qi{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:10px;border-radius:12px;background:var(--desk)}
+.qi input,.qi select{width:100%;background:var(--paper)}
+.qi .st{grid-column:1/-1;font-size:.88rem;color:var(--muted);display:flex;gap:8px;align-items:center}
+.qi .st.ok{color:var(--ok)} .qi .st.bad{color:var(--danger)}
+.qi label{display:grid;gap:2px;font-size:.8rem;color:var(--muted);min-width:0}
+@media (max-width:640px){.qi{grid-template-columns:1fr 1fr}.qi label:first-child{grid-column:1/-1}}
+
+.subj{display:grid;gap:6px}
+.subj h3{margin:8px 0 0;font-size:.95rem;color:var(--muted)}
+.subj ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.ti{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:var(--desk)}
+.ti .nm{flex:1 1 200px;min-width:0;overflow-wrap:anywhere;font-size:1.05rem}
+.ti select{min-height:38px;background:var(--paper)}
+
+dialog{border:0;border-radius:var(--r);background:var(--paper);color:var(--ink);width:min(440px,94vw);padding:0}
+dialog::backdrop{background:rgba(10,20,25,.45)}
+.dlg{padding:20px;display:grid;gap:12px;justify-items:center;text-align:center}
+.dlg h2{font-family:var(--font-display);font-weight:400;margin:0;font-size:1.3rem}
+#qrBox{background:#fff;padding:12px;border-radius:10px;line-height:0}
+#qrUrl{word-break:break-all;font-size:.8rem;background:var(--desk);padding:6px 8px;border-radius:8px;width:100%;text-align:left}
+.spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--accent-soft);border-top-color:var(--accent);animation:sp 1s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:12px;max-width:min(560px,92vw)}
+details summary{cursor:pointer;font-family:var(--font-display)}
+.errbox{border:2px solid var(--danger);border-radius:12px;padding:12px 14px;display:grid;gap:6px;color:var(--ink)}
+.errbox b{color:var(--danger)}
+.errbox ol{margin:0;padding-left:1.4em;color:var(--muted)}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>老師端・上傳考卷<small>評量報讀小幫手</small></h1>
+    <a class="btn" id="toStudent" href="./">👀 打開學生端</a>
+  </header>
+
+  <!-- 1. 連線 -->
+  <section class="card" id="connCard">
+    <h2>連線到網站 <span class="pill" id="connPill"><span class="dot"></span>尚未連線</span></h2>
+    <div id="connForm" class="row" style="display:grid;gap:10px">
+      <div class="row">
+        <input type="text" id="repo" placeholder="帳號/存放庫，例如 liniris1023/sped-exam-reader" style="flex:1 1 280px">
+      </div>
+      <div class="row">
+        <input type="password" id="token" placeholder="貼上 GitHub 權杖（github_pat_ 開頭）" autocomplete="off" style="flex:1 1 280px">
+        <button class="btn primary" id="bConnect" type="button">連線</button>
+      </div>
+      <div class="row">
+        <a class="btn" href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener">🔑 打開我的 GitHub 權杖頁面</a>
+        <a class="btn" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">＋ 建立新權杖</a>
+        <span class="note">在權杖頁面按 📋 複製，再貼到上面</span>
+      </div>
+      <label class="row note" style="gap:8px"><input type="checkbox" id="remember" checked> 在這台電腦記住權杖（只在老師自己的電腦勾選，不要在學生平板上使用）</label>
+      <details>
+        <summary>第一次使用：怎麼取得 GitHub 權杖？（約 2 分鐘，只要做一次）</summary>
+        <ol class="steps">
+          <li>登入 GitHub 後打開 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">建立權杖頁面</a>（Fine-grained token）。</li>
+          <li><b>Token name</b> 填「評量報讀上傳」；<b>Expiration</b> 選 1 年（或自訂）。</li>
+          <li><b>Repository access</b> 選「Only select repositories」，再選 <code id="repoName">sped-exam-reader</code>。</li>
+          <li><b>Permissions → Repository permissions → Contents</b> 改成「Read and write」。其他都不用動。</li>
+          <li>按最下面的 <b>Generate token</b>，複製 <code>github_pat_</code> 開頭的那串字，貼到上面再按「連線」。</li>
+        </ol>
+        <p class="note">這個權杖只能修改這一個存放庫的檔案。權杖不會上傳到任何地方，只存在這台電腦的瀏覽器裡。</p>
+      </details>
+    </div>
+    <div id="connErr" class="errbox" hidden></div>
+    <div id="connOk" class="row" hidden>
+      <span class="note" id="connInfo"></span>
+      <button class="btn sm" id="bLogout" type="button">登出</button>
+    </div>
+  </section>
+
+  <!-- 2. 上傳 -->
+  <section class="card" id="upCard">
+    <h2>上傳考卷</h2>
+    <div class="drop" id="drop" role="button" tabindex="0">
+      📄 把考卷 PDF 拖到這裡
+      <span>或點這裡選擇檔案（可以一次選好幾份）</span>
+    </div>
+    <ul class="queue" id="queue"></ul>
+    <div class="row" id="queueBar" hidden>
+      <button class="btn primary" id="bUpload" type="button">⬆ 全部上傳</button>
+      <button class="btn" id="bClearQ" type="button">清空</button>
+      <span class="note">上傳後約 1～3 分鐘，學生的考卷櫃就會出現（學生可以按「重新整理清單」）。</span>
+    </div>
+    <p class="warn" id="needConn" hidden>請先在上面連線，才能上傳。</p>
+  </section>
+
+  <!-- 3. 已上傳 -->
+  <section class="card">
+    <h2>已上傳的考卷 <span class="pill" id="cnt"></span> <button class="btn sm" id="bRefresh" type="button" style="margin-left:auto">重新整理</button></h2>
+    <p class="note" id="listNote">連線後會顯示網站上的考卷。</p>
+    <div id="list" class="subj"></div>
+    <label class="row note" style="gap:8px"><input type="checkbox" id="qrKey"> QR Code 連結附上 Gemini API Key（學生不用自己輸入；只給自己的學生，不要公開張貼）</label>
+  </section>
+</div>
+
+<input type="file" id="fPick" accept="application/pdf,.pdf" multiple hidden>
+
+<dialog id="qrDlg">
+  <form method="dialog" class="dlg">
+    <h2 id="qrTitle">考卷 QR Code</h2>
+    <div id="qrBox"></div>
+    <div id="qrUrl"></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" type="button" id="bCopy">複製連結</button>
+      <button class="btn" type="button" id="bDl">下載 QR 圖片</button>
+      <button class="btn primary" value="ok">關閉</button>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const SUBJECTS = ['國語','數學','社會','自然','英語','其他'];
+const DIRS = {h:'橫式', v:'直式（國語）', auto:'自動判斷'};
+const ls = {
+  get(k, d, s){ try{ const v = (s ? sessionStorage : localStorage).getItem(k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v, s){ try{ (s ? sessionStorage : localStorage).setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }
+};
+let toastT;
+function toast(m, ms=3500){ const t=$('toast'); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, ms); }
+
+/* ---------- 連線 ---------- */
+const G = { token:'', owner:'', repo:'', branch:'main', files:[], listSha:null, ready:false };
+function guessRepo(){
+  const m = location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i);
+  if(!m) return 'liniris1023/sped-exam-reader';
+  const seg = location.pathname.split('/').filter(Boolean);
+  const repo = (seg.length && !/\.[a-z0-9]+$/i.test(seg[0])) ? decodeURIComponent(seg[0]) : m[1]+'.github.io';
+  return m[1]+'/'+repo;
+}
+async function gh(path, opt={}){
+  const r = await fetch('https://api.github.com'+path, {
+    ...opt,
+    headers: { 'Accept':'application/vnd.github+json', 'Authorization':'Bearer '+G.token, 'X-GitHub-Api-Version':'2022-11-28', ...(opt.body ? {'Content-Type':'application/json'} : {}) }
+  });
+  if(r.status === 204) return null;
+  let j = null; try{ j = await r.json(); }catch(e){}
+  if(!r.ok){
+    const e = new Error((j && j.message) || ('HTTP '+r.status)); e.status = r.status; throw e;
+  }
+  return j;
+}
+function encPath(p){ return p.split('/').map(encodeURIComponent).join('/'); }
+function bufToB64(buf){
+  const u = new Uint8Array(buf); let s = '';
+  for(let i=0; i<u.length; i+=0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i+0x8000));
+  return btoa(s);
+}
+function textToB64(t){ return bufToB64(new TextEncoder().encode(t)); }
+function b64ToText(b){ const s = atob(b.replace(/\s/g,'')); const u = new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return new TextDecoder().decode(u); }
+
+function showErr(title, tips){
+  const b = $('connErr'); b.innerHTML = '';
+  const t = document.createElement('b'); t.textContent = '✗ '+title; b.appendChild(t);
+  const ol = document.createElement('ol'); tips.forEach(x => { const li = document.createElement('li'); li.textContent = x; ol.appendChild(li); }); b.appendChild(ol);
+  b.hidden = false;
+}
+function setPill(state, text){
+  const p = $('connPill'); p.className = 'pill'+(state ? ' '+state : '');
+  p.innerHTML = '<span class="dot"></span>'; p.append(text);
+}
+async function connect(silent){
+  const repo = $('repo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,'');
+  const token = $('token').value.replace(/\s+/g,'');
+  $('token').value = token;
+  $('connErr').hidden = true;
+  if(!/^[^/\s]+\/[^/\s]+$/.test(repo)){ showErr('存放庫格式不對', ['要寫成「帳號/存放庫」，例如 liniris1023/sped-exam-reader']); return; }
+  if(!token){ if(!silent) showErr('還沒有貼上權杖', ['照下面「怎麼取得 GitHub 權杖」的步驟產生一個，再貼上。']); return; }
+  if(!/^(github_pat_|ghp_)/.test(token) || (token.startsWith('github_pat_') && token.length < 80) || (token.startsWith('ghp_') && token.length < 40)){
+    setPill('bad', '連線失敗');
+    showErr('權杖看起來不完整（目前只有 '+token.length+' 個字）', [
+      '正確的權杖是 github_pat_ 開頭、大約 90 個字的一長串。',
+      '產生權杖後，GitHub 畫面上會出現那串字，旁邊有一個「複製」圖示 📋，請按那個圖示來複製，不要用手選取。',
+      '這串字只會顯示一次。如果頁面已經關掉，請回到權杖頁面按「Regenerate token」重新產生。'
+    ]);
+    return;
+  }
+  [G.owner, G.repo] = repo.split('/'); G.token = token;
+  setPill('', '連線中…');
+  try{
+    const info = await gh('/repos/'+G.owner+'/'+G.repo);
+    if(info.permissions && info.permissions.push === false) throw Object.assign(new Error('nopush'), {status:403});
+    G.branch = info.default_branch || 'main';
+    G.ready = true;
+    const remember = $('remember').checked;
+    ls.del('erh_t_token');
+    ls.set('erh_t_token', token, !remember);
+    ls.set('erh_t_repo', repo);
+    setPill('ok', '已連線');
+    $('connForm').hidden = true; $('connOk').hidden = false;
+    $('connInfo').textContent = '已連線到 '+repo+'（'+G.branch+'）。考卷會放在 tests 資料夾。';
+    $('needConn').hidden = true;
+    await refreshList();
+  }catch(e){
+    G.ready = false;
+    setPill('bad', '連線失敗');
+    if(e.status===401) showErr('權杖不正確或已過期', ['請到 GitHub 權杖頁面重新產生一個，再按「複製」圖示貼上。']);
+    else if(e.status===404){
+      // 不用權杖查一次：存放庫存在 → 權杖沒有開放這個存放庫
+      let exists = false;
+      try{ exists = (await fetch('https://api.github.com/repos/'+G.owner+'/'+G.repo)).ok; }catch(_){}
+      if(exists) showErr('權杖沒有開放「'+G.repo+'」這個存放庫', [
+        '到 GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens，點這個權杖。',
+        'Repository access 改成「Only select repositories」，並選擇 '+G.repo+'。',
+        'Repository permissions 裡的 Contents 要設成「Read and write」，按 Update 儲存後再連線。'
+      ]);
+      else showErr('找不到「'+G.owner+'/'+G.repo+'」', ['請確認帳號和存放庫名稱拼字正確（大小寫、連字號都要一樣）。']);
+    }
+    else if(e.status===403) showErr('權杖沒有寫入權限', ['到這個權杖的設定，把 Repository permissions → Contents 改成「Read and write」，按 Update 儲存後再連線。']);
+    else showErr('連不上 GitHub', ['請檢查網路。學校網路如果擋 api.github.com，可以改用手機熱點試試。', '錯誤訊息：'+e.message]);
+  }
+}
+$('bConnect').addEventListener('click', () => connect(false));
+$('token').addEventListener('keydown', e => { if(e.key==='Enter') connect(false); });
+$('bLogout').addEventListener('click', () => {
+  ls.del('erh_t_token'); G.ready = false; G.token = ''; $('token').value = '';
+  $('connForm').hidden = false; $('connOk').hidden = true; setPill('', '尚未連線');
+  $('list').innerHTML = ''; $('cnt').textContent = ''; $('listNote').hidden = false; $('listNote').textContent = '連線後會顯示網站上的考卷。';
+});
+$('repo').addEventListener('input', () => { $('repoName').textContent = ($('repo').value.split('/')[1] || 'sped-exam-reader'); });
+
+/* ---------- 清單（tests/list.json） ---------- */
+// list.json 記錄每份考卷的名稱、科目、排列方式，學生端會讀它
+async function readListJson(){
+  try{
+    const j = await gh('/repos/'+G.owner+'/'+G.repo+'/contents/tests/list.json?ref='+encodeURIComponent(G.branch));
+    G.listSha = j.sha;
+    const d = JSON.parse(b64ToText(j.content));
+    return Array.isArray(d) ? d : (d.files || []);
+  }catch(e){ if(e.status === 404){ G.listSha = null; return []; } throw e; }
+}
+async function refreshList(){
+  if(!G.ready) return;
+  $('listNote').hidden = false; $('listNote').textContent = '讀取中…';
+  try{
+    const [tree, meta] = await Promise.all([
+      gh('/repos/'+G.owner+'/'+G.repo+'/git/trees/'+encodeURIComponent(G.branch)+'?recursive=1'),
+      readListJson()
+    ]);
+    const metaBy = new Map(meta.map(m => [typeof m==='string' ? m : (m.path||m.file), m]));
+    G.blobs = new Map((tree.tree||[]).filter(n => n.type==='blob').map(n => [n.path, n.sha]));
+    G.files = (tree.tree||[]).filter(n => n.type==='blob' && /^tests\/.+\.pdf$/i.test(n.path)).map(n => {
+      const m = metaBy.get(n.path) || {};
+      const parts = n.path.replace(/^tests\//,'').split('/'); const base = parts.pop();
+      return { path:n.path, sha:n.sha, name: m.name || base.replace(/\.pdf$/i,''), subject: m.subject || parts.join('/') || '其他', dir: m.dir || (parts[0]==='國語' ? 'v' : 'h'), added: m.added || 0 };
+    });
+    renderList();
+    // 清單和實際檔案不一致（例如直接在 GitHub 上傳過檔案）就自動更新 list.json
+    const same = meta.length === G.files.length && G.files.every(f => metaBy.has(f.path));
+    if(!same) await saveListJson('更新考卷清單');
+  }catch(e){
+    $('listNote').textContent = '讀取失敗：'+e.message;
+  }
+}
+async function saveListJson(msg){
+  const data = { updated: new Date().toISOString(), files: G.files.map(({path,name,subject,dir,added}) => ({path,name,subject,dir,added})) };
+  const body = { message: msg || '更新考卷清單', content: textToB64(JSON.stringify(data, null, 1)), branch: G.branch };
+  if(G.listSha) body.sha = G.listSha;
+  try{
+    const r = await gh('/repos/'+G.owner+'/'+G.repo+'/contents/tests/list.json', {method:'PUT', body: JSON.stringify(body)});
+    G.listSha = r.content.sha;
+  }catch(e){
+    if(e.status === 409 || e.status === 422){ // sha 過期：重新讀一次再存
+      await readListJson(); body.sha = G.listSha;
+      const r = await gh('/repos/'+G.owner+'/'+G.repo+'/contents/tests/list.json', {method:'PUT', body: JSON.stringify(body)});
+      G.listSha = r.content.sha;
+    } else throw e;
+  }
+}
+function sortFiles(){
+  G.files.sort((a,b) => {
+    const ia = SUBJECTS.indexOf(a.subject.split('/')[0]), ib = SUBJECTS.indexOf(b.subject.split('/')[0]);
+    return ((ia<0?99:ia) - (ib<0?99:ib)) || a.subject.localeCompare(b.subject,'zh-Hant') || a.name.localeCompare(b.name,'zh-Hant',{numeric:true});
+  });
+}
+function renderList(){
+  sortFiles();
+  const box = $('list'); box.innerHTML = '';
+  $('cnt').textContent = G.files.length ? G.files.length+' 份' : '';
+  if(!G.files.length){ $('listNote').hidden = false; $('listNote').textContent = '還沒有考卷，從上面上傳第一份吧。'; return; }
+  $('listNote').hidden = true;
+  let cur = null, ul = null;
+  G.files.forEach(f => {
+    if(f.subject !== cur){
+      cur = f.subject;
+      const h = document.createElement('h3'); h.textContent = '📁 '+cur; box.appendChild(h);
+      ul = document.createElement('ul'); box.appendChild(ul);
+    }
+    const li = document.createElement('li'); li.className = 'ti';
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = '📄 '+f.name;
+    const sel = document.createElement('select'); sel.setAttribute('aria-label','排列方式');
+    Object.entries(DIRS).forEach(([k,v]) => { const o = document.createElement('option'); o.value=k; o.textContent=v; sel.appendChild(o); });
+    sel.value = f.dir;
+    sel.addEventListener('change', async () => {
+      const old = f.dir; f.dir = sel.value; sel.disabled = true;
+      try{ await saveListJson('設定「'+f.name+'」排列方式'); toast('已改成'+DIRS[f.dir]+'，學生端幾分鐘後生效。'); }
+      catch(e){ f.dir = old; sel.value = old; toast('儲存失敗：'+e.message); }
+      sel.disabled = false;
+    });
+    const qr = mk('QR', '', () => showQr(f));
+    const view = document.createElement('a'); view.className = 'btn sm'; view.textContent = '預覽'; view.href = studentUrl(f, false); view.target = '_blank'; view.rel = 'noopener';
+    const edit = document.createElement('a'); edit.className = 'btn sm primary'; edit.textContent = '✏️ 編輯報讀'; edit.href = studentUrl(f, false) + '&edit=1'; edit.target = '_blank';
+    edit.title = '檢查辨識文字、調整分段與題型、設定單題是否報讀，儲存後同步給學生';
+    if(G.blobs && G.blobs.has(f.path + '.json')) nm.append(' ✓已調整');
+    let armT;
+    const del = mk('刪除', 'del', async () => {
+      if(!del.classList.contains('arm')){
+        del.classList.add('arm'); del.textContent = '確定刪除？';
+        clearTimeout(armT); armT = setTimeout(() => { del.classList.remove('arm'); del.textContent = '刪除'; }, 3000);
+        return;
+      }
+      del.disabled = true; del.textContent = '刪除中…';
+      try{
+        await gh('/repos/'+G.owner+'/'+G.repo+'/contents/'+encPath(f.path), {method:'DELETE', body: JSON.stringify({message:'刪除考卷 '+f.name, sha:f.sha, branch:G.branch})});
+        await delJson(f.path);
+        G.files = G.files.filter(x => x !== f);
+        await saveListJson('刪除考卷 '+f.name);
+        renderList(); toast('已刪除「'+f.name+'」。');
+      }catch(e){ toast('刪除失敗：'+e.message); del.disabled = false; del.textContent = '刪除'; del.classList.remove('arm'); }
+    });
+    li.append(nm, sel, edit, view, qr, del);
+    ul.appendChild(li);
+  });
+}
+async function delJson(pdfPath){
+  const jp = pdfPath + '.json', sha = G.blobs && G.blobs.get(jp);
+  if(!sha) return false;
+  try{
+    await gh('/repos/'+G.owner+'/'+G.repo+'/contents/'+encPath(jp), {method:'DELETE', body: JSON.stringify({message:'清除報讀設定 '+jp, sha, branch:G.branch})});
+    G.blobs.delete(jp); return true;
+  }catch(e){ console.warn(e); return false; }
+}
+function mk(label, cls, fn){ const b = document.createElement('button'); b.type='button'; b.className='btn sm '+(cls||''); b.textContent=label; b.addEventListener('click', fn); return b; }
+$('bRefresh').addEventListener('click', () => G.ready ? refreshList() : toast('請先連線。'));
+
+/* ---------- QR ---------- */
+function studentBase(){ return location.href.replace(/[?#].*$/,'').replace(/teacher\.html$/,''); }
+function studentUrl(f, withKey){
+  const p = new URLSearchParams();
+  p.set('pdf', f.path); p.set('dir', f.dir);
+  const eng = ls.get('erh_engine', null); if(eng) p.set('engine', eng);
+  const zy = ls.get('erh_skipZy', null); if(zy !== null) p.set('zy', zy ? '1' : '0');
+  const mt = ls.get('erh_mathWords', null); if(mt !== null) p.set('math', mt ? '1' : '0');
+  const ns = ls.get('erh_noSound', null); if(ns !== null) p.set('ns', ns ? '1' : '0');
+  const nsh = ls.get('erh_noShape2', null); if(nsh !== null) p.set('nsh', nsh ? '1' : '0');
+  const nf = ls.get('erh_noFill', null); if(nf !== null) p.set('nf', nf ? '1' : '0');
+  const key = ls.get('erh_key', ''); if(withKey && key) p.set('key', key);
+  return studentBase() + '?' + p.toString();
+}
+let qrFile = null;
+function showQr(f){
+  qrFile = f;
+  const withKey = $('qrKey').checked;
+  if(withKey && !ls.get('erh_key','')) toast('這台電腦的學生端還沒設定 Gemini Key，連結不會附上 Key。', 5000);
+  const url = studentUrl(f, withKey);
+  $('qrTitle').textContent = f.name;
+  $('qrUrl').textContent = url;
+  const box = $('qrBox'); box.innerHTML = '';
+  try{ new QRCode(box, {text:url, width:240, height:240, correctLevel: QRCode.CorrectLevel.M}); }catch(e){ box.textContent = 'QR Code 產生失敗，請複製連結。'; }
+  $('qrDlg').showModal();
+}
+$('bCopy').addEventListener('click', async () => {
+  try{ await navigator.clipboard.writeText($('qrUrl').textContent); toast('已複製連結。'); }
+  catch(e){ const r=document.createRange(); r.selectNodeContents($('qrUrl')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('請按 Ctrl+C 複製選取的連結。'); }
+});
+$('bDl').addEventListener('click', () => {
+  const src = $('qrBox').querySelector('canvas'); if(!src) return;
+  // 加上考卷名稱，方便印出來貼在教室
+  const pad = 24, title = qrFile ? qrFile.name : '';
+  const c = document.createElement('canvas'); c.width = src.width + pad*2; c.height = src.height + pad*2 + 50;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,c.width,c.height);
+  g.drawImage(src, pad, pad);
+  g.fillStyle = '#1c2a33'; g.font = '24px "Noto Sans TC", "Microsoft JhengHei", sans-serif'; g.textAlign = 'center';
+  g.fillText(title, c.width/2, src.height + pad + 36, c.width - 20);
+  const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'QR-'+(title||'考卷')+'.png';
+  document.body.appendChild(a); a.click(); a.remove();
+});
+
+/* ---------- 上傳 ---------- */
+const Q = []; // {file, name, subject, dir, el, status}
+function cleanName(n){ return n.replace(/\.pdf$/i,'').replace(/[\\/:*?"<>|#%]+/g,' ').replace(/\s+/g,' ').trim().slice(0,60) || '考卷'; }
+function guessSubject(n){
+  if(/國語|國文|生字|課文|注音|造句/.test(n)) return '國語';
+  if(/數學|算|乘法|加法|減法|除法|分數|公分/.test(n)) return '數學';
+  if(/社會/.test(n)) return '社會';
+  if(/自然|科學/.test(n)) return '自然';
+  if(/英|English/i.test(n)) return '英語';
+  return ls.get('erh_t_lastSubj', '國語');
+}
+function addFiles(files){
+  const pdfs = [...files].filter(f => f.type==='application/pdf' || /\.pdf$/i.test(f.name));
+  if(!pdfs.length){ toast('只能上傳 PDF 檔。照片考卷可以先用手機掃描 App 存成 PDF。', 5000); return; }
+  pdfs.forEach(file => {
+    const subject = guessSubject(file.name);
+    const it = { file, name: cleanName(file.name), subject, dir: subject==='國語' ? 'v' : 'h', status:'' };
+    Q.push(it); drawItem(it);
+  });
+  $('queueBar').hidden = !Q.length;
+  if(!G.ready) $('needConn').hidden = false;
+}
+function drawItem(it){
+  const li = document.createElement('li'); li.className = 'qi';
+  const l1 = document.createElement('label'); l1.textContent = '考卷名稱';
+  const n = document.createElement('input'); n.type = 'text'; n.value = it.name; n.addEventListener('input', () => it.name = n.value);
+  l1.appendChild(n);
+  const l2 = document.createElement('label'); l2.textContent = '科目';
+  const s = document.createElement('select');
+  SUBJECTS.forEach(x => { const o=document.createElement('option'); o.value=o.textContent=x; s.appendChild(o); });
+  s.value = it.subject;
+  const l3 = document.createElement('label'); l3.textContent = '排列方式';
+  const d = document.createElement('select');
+  Object.entries(DIRS).forEach(([k,v]) => { const o=document.createElement('option'); o.value=k; o.textContent=v; d.appendChild(o); });
+  d.value = it.dir;
+  s.addEventListener('change', () => { it.subject = s.value; ls.set('erh_t_lastSubj', s.value); if(s.value==='國語'){ it.dir='v'; d.value='v'; } else if(it.dir==='v'){ it.dir='h'; d.value='h'; } });
+  d.addEventListener('change', () => it.dir = d.value);
+  l2.appendChild(s); l3.appendChild(d);
+  const rm = mk('移除', '', () => { const i = Q.indexOf(it); if(i>=0) Q.splice(i,1); li.remove(); $('queueBar').hidden = !Q.length; });
+  const st = document.createElement('div'); st.className = 'st';
+  st.textContent = (it.file.size/1048576).toFixed(1)+' MB'+(it.file.size > 25*1048576 ? '・檔案太大，建議壓縮到 25 MB 以下' : '');
+  li.append(l1, l2, l3, rm, st);
+  it.el = li; it.st = st; it.inputs = [n, s, d, rm];
+  $('queue').appendChild(li);
+}
+function setSt(it, cls, html){ it.st.className = 'st '+(cls||''); it.st.innerHTML = html; }
+
+let uploading = false;
+$('bUpload').addEventListener('click', async () => {
+  if(!G.ready){ $('needConn').hidden = false; $('connCard').scrollIntoView({behavior:'smooth'}); toast('請先連線到網站。'); return; }
+  if(uploading) return;
+  const todo = Q.filter(it => it.status !== 'done');
+  if(!todo.length) return;
+  uploading = true; $('bUpload').disabled = true;
+  let ok = 0;
+  for(const it of todo){
+    it.inputs.forEach(x => x.disabled = true);
+    setSt(it, '', '<span class="spin"></span>上傳中…');
+    try{
+      const name = cleanName(it.name);
+      const path = 'tests/'+it.subject+'/'+name+'.pdf';
+      const exist = G.files.find(f => f.path === path);
+      const buf = await it.file.arrayBuffer();
+      const body = { message: (exist ? '更新考卷 ' : '上傳考卷 ')+name, content: bufToB64(buf), branch: G.branch };
+      if(exist) body.sha = exist.sha;
+      const r = await gh('/repos/'+G.owner+'/'+G.repo+'/contents/'+encPath(path), {method:'PUT', body: JSON.stringify(body)});
+      const rec = { path, sha: r.content.sha, name, subject: it.subject, dir: it.dir, added: Date.now() };
+      if(exist) Object.assign(exist, rec); else G.files.push(rec);
+      it.status = 'done'; ok++;
+      let cleared = false;
+      if(exist) cleared = await delJson(path);   // 換了新考卷，舊的報讀設定不適用
+      setSt(it, 'ok', '✓ 已上傳'+(exist ? '（取代同名考卷'+(cleared ? '，舊的報讀調整已清除' : '')+'）' : ''));
+    }catch(e){
+      it.inputs.forEach(x => x.disabled = false);
+      setSt(it, 'bad', '✗ 上傳失敗：'+(e.status===422 && /sha/.test(e.message) ? '同名檔案剛被修改過，請按「重新整理」後再上傳' : e.message));
+    }
+  }
+  if(ok){
+    try{ await saveListJson('更新考卷清單（上傳 '+ok+' 份）'); }catch(e){ toast('考卷已上傳，但清單更新失敗：'+e.message, 6000); }
+    renderList();
+    toast('上傳完成 '+ok+' 份。約 1～3 分鐘後學生端就看得到。', 5000);
+  }
+  uploading = false; $('bUpload').disabled = false;
+});
+$('bClearQ').addEventListener('click', () => {
+  if(uploading) return;
+  Q.splice(0); $('queue').innerHTML = ''; $('queueBar').hidden = true;
+});
+
+const drop = $('drop');
+drop.addEventListener('click', () => $('fPick').click());
+drop.addEventListener('keydown', e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); $('fPick').click(); } });
+$('fPick').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+['dragenter','dragover'].forEach(ev => document.addEventListener(ev, e => { if(e.dataTransfer && [...e.dataTransfer.types].includes('Files')){ e.preventDefault(); drop.classList.add('over'); } }));
+['dragleave','dragend'].forEach(ev => document.addEventListener(ev, e => { if(!e.relatedTarget) drop.classList.remove('over'); }));
+document.addEventListener('drop', e => { if(!e.dataTransfer || !e.dataTransfer.files.length) return; e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); });
+
+/* ---------- 開始 ---------- */
+$('repo').value = ls.get('erh_t_repo', '') || guessRepo();
+$('repoName').textContent = $('repo').value.split('/')[1] || 'sped-exam-reader';
+$('toStudent').href = studentBase();
+const saved = ls.get('erh_t_token', '') || ls.get('erh_t_token', '', true);
+if(saved){ $('token').value = saved; connect(true); }
+</script>
+</body>
+</html>

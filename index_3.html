@@ -1,0 +1,1866 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>評量報讀小幫手</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* 版面：上方工具列 + 中間考卷（像放在桌上的紙）+ 下方固定朗讀按鈕列。報讀中的題目用螢光筆黃標示。 */
+:root{
+  --desk:#e6ecef; --paper:#ffffff; --ink:#1c2a33; --muted:#5a6a74; --line:#cfd8dd;
+  --accent:#0f7b6c; --accent-ink:#ffffff; --accent-soft:#d6efe9;
+  --mark:rgba(255,212,59,.45); --mark-edge:#e0a800; --danger:#b3361f;
+  --box:rgba(15,123,108,.10); --box-edge:rgba(15,123,108,.55);
+  --font-display:"Huninn","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --r:14px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --desk:#11181d; --paper:#1a242b; --ink:#e5edf1; --muted:#97a7b0; --line:#2c3a43;
+  --accent:#3cc2a9; --accent-ink:#0b1a17; --accent-soft:#1d3b36;
+  --mark:rgba(255,212,59,.35); --mark-edge:#ffd43b; --danger:#ff8a70;
+  --box:rgba(60,194,169,.10); --box-edge:rgba(60,194,169,.6);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --desk:#11181d; --paper:#1a242b; --ink:#e5edf1; --muted:#97a7b0; --line:#2c3a43;
+  --accent:#3cc2a9; --accent-ink:#0b1a17; --accent-soft:#1d3b36;
+  --mark:rgba(255,212,59,.35); --mark-edge:#ffd43b; --danger:#ff8a70;
+  --box:rgba(60,194,169,.10); --box-edge:rgba(60,194,169,.6);
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--desk);color:var(--ink);font:16px/1.6 var(--font-body);
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));
+  padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--mark-edge);outline-offset:2px}
+[hidden]{display:none!important}
+
+header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding-block:14px 8px;max-width:1100px;margin:0 auto}
+.brand{font-family:var(--font-display);font-size:1.6rem;letter-spacing:.04em;margin:0;flex:1 1 auto;min-width:0}
+.brand small{display:block;font-family:var(--font-body);font-size:.8rem;color:var(--muted);letter-spacing:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:0 16px;border-radius:999px;border:2px solid var(--line);background:var(--paper);font-family:var(--font-display);font-size:1.05rem;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.on{background:var(--mark);border-color:var(--mark-edge)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.icon{width:48px;padding:0}
+
+.opts{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;max-width:1100px;margin:0 auto;padding-block:6px 12px;color:var(--muted);font-size:.95rem}
+.seg{display:inline-flex;border:2px solid var(--line);border-radius:999px;overflow:hidden;background:var(--paper)}
+.seg button{border:0;background:transparent;min-height:42px;padding:0 14px;font-family:var(--font-display);font-size:1rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.opts label{display:inline-flex;align-items:center;gap:8px}
+.opts select{min-height:42px;border-radius:10px;border:2px solid var(--line);background:var(--paper);padding:0 8px;max-width:220px}
+.opts input[type=range]{width:120px;accent-color:var(--accent)}
+.rate-val{font-variant-numeric:tabular-nums;min-width:3.2em;color:var(--ink)}
+
+main{max-width:1100px;margin:0 auto}
+.empty{background:var(--paper);border-radius:var(--r);padding:28px 22px;display:grid;gap:18px;border:2px dashed var(--line)}
+.empty h2{font-family:var(--font-display);font-weight:400;font-size:1.5rem;margin:0;text-wrap:balance}
+.empty .big{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.empty .big .btn{min-height:84px;font-size:1.3rem;border-radius:var(--r)}
+.empty ol{margin:0;padding-left:1.4em;color:var(--muted);max-width:65ch}
+.empty ol li{margin:.2em 0}
+kbd{font-family:var(--font-display);background:var(--accent-soft);border-radius:6px;padding:0 6px;color:var(--ink)}
+
+.paper{position:relative;background:var(--paper);border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.08);user-select:none;-webkit-user-select:none}
+.paper canvas{display:block;width:100%;height:auto;background:#fff}
+.overlay{position:absolute;inset:0}
+.overlay.selecting{cursor:crosshair;touch-action:none;background:rgba(0,0,0,.04)}
+.blk{position:absolute;border:2px solid transparent;background:transparent;border-radius:6px;padding:0;cursor:pointer;transition:background .15s}
+.blk:hover{background:rgba(255,212,59,.22)}
+.blk.reading{background:var(--mark);border-color:var(--mark-edge);border-width:3px}
+.overlay.editing .blk.head{border-color:var(--accent);background:rgba(15,123,108,.07)}
+.overlay.editing .blk.fix .n{background:var(--mark-edge);color:#1c2a33;font-weight:700}
+.blk.mute{border:2px dashed var(--line);background:transparent;cursor:default;pointer-events:none}
+.blk.mute .n{background:var(--line);color:var(--muted)}
+.blk.cue{border-color:var(--mark-edge);border-width:3px;animation:cue 1.3s ease-in-out infinite}
+@keyframes cue{50%{box-shadow:0 0 0 7px rgba(224,168,0,.35)}}
+@media (prefers-reduced-motion:reduce){.blk.cue{animation:none;box-shadow:0 0 0 5px rgba(224,168,0,.35)}}
+.stepbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 10px;padding:12px 14px;border-radius:12px;background:var(--mark);font-family:var(--font-display);font-size:1.1rem}
+.stepbar span{flex:1 1 260px;min-width:0}
+.texts h2{font-family:var(--font-display);font-weight:400;font-size:1.25rem;margin:0}
+.edhead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 0 8px}
+.edhead .note{flex:1 1 240px}
+.texts li.ed{display:grid;gap:6px;padding:10px;border-radius:12px;background:var(--desk)}
+.texts li.ed.head{background:var(--accent-soft)}
+.texts li.ed.mute .t{color:var(--muted)}
+.texts li.ed.off .t{text-decoration:line-through;text-decoration-color:var(--danger)}
+.texts li.ed.reading{outline:3px solid var(--mark-edge)}
+.edtop,.edacts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.edtop select{min-height:38px;border-radius:10px;border:2px solid var(--line);background:var(--paper)}
+.chip{font-family:var(--font-display);background:var(--paper);border-radius:999px;padding:2px 10px;font-size:.92rem}
+.texts .t{display:block;background:var(--paper);border-radius:8px;padding:6px 10px;min-height:2.2em;font-size:1.05rem}
+.lock{color:var(--muted);font-size:.9rem}
+.warn{color:var(--danger);font-size:.88rem}
+.overlay.editing .blk.noread{border-style:dashed;border-color:var(--danger);background:repeating-linear-gradient(45deg,rgba(179,54,31,.10) 0 6px,transparent 6px 12px)}
+.overlay.editing .blk.noread .n{background:var(--danger)}
+.overlay.editing .blk.noread.reading{background:repeating-linear-gradient(45deg,rgba(179,54,31,.22) 0 6px,transparent 6px 12px)}
+.blk .n{position:absolute;top:-2px;right:calc(100% + 2px);min-width:26px;height:26px;padding:0 5px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:14px/26px var(--font-display);text-align:center}
+.blk.v .n{right:auto;left:50%;top:auto;bottom:calc(100% + 2px);transform:translateX(-50%)}
+.blk .n{min-width:30px;height:30px;line-height:30px;font-size:14px;white-space:nowrap;padding:0 7px;border-radius:15px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.blk.mute .n{display:none}
+.blk .n{top:50%;transform:translateY(-50%)}
+.blk.v .n{top:auto;transform:translateX(-50%)}
+.blk .n,.blk.head .n{z-index:2}
+.blk .n .short{display:none}
+.overlay.compact .blk .n{min-width:22px;height:22px;line-height:22px;font-size:12px;padding:0 4px;border-radius:11px}
+.overlay.compact .blk .n .full{display:none}
+.overlay.compact .blk .n .short{display:inline}
+.overlay.compact .blk.mute .n{display:none}
+.overlay.selecting .blk{display:none}
+.blk .n{display:none!important}
+.blk.mute{display:none}
+.overlay.editing .blk{border-color:var(--box-edge)}
+.overlay.editing .blk .n{display:inline-block!important}
+.overlay.editing .blk.mute{display:block;border:2px dashed var(--line)}
+.selrect{position:absolute;border:3px dashed var(--danger);background:rgba(255,212,59,.18);pointer-events:none;border-radius:4px}
+.hint{display:flex;gap:10px;align-items:center;margin:0 0 10px;padding:10px 14px;border-radius:12px;background:var(--mark);color:var(--ink);font-family:var(--font-display)}
+
+.texts{margin-top:16px;background:var(--paper);border-radius:var(--r);padding:6px 16px 14px}
+.texts ol{margin:0;padding-left:1.8em;display:grid;gap:6px}
+.texts li{padding:6px 8px;border-radius:8px;line-height:1.7}
+.texts .t{outline:none}
+.texts li.reading{background:var(--mark)}
+.texts .t:focus{box-shadow:0 0 0 2px var(--accent);border-radius:4px}
+.texts p{color:var(--muted);font-size:.9rem;margin:8px 0 0}
+
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--paper);border-top:1px solid var(--line);
+  padding:10px max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.dock .in{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+.pg{font-variant-numeric:tabular-nums;font-family:var(--font-display);min-width:5.5em;text-align:center}
+.dock .sp{flex:1 1 0}
+@media (max-width:620px){.dock .sp{display:none}.dock .in{gap:6px}.dock .btn{min-height:44px;padding:0 10px;font-size:.98rem}.dock .btn.icon{width:44px}.pg{min-width:auto;font-size:.9rem}.brand{font-size:1.35rem}}
+
+.busy{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(10,20,25,.35)}
+.busy .card{background:var(--paper);border-radius:var(--r);padding:22px 26px;display:flex;gap:14px;align-items:center;max-width:min(420px,90vw);font-family:var(--font-display);font-size:1.15rem}
+.spin{width:30px;height:30px;border-radius:50%;border:4px solid var(--accent-soft);border-top-color:var(--accent);animation:sp 1s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:12px;max-width:min(560px,92vw);font-size:.95rem}
+
+dialog{border:0;border-radius:var(--r);background:var(--paper);color:var(--ink);width:min(640px,94vw);max-height:90vh;padding:0}
+dialog::backdrop{background:rgba(10,20,25,.45)}
+.dlg{padding:20px 22px;display:grid;gap:16px}
+.dlg h2{font-family:var(--font-display);font-weight:400;margin:0;font-size:1.4rem}
+.dlg h3{margin:0 0 6px;font-size:1rem}
+.dlg section{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:14px}
+.dlg label{display:flex;gap:8px;align-items:flex-start}
+.dlg input[type=text],.dlg input[type=password]{width:100%;min-height:42px;border-radius:10px;border:2px solid var(--line);background:var(--desk);padding:0 10px}
+.dlg .note{color:var(--muted);font-size:.88rem;margin:0}
+.dlg .warn{color:var(--danger);font-size:.88rem;margin:0}
+.dlg .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.qr{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+.qr #qrBox{background:#fff;padding:8px;border-radius:8px;line-height:0}
+.qr code{word-break:break-all;font-size:.8rem;background:var(--desk);padding:6px 8px;border-radius:8px;display:block;flex:1 1 220px;min-width:0}
+a{color:var(--accent)}
+
+/* 考卷櫃 */
+.lib{display:grid;gap:16px}
+.drop{background:var(--paper);border:3px dashed var(--line);border-radius:var(--r);padding:30px 18px;display:grid;gap:6px;place-items:center;text-align:center;cursor:pointer;font-family:var(--font-display);font-size:1.35rem;transition:background .15s,border-color .15s}
+.drop span{font-family:var(--font-body);font-size:.95rem;color:var(--muted)}
+.drop.over,.drop:hover{border-color:var(--accent);background:var(--accent-soft)}
+.savechk{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:.95rem}
+.savechk input{width:20px;height:20px;accent-color:var(--accent)}
+.shelves{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px}
+.shelf{background:var(--paper);border-radius:var(--r);padding:16px 18px;display:grid;gap:10px;align-content:start;min-width:0}
+.shelf h2{font-family:var(--font-display);font-weight:400;font-size:1.25rem;margin:0;display:flex;align-items:center;gap:8px}
+.shelf h2 .cnt{font-family:var(--font-body);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.shelf ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.shelf li{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--desk);min-width:0}
+.shelf li.grp{background:none;padding:8px 2px 0;color:var(--muted);font-size:.9rem;font-weight:700}
+.fname{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;font-size:1.05rem;line-height:1.4}
+.fmeta{display:block;color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+.mini{min-height:40px;padding:0 12px;border-radius:999px;border:2px solid var(--line);background:var(--paper);font-family:var(--font-display);font-size:.98rem;white-space:nowrap;flex:none}
+.mini.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.mini.del.arm{background:var(--danger);border-color:var(--danger);color:var(--paper)}
+.note{color:var(--muted);font-size:.9rem;margin:0}
+.howto{background:var(--paper);border-radius:var(--r);padding:6px 18px 12px}
+.howto summary{cursor:pointer;padding:10px 0;font-family:var(--font-display);font-size:1.05rem}
+.howto ol{margin:0;padding-left:1.4em;color:var(--muted);max-width:65ch}
+.howto li{margin:.25em 0}
+.howto code{background:var(--desk);border-radius:6px;padding:0 6px}
+
+/* 考卷檢視列 */
+.nowbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.now{flex:1 1 200px;min-width:0;font-family:var(--font-display);font-size:1.15rem;overflow-wrap:anywhere}
+.zoom{display:inline-flex;align-items:center;gap:4px}
+.zoom .val{font-variant-numeric:tabular-nums;min-width:3.4em;text-align:center}
+.paperWrap{overflow:auto;padding:30px 0 4px 52px;min-width:0}
+@media (max-width:640px){.paperWrap{padding-left:30px}}
+.workarea{display:grid;gap:14px;align-items:start}
+@media (min-width:900px){.workarea{grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr)}
+  .qpanel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px);max-height:calc(100vh - 150px);overflow:auto}}
+.qpanel{background:var(--paper);border-radius:var(--r);padding:12px;display:grid;gap:8px;min-width:0}
+.qpanel h2{font-family:var(--font-display);font-weight:400;font-size:1.2rem;margin:2px 4px}
+.qpanel ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.qcard{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:8px 12px 8px 8px;border-radius:14px;border:2px solid var(--line);background:var(--desk);text-align:left;font:inherit;color:inherit;cursor:pointer}
+.qcard .spk{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-size:1.6rem}
+.qcard .lbl{display:grid;gap:2px;min-width:0}
+.qcard .lbl b{font-family:var(--font-display);font-weight:400;font-size:1.2rem}
+.qcard .lbl span{color:var(--muted);font-size:.92rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.qcard.head{background:var(--accent-soft);border-color:var(--accent)}
+.qcard.head .lbl b{font-size:1.25rem}
+.qcard.fix .spk{background:var(--mark-edge);color:#1c2a33}
+.qcard.off .spk{background:var(--danger);color:var(--paper)}
+.qcard.reading{background:var(--mark);border-color:var(--mark-edge);border-width:3px}
+.qcard.cue{border-color:var(--mark-edge);border-width:3px;animation:cue 1.3s ease-in-out infinite}
+.qcard:active{transform:scale(.98)}
+.qmute{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;border:2px dashed var(--line);color:var(--muted)}
+.qitem{margin-left:18px}
+.paper{margin:0 auto}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<header class="top">
+  <h1 class="brand">評量報讀小幫手<small>拍考卷或開 PDF，點題目就唸給你聽</small></h1>
+  <button class="btn primary" id="bCam" type="button">📷 拍考卷</button>
+  <button class="btn" id="bLib" type="button">📚 考卷櫃</button>
+  <button class="btn icon" id="bSet" type="button" aria-label="老師設定" title="老師設定">⚙️</button>
+</header>
+
+<div class="opts">
+  <span class="seg" id="dirSeg" role="group" aria-label="文字排列">
+    <button type="button" data-dir="h" aria-pressed="true">橫式</button>
+    <button type="button" data-dir="v" aria-pressed="false">直式（國語）</button>
+    <button type="button" data-dir="auto" aria-pressed="false">自動</button>
+  </span>
+  <label>聲音 <select id="voice"></select></label>
+  <span class="seg" id="rateSeg" role="group" aria-label="語速">
+    <button type="button" data-rate="0.75" aria-pressed="false">慢 0.75</button>
+    <button type="button" data-rate="0.85" aria-pressed="true">0.85 倍</button>
+    <button type="button" data-rate="1" aria-pressed="false">1.0 倍</button>
+  </span>
+</div>
+
+<main>
+  <section class="lib" id="lib">
+    <div class="nowbar" id="backBar" hidden>
+      <button class="btn" id="bBack" type="button">← 回到目前的考卷</button>
+    </div>
+    <div class="drop" id="drop" role="button" tabindex="0">
+      📄 把 PDF 或考卷照片拖到這裡
+      <span>或點這裡選擇檔案（可以一次選好幾張照片）</span>
+    </div>
+    <label class="savechk"><input type="checkbox" id="saveLocal" checked> 打開的 PDF 同時收進「這台平板的考卷」，下次直接點就能用</label>
+    <div class="shelves">
+      <section class="shelf">
+        <h2>老師放在網站上的考卷 <span class="cnt" id="repoCnt"></span></h2>
+        <p class="note" id="repoNote">讀取中…</p>
+        <ul id="repoList"></ul>
+      </section>
+      <section class="shelf">
+        <h2>這台平板的考卷 <span class="cnt" id="localCnt"></span></h2>
+        <p class="note" id="localNote"></p>
+        <ul id="localList"></ul>
+      </section>
+    </div>
+    <details class="howto" id="howto">
+      <summary>使用說明</summary>
+      <ol>
+        <li>國語考卷是直的，請先按上面的 <kbd>直式（國語）</kbd>；數學、社會選 <kbd>橫式</kbd>。</li>
+        <li>打開考卷後，每一題會出現有編號的框框，<b>點一下框框</b>就會唸那一題；按下面的 <kbd>下一題 ⏭</kbd> 可以一題一題聽。</li>
+        <li>沒有框到的地方，按 <kbd>✋ 框選朗讀</kbd>，用手指把文字框起來就會唸。</li>
+        <li>拍照時考卷要放平、光線要亮，字會辨識得比較準。</li>
+        <li><b>老師放考卷到網站上：</b>在 GitHub 存放庫建立 <code>tests</code> 資料夾，把 PDF 上傳進去（可以再分成 <code>tests/國語</code>、<code>tests/數學</code> 子資料夾）。幾分鐘後，「老師放在網站上的考卷」就會出現，全班平板都看得到。每份考卷旁的 <kbd>QR</kbd> 可以產生直接開這份考卷的 QR Code。</li>
+        <li>「這台平板的考卷」只存在這台平板的瀏覽器裡，其他平板看不到；清除瀏覽器資料後會不見。</li>
+      </ol>
+    </details>
+  </section>
+
+  <section id="viewer" hidden>
+    <div class="nowbar">
+      <span class="now" id="nowName"></span>
+      <span class="zoom" role="group" aria-label="縮放">
+        <button class="btn icon" id="bZoomOut" type="button" aria-label="縮小">－</button>
+        <span class="val" id="zoomVal">100%</span>
+        <button class="btn icon" id="bZoomIn" type="button" aria-label="放大">＋</button>
+      </span>
+      <button class="btn" id="bRot" type="button" title="照片拍歪了可以轉向">⟳ 轉向</button>
+      <button class="btn" id="bSel" type="button">✋ 框選朗讀</button>
+    </div>
+    <div class="stepbar" id="stepBar" hidden>
+      <span id="stepText"></span>
+      <button class="btn primary" id="bStepNext" type="button">▶ 繼續下一大題</button>
+      <button class="btn" id="bStepEnd" type="button">結束</button>
+    </div>
+    <p class="hint" id="selHint" hidden>✋ 用手指拖曳，把要聽的文字框起來。再按一次「框選朗讀」可以關掉。</p>
+    <div class="workarea">
+      <div class="paperWrap">
+      <div class="paper" id="paper">
+        <canvas id="cv"></canvas>
+        <div class="overlay" id="ov"></div>
+      </div>
+      </div>
+      <aside class="qpanel" id="qpanel" aria-label="題目喇叭">
+        <h2>🔊 按喇叭聽題目</h2>
+        <ol id="qlist"></ol>
+      </aside>
+    </div>
+    <section class="texts" id="editPanel" hidden>
+      <div class="edhead">
+        <h2>✏️ 老師編輯：語音報讀內容</h2>
+        <span class="note" id="edNote"></span>
+        <button class="btn primary" id="bEdSave" type="button" hidden>💾 儲存並同步給學生</button>
+      </div>
+      <p class="note">可以修改每一段要唸的文字、分開或合併題目、改大題的題型、關閉單一小題的語音。題目畫面不會被修改，錯別字也會照原樣保留。寫注音的小題固定不報讀。</p>
+      <ol id="textList"></ol>
+    </section>
+  </section>
+</main>
+
+<nav class="dock" id="dock" aria-label="朗讀控制" hidden>
+  <div class="in">
+    <button class="btn icon" id="bPrev" type="button" aria-label="上一頁">◀</button>
+    <span class="pg" id="pg">－</span>
+    <button class="btn icon" id="bNext" type="button" aria-label="下一頁">▶</button>
+    <span class="sp"></span>
+    <button class="btn" id="bQPrev" type="button">⏮ 上一題</button>
+    <button class="btn primary" id="bQNext" type="button">下一題 ⏭</button>
+    <span class="sp"></span>
+    <button class="btn" id="bPlay" type="button">🔊 整頁播放</button>
+    <button class="btn" id="bPause" type="button" disabled>⏸ 暫停</button>
+    <button class="btn" id="bStop" type="button" disabled>⏹ 停止</button>
+    <button class="btn" id="bReplay" type="button" disabled>🔁 重播</button>
+  </div>
+</nav>
+
+<div class="busy" id="busy" hidden><div class="card"><span class="spin"></span><span id="busyText">處理中…</span></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<input type="file" id="fOpen" accept="application/pdf,image/*" multiple hidden>
+<input type="file" id="fCam" accept="image/*" capture="environment" hidden>
+
+<dialog id="dlg">
+  <form method="dialog" class="dlg">
+    <h2>老師設定</h2>
+
+    <section>
+      <h3>文字辨識方式</h3>
+      <label><input type="radio" name="eng" value="tess" id="engTess"> <span><b>免費辨識</b>：在平板上直接辨識，不用帳號。第一次使用要下載辨識資料（約 10–20 MB），之後會快很多。</span></label>
+      <label><input type="radio" name="eng" value="gemini" id="engGem"> <span><b>Gemini AI 辨識</b>：橫式、直式混排、有注音的考卷都比較準，會自動分好每一題。需要 Gemini API Key。</span></label>
+      <input type="password" id="apiKey" placeholder="貼上 Gemini API Key" autocomplete="off">
+      <div class="row"><span class="note">模型</span><input type="text" id="model" style="flex:1"></div>
+      <p class="note">取得 API Key：到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> 登入，按「Create API key」後複製貼上。Key 只存在這台裝置的瀏覽器裡。</p>
+    </section>
+
+    <section>
+      <h3>報讀方式</h3>
+      <label><input type="checkbox" id="optZy"> <span>不唸國字旁邊的注音符號</span></label>
+      <p class="note"><b>固定規則：</b>「寫注音」大題只唸大題名稱，小題完全不唸；「改錯字、圈出錯字、找出錯別字」每次只唸一小題，由學生自己按下一題。</p>
+      <label><input type="checkbox" id="optNoShape"> <span>「寫國字／看注音寫國字」的小題不報讀（預設打開）</span></label>
+      <label><input type="checkbox" id="optNoFill"> <span>「填空題」的小題不報讀</span></label>
+      <label><input type="checkbox" id="optNoSound"> <span>問「讀音」的題目不報讀（例如選擇題「下列哪個字的讀音不同」）</span></label>
+      <p class="note">不報讀的題目會用紅色虛線框起來，學生點了會聽到「這一題不報讀，請自己看題目」。</p>
+      <label><input type="checkbox" id="optMath"> <span>數學符號唸成中文（＋ 唸「加」、＝ 唸「等於」、（　）唸「括號」）</span></label>
+    </section>
+
+    <section>
+      <h3>學生用連結與 QR Code</h3>
+      <p class="note">學生掃 QR Code 開啟後，會自動套用目前的排列方式與上面的設定。</p>
+      <div class="row"><span class="note">預先載入的 PDF（選填）</span><input type="text" id="pdfPath" placeholder="例如 tests/數學/第一單元.pdf（可在考卷櫃按 QR 自動帶入）" style="flex:1 1 260px"></div>
+      <label><input type="checkbox" id="incKey"> <span>把 API Key 放進學生連結（學生不用自己輸入）</span></label>
+      <p class="warn" id="keyWarn" hidden>拿到這個連結或 QR Code 的人都能使用你的 Key，請只給自己的學生，不要貼到公開網頁。</p>
+      <div class="row"><button type="button" class="btn" id="bMakeQr">產生學生連結</button><button type="button" class="btn" id="bCopy" hidden>複製連結</button></div>
+      <div class="qr" id="qrWrap" hidden><div id="qrBox"></div><code id="qrUrl"></code></div>
+    </section>
+
+    <section>
+      <h3>老師編輯模式</h3>
+      <p class="note">打開後，考卷下方會出現「語音報讀內容」編輯區，可以預聽、修改、分段、改題型。網站上的考卷可以直接儲存並同步給學生。</p>
+      <div class="row"><button type="button" class="btn" id="bEditMode">✏️ 開啟老師編輯模式</button></div>
+    </section>
+
+    <section>
+      <h3>老師端</h3>
+      <p class="note">要把考卷放到網站上給全班用，請到 <a href="teacher.html" target="_blank" rel="noopener">老師端・上傳考卷</a>（需要 GitHub 權杖，只在老師自己的電腦使用）。</p>
+    </section>
+
+    <section>
+      <div class="row">
+        <button type="button" class="btn" id="bClear">清除這次的辨識結果</button>
+        <button type="submit" class="btn primary" value="ok" style="margin-left:auto">完成</button>
+      </div>
+    </section>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+/* ================= 狀態與設定 ================= */
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('erh_'+k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('erh_'+k, JSON.stringify(v)); }catch(e){} }
+};
+const S = {
+  pages: [],          // {kind:'pdf', num} | {kind:'img', canvas}
+  pdf: null, cur: 0,
+  cache: new Map(),   // key -> blocks
+  blocks: [],
+  dir: store.get('dir','h'),
+  engine: store.get('engine','tess'),
+  key: store.get('key',''),
+  model: store.get('model','gemini-flash-latest'),
+  skipZy: store.get('skipZy', true),
+  mathWords: store.get('mathWords', true),
+  noSound: store.get('noSound', true),
+  noShape: store.get('noShape2', true),
+  noFill: store.get('noFill', false),
+  rate: [0.75, 0.85, 1].includes(store.get('rate2', 0.85)) ? store.get('rate2', 0.85) : 0.85,
+  voiceURI: store.get('voice3', 'auto'),
+  edit: false, dirty: new Set(), pageBlocks: new Map(), saved: null, remotePath: '', step: null,
+  selecting: false,
+  renderToken: 0,
+  ptr: -1,            // 目前唸到第幾題
+  zoom: store.get('zoom', 1),
+  fileName: ''
+};
+
+// 網址參數：?dir=v&engine=gemini&key=...&pdf=xxx.pdf&zy=1&math=1&model=
+(function readParams(){
+  const p = new URLSearchParams(location.search);
+  if (['h','v','auto'].includes(p.get('dir'))) S.dir = p.get('dir');
+  if (['tess','gemini'].includes(p.get('engine'))) { S.engine = p.get('engine'); store.set('engine', S.engine); }
+  if (p.get('model')) { S.model = p.get('model'); store.set('model', S.model); }
+  if (p.get('zy')) { S.skipZy = p.get('zy')==='1'; store.set('skipZy', S.skipZy); }
+  if (p.get('math')) { S.mathWords = p.get('math')==='1'; store.set('mathWords', S.mathWords); }
+  if (p.get('ns')) { S.noSound = p.get('ns')==='1'; store.set('noSound', S.noSound); }
+  if (p.get('nsh')) { S.noShape = p.get('nsh')==='1'; store.set('noShape2', S.noShape); }
+  if (p.get('nf')) { S.noFill = p.get('nf')==='1'; store.set('noFill', S.noFill); }
+  S.edit = p.get('edit') === '1';
+  if (p.get('key')) {
+    S.key = p.get('key'); store.set('key', S.key);
+    p.delete('key');
+    const q = p.toString();
+    try { history.replaceState(null, '', location.pathname + (q ? '?'+q : '') + location.hash); } catch(e){}
+  }
+  S.autoPdf = p.get('pdf') || '';
+})();
+
+/* ================= 小工具 ================= */
+let toastTimer;
+function toast(msg, ms=3500){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true, ms); }
+function busy(msg){ if(msg===false){ $('busy').hidden=true; return; } $('busyText').textContent=msg; $('busy').hidden=false; }
+const CJK = '\\u2E80-\\u2FFF\\u3000-\\u303F\\u3100-\\u312F\\u31A0-\\u31BF\\u3400-\\u9FFF\\uF900-\\uFAFF\\uFF00-\\uFFEF';
+const reCjkGap = new RegExp('(['+CJK+'])\\s+(?=['+CJK+'])','g');
+function cleanText(t){
+  return (t||'').replace(/[^①-⑳]+/g, s => s.normalize('NFKC')).replace(/\u3000/g,' ').replace(/[\r\n]+/g,' ').replace(reCjkGap,'$1').replace(reCjkGap,'$1').replace(/\s{2,}/g,' ').trim();
+}
+function joinText(a, b){
+  if(!a) return b; if(!b) return a;
+  const ascii = /[A-Za-z0-9]$/.test(a) && /^[A-Za-z0-9]/.test(b);
+  return a + (ascii ? ' ' : '') + b;
+}
+function meaningful(t){ return /[A-Za-z0-9ㄅ-ㄯ㐀-鿿]/.test(t); }
+
+/* ================= 版面分析：行 → 題目 ================= */
+const QNUM = /^\s*[（(【\[]?\s*[0-9０-９一二三四五六七八九十]{1,3}\s*[)）】\]、.．:：]/;
+
+/* ---------- 國語題型：大題／小題結構與報讀規則 ---------- */
+// 大題標題：「一、」「（二）」「第三大題」「甲、」
+const CN_NUM = '一二三四五六七八九十壹貳參肆伍陸柒捌玖拾';
+const HEAD = new RegExp('^\\s*(第\\s*[' + CN_NUM + ']+\\s*大?題|[（(]?\\s*[' + CN_NUM + ']{1,3}\\s*[)）]?\\s*[、.．:：]|[甲乙丙丁戊]\\s*[、.．:：])');
+// 大題名稱：有「一、」「第一大題」「壹、」，或沒有編號但很短、而且是題型名稱（例如只寫「寫出注音」）
+function looksHead(src){
+  if(HEAD.test(src || '')) return true;
+  const t = (src || '').normalize('NFKC').trim();
+  return t.length > 0 && t.length <= 24 && !QNO.test(t) && !/^\s*[（(]?\s*\d/.test(t) && !/[？?]/.test(t) && !!secOf(t);
+}
+const SEC_NAMES = {zhuyin:'寫注音', fix:'改錯字', shape:'看注音寫國字', fill:'填空題', choice:'選擇題', tf:'是非題', reading:'閱讀測驗', sentence:'造句題', other:'其他題型'};
+// 順序重要：「看注音寫國字」要比「寫注音」先判斷
+const SEC_RULES = [
+  ['shape',   /看\s*注音\s*寫\s*國字|注音\s*寫\s*國字|寫出\s*(正確的?)?國字|國字\s*填寫|寫國字/],
+  ['zhuyin',  /寫\s*注音|國字\s*注音|寫出\s*(正確的?)?注音|為\s*國字\s*注音|標(上|出)?\s*注音|注音\s*(填|寫)/],
+  ['fix',     /改錯|錯別字|錯字|圈出.{0,4}錯|找出.{0,4}錯/],
+  ['fill',    /填空|填入|填填看|填一填/],
+  ['choice',  /選擇/],
+  ['tf',      /是非|對錯|判斷/],
+  ['reading', /閱讀/],
+  ['sentence',/造句|照樣|仿寫/],
+];
+function secOf(t){ for(const [k, re] of SEC_RULES) if(re.test(t || '')) return k; return null; }
+// 小題本身在問讀音（例如選擇題「下列哪一個字的讀音不同」）
+const SOUND_ITEM = /(讀|念|唸|發)音|字音|念法|唸法|讀法|破音字|多音字|一字多音|同音字|音同|讀作|念作|唸作|注音.{0,4}(正確|錯誤|不同|相同)|(正確|錯誤|不同|相同)的?注音/;
+const QNO = /^\s*[（(]?\s*([0-9０-９]{1,2})\s*[)）]?\s*[.．、:：]/;
+function qnum(t){ const m = (t || '').normalize('NFKC').match(QNO); return m ? +m[1] : 0; }
+
+function analyzeStructure(blocks){
+  let head = null, n = 0;
+  for(const b of blocks){
+    const src = b.orig != null ? b.orig : b.text;
+    if(b.orig == null) b.orig = b.text;      // 保留 OCR 原文：題型判斷用原文，老師改語音文字也不影響
+    b.isHead = b.headOv != null ? b.headOv : (looksHead(src) || b.kindHint === 'header');
+    if(b.isHead){
+      b.autoSec = secOf(src) || (b.kindHint === 'sound' ? 'zhuyin' : b.kindHint === 'shape' ? 'shape' : null);
+      b.sec = b.secOv || b.autoSec || 'other';
+      b.head = null; b.qn = 0; head = b; n = 0;
+    } else {
+      b.head = head; n++;
+      b.sec = head ? head.sec : (secOf(src) === 'zhuyin' ? 'zhuyin' : null);
+      b.qn = qnum(src) || n;
+      b.kind = SOUND_ITEM.test(src) ? 'sound' : null;
+    }
+  }
+  return blocks;
+}
+// 寫注音小題：任何播放方式都不讀（整頁、重播、框選、上一題／下一題）
+function absSilent(b){ return !!b && !b.isHead && b.sec === 'zhuyin'; }
+// 整個大題都不報讀的小題（寫注音，或老師設定不唸的寫國字／填空）：不給按鈕、上一題／下一題直接跳過
+function quietItem(b){ return absSilent(b) || (!!b && !b.isHead && b.force !== 'skip' && teacherOff(b)); }
+// 老師設定不報讀的題目
+function teacherOff(b){
+  if(b.isHead) return false;            // 大題名稱一律報讀
+  if(b.force === 'skip') return true;
+  if(b.force === 'read') return false;
+  return (b.sec === 'shape' && S.noShape) || (b.sec === 'fill' && S.noFill) || (b.kind === 'sound' && S.noSound);
+}
+function silent(b){ return absSilent(b) || teacherOff(b); }
+function noReadMsg(b){
+  if(b.force === 'skip') return '這一題老師設定不報讀，請自己看題目作答。';
+  if(b.sec === 'shape') return '這一題考國字，不報讀，請自己看題目作答。';
+  if(b.sec === 'fill') return '這一題不報讀，請自己看題目作答。';
+  if(b.kind === 'sound') return '這一題考讀音，不報讀，請自己看題目作答。';
+  return '這一題不報讀，請自己看題目作答。';
+}
+// 「一、寫注音」「第一大題 寫出注音」「壹、改錯字」→「第一大題，寫注音。」
+function headerSpeech(t){
+  t = cleanText(t);
+  const m = t.match(new RegExp('^\\s*第\\s*([' + CN_NUM + ']+)\\s*大?題\\s*[、.．:：,，]?\\s*(.*)$'))
+         || t.match(new RegExp('^\\s*[（(]?\\s*([' + CN_NUM + ']{1,3})\\s*[)）]?\\s*[、.．:：]\\s*(.*)$'));
+  const big = {壹:'一',貳:'二',參:'三',肆:'四',伍:'五',陸:'六',柒:'七',捌:'八',玖:'九',拾:'十'};
+  const s = m ? '第' + m[1].split('').map(c => big[c] || c).join('') + '大題' + (m[2] ? '，' + toSpeech(m[2]) : '') : toSpeech(t);
+  return s.replace(/[。，,\s]+$/, '') + '。';
+}
+// 小題：「2.（　）弟弟在公園玩要。」→「第2題，弟弟在公園玩要。」（題號後面的作答括號不唸）
+function itemBody(t){ return cleanText(t).replace(QNO, '').replace(/^\s*([（(][\s　_＿]*[）)]\s*)+/, '').trim(); }
+function speechOf(b){
+  if(b.isHead) return headerSpeech(b.text);
+  return qnum(b.text) ? '第' + b.qn + '題，' + toSpeech(itemBody(b.text)) : toSpeech(b.text);
+}
+
+// 一行裡有好幾題（1.… 2.… 3.…）就分開，每一小題一個框
+function splitMulti(blocks){
+  const out = [];
+  for(const b of blocks){
+    const t = b.text, first = qnum(t);
+    if(!first){ out.push(b); continue; }
+    const cuts = []; let want = first + 1;
+    const re = /(?:[\s　）)。？?！!，,]|^)([0-9０-９]{1,2})\s*[.．、](?![0-9０-９])/g; let m;
+    while((m = re.exec(t))){
+      if(m.index === 0) continue;
+      if(+m[1].normalize('NFKC') === want){ cuts.push(m.index + m[0].indexOf(m[1])); want++; }
+    }
+    if(!cuts.length){ out.push(b); continue; }
+    const pos = [0, ...cuts, t.length];
+    for(let i = 0; i < pos.length - 1; i++){
+      const r0 = pos[i] / t.length, r1 = pos[i+1] / t.length, piece = t.slice(pos[i], pos[i+1]).trim();
+      if(!piece) continue;
+      const nb = {...b, text: piece, orig: piece};
+      if(b.dir === 'v'){ nb.y = b.y + b.h*r0; nb.h = b.h*(r1 - r0); }
+      else { nb.x = b.x + b.w*r0; nb.w = b.w*(r1 - r0); }
+      out.push(nb);
+    }
+  }
+  return out;
+}
+
+function union(a, b){
+  const x=Math.min(a.x,b.x), y=Math.min(a.y,b.y);
+  return {x, y, w:Math.max(a.x+a.w,b.x+b.w)-x, h:Math.max(a.y+a.h,b.y+b.h)-y};
+}
+function overlap1d(a0,a1,b0,b1){ return Math.max(0, Math.min(a1,b1)-Math.max(a0,b0)); }
+
+// lines: [{x,y,w,h,text}]，回傳依閱讀順序排好、合併後的題目區塊
+function orderAndMerge(lines, dir){
+  // 直式：先把同一直排被空白隔開的片段（題號、「.」、作答括號、題目）接回來，再判斷哪幾排是同一題
+  if(dir === 'v') lines = mergeStacks(lines.filter(l => l.text && l.text.trim()).map(l => ({...l})));
+  lines = lines.filter(l => l.text && meaningful(l.text));
+  if(!lines.length) return [];
+  const out = [];
+  if(dir === 'v'){
+    // 直式：先把上下分開的大題切成「橫向帶狀區」，帶狀區由上而下，帶內每一行由右而左
+    const cols = [...lines].sort((a,b)=>(b.x+b.w/2)-(a.x+a.w/2));
+    const bands = [];
+    for(const c of cols){
+      let band = bands.find(bd => overlap1d(c.y, c.y+c.h, bd.y0, bd.y1) > 0.3*Math.min(c.h, bd.y1-bd.y0));
+      if(!band){ band = {y0:c.y, y1:c.y+c.h, cols:[]}; bands.push(band); }
+      band.cols.push(c); band.y0=Math.min(band.y0,c.y); band.y1=Math.max(band.y1,c.y+c.h);
+    }
+    bands.sort((a,b)=>a.y0-b.y0);
+    for(const band of bands){
+      band.cols.sort((a,b)=>(b.x+b.w/2)-(a.x+a.w/2));
+      const avgW = band.cols.reduce((s,c)=>s+c.w,0)/band.cols.length;
+      let cur = null;
+      for(const c of band.cols){
+        if(cur){
+          const gap = cur.last.x - (c.x + c.w);
+          const sameTop = Math.abs(c.y - cur.last.y) < Math.max(2*avgW, 0.25*cur.last.h);
+          if(gap < 1.6*avgW && sameTop && !QNUM.test(c.text) && !looksHead(c.text)){
+            Object.assign(cur, union(cur, c)); cur.text = joinText(cur.text, c.text); cur.last = c; continue;
+          }
+          out.push(cur);
+        }
+        cur = {x:c.x,y:c.y,w:c.w,h:c.h,text:c.text,dir:'v',last:c};
+      }
+      if(cur) out.push(cur);
+    }
+  } else {
+    const rows = [...lines].sort((a,b)=> (a.y - b.y) || (a.x - b.x));
+    const avgH = rows.reduce((s,r)=>s+r.h,0)/rows.length;
+    let cur = null;
+    for(const r of rows){
+      if(cur){
+        const gap = r.y - (cur.last.y + cur.last.h);
+        const aligned = Math.abs(r.x - cur.last.x) < 3*avgH || overlap1d(r.x,r.x+r.w,cur.x,cur.x+cur.w) > 0.5*r.w;
+        // 沒有題號的行＝上一題換行（考卷行距通常很大，所以放寬）；有題號或大題名稱才是新的一題
+        const isNew = QNUM.test(r.text) || looksHead(r.text) || looksHead(cur.text);
+        if(!isNew && gap < 1.5*avgH && gap > -0.5*avgH && aligned){
+          Object.assign(cur, union(cur, r)); cur.text = joinText(cur.text, r.text); cur.last = r; continue;
+        }
+        out.push(cur);
+      }
+      cur = {x:r.x,y:r.y,w:r.w,h:r.h,text:r.text,dir:'h',last:r};
+    }
+    if(cur) out.push(cur);
+  }
+  return out.map(({last, ...b}) => b);
+}
+
+// 把零散的字（PDF 文字）依方向組成行
+// 只有注音符號／聲調的小字（國字旁邊的注音）不參與分段，也不報讀
+const ZY_ONLY = /^[\u3105-\u312F\u31A0-\u31BF\u02C7\u02CA\u02CB\u02D9\u02C9\uE000-\uF8FF\s]+$/;
+// 直式考卷：題號、作答括號、題目常常上下分開，同一直排、沒有新題號的片段要合回上一段
+function mergeStacks(blocks){
+  if(blocks.length < 2) return blocks;
+  const sz = blocks.reduce((s, b) => s + Math.min(b.w, b.h), 0) / blocks.length;
+  const byTop = [...blocks].sort((a, b) => a.y - b.y);
+  for(const B of byTop){
+    if(B._dead) continue;
+    if(QNUM.test(B.text) || looksHead(B.text) || /^\s*[①-⑳]/.test(B.text)) continue;
+    let best = null, bestGap = Infinity;
+    for(const A of blocks){
+      if(A === B || A._dead) continue;
+      if(overlap1d(A.x, A.x + A.w, B.x, B.x + B.w) < 0.5 * Math.min(A.w, B.w)) continue;
+      const gap = B.y - (A.y + A.h);
+      if(gap < -0.3 * B.h || gap > 14 * sz) continue;
+      if(blocks.some(C => C !== A && C !== B && !C._dead && C.y >= A.y + A.h - 2 && C.y + C.h <= B.y + 2 && overlap1d(C.x, C.x + C.w, B.x, B.x + B.w) > 0.5 * Math.min(C.w, B.w))) continue;
+      if(gap < bestGap){ bestGap = gap; best = A; }
+    }
+    if(best){ Object.assign(best, union(best, B)); best.text = joinText(best.text, B.text); B._dead = true; }
+  }
+  return blocks.filter(b => !b._dead);
+}
+// 「每題2分」「共10分」「10分」這種分數小字，併回旁邊的大題名稱，讓大題一次唸完
+const SCORE = /^[\s（(：:，,、]*((每一?題|每格|每個|每空|共|全對)\s*)?[0-9０-９一二三四五六七八九十]+\s*分[\s)）。，,、]*$/;
+function attachScores(blocks){
+  const out = []; let head = null;
+  for(const b of blocks){
+    const t = (b.text || '').normalize('NFKC').trim();
+    if(looksHead(b.text)){ head = b; out.push(b); continue; }
+    if(head && SCORE.test(t)){
+      const s = Math.max(12, Math.min(head.w, head.h));
+      const dx = Math.max(0, Math.max(head.x, b.x) - Math.min(head.x + head.w, b.x + b.w));
+      const dy = Math.max(0, Math.max(head.y, b.y) - Math.min(head.y + head.h, b.y + b.h));
+      if(dx < 5*s && dy < 5*s){ head.text = joinText(head.text, (/[，,：:]$/.test(head.text) ? '' : '，') + t); continue; }
+    }
+    out.push(b);
+  }
+  return out;
+}
+function attachOptions(blocks){
+  const out = [];
+  for(const b of blocks){
+    const prev = out[out.length - 1];
+    if(prev && /^\s*[①-⑳]/.test(b.text) && !looksHead(prev.text)){ Object.assign(prev, union(prev, b)); prev.text = joinText(prev.text, b.text); continue; }
+    out.push(b);
+  }
+  return out;
+}
+function fixScoreNumbers(blocks){
+  const out = [];
+  for(const b of blocks){
+    const t = (b.text || '').normalize('NFKC').trim();
+    // 找最近、而且結尾是「共」或「共分」的大題
+    let head = null, best = Infinity;
+    if(/^[0-9]{1,3}\s*分?$/.test(t)) out.forEach(x => {
+      if(!looksHead(x.text) || !/共\s*分?\s*$/.test(x.text)) return;
+      const d = Math.hypot((x.x + x.w/2) - (b.x + b.w/2), (x.y + x.h) - b.y);
+      if(d < best){ best = d; head = x; }
+    });
+    if(head && best < 8 * Math.max(16, Math.min(head.w, head.h))){
+      head.text = head.text.replace(/共\s*分?\s*$/, '共' + t.replace(/分$/, '') + '分'); continue;
+    }
+    out.push(b);
+  }
+  return out;
+}
+function finishBlocks(blocks, d){ return splitMulti(attachOptions(fixScoreNumbers(attachScores(blocks)))); }
+function itemsToLines(items, dir){
+  items = items.filter(it => !ZY_ONLY.test(it.str));
+  if(dir === 'v'){
+    const split = [];
+    for(const it of items){
+      const n = [...it.str].length;
+      if(n > 1 && it.w > it.h * 1.6){
+        const cw = it.w / n;
+        [...it.str].forEach((c, i) => { if(c.trim() && !ZY_ONLY.test(c)) split.push({str:c, x:it.x + i*cw, y:it.y, w:Math.min(cw, it.h), h:it.h}); });
+      } else split.push(it);
+    }
+    items = split;
+  }
+  if(!items.length) return [];
+  const lines = [];
+  if(dir === 'v'){
+    const its = [...items].sort((a,b)=>(b.x+b.w/2)-(a.x+a.w/2));
+    for(const it of its){
+      const cx = it.x+it.w/2;
+      let ln = lines.find(l => Math.abs(l.cx - cx) < 0.5*Math.max(l.w0, it.w) && overlap1d(it.y-it.h, it.y+2*it.h, l.y, l.y+l.h) > 0);
+      if(!ln){ ln = {cx, w0:it.w, items:[], x:it.x, y:it.y, w:it.w, h:it.h}; lines.push(ln); }
+      ln.items.push(it); Object.assign(ln, union(ln, it));
+    }
+    lines.forEach(l => { l.items.sort((a,b)=>a.y-b.y); l.text = cleanText(l.items.map(i=>i.str).join('')); });
+  } else {
+    const its = [...items].sort((a,b)=>(a.y+a.h/2)-(b.y+b.h/2));
+    for(const it of its){
+      const cy = it.y+it.h/2;
+      let ln = lines.find(l => Math.abs(l.cy - cy) < 0.5*Math.max(l.h0, it.h) && overlap1d(it.x-it.h*3, it.x+it.w+it.h*3, l.x, l.x+l.w) > 0);
+      if(!ln){ ln = {cy, h0:it.h, items:[], x:it.x, y:it.y, w:it.w, h:it.h}; lines.push(ln); }
+      ln.items.push(it); Object.assign(ln, union(ln, it));
+    }
+    lines.forEach(l => {
+      l.items.sort((a,b)=>a.x-b.x);
+      let t=''; l.items.forEach(i => t = joinText(t, i.str)); l.text = cleanText(t);
+    });
+  }
+  return lines.map(l => ({x:l.x,y:l.y,w:l.w,h:l.h,text:l.text}));
+}
+function pickDirFromItems(items){
+  const h = itemsToLines(items,'h'), v = itemsToLines(items,'v');
+  return v.length < h.length*0.75 ? 'v' : 'h';
+}
+
+/* ================= PDF ================= */
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const PDF_OPTS = { cMapUrl:'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/', cMapPacked:true,
+  standardFontDataUrl:'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/' };
+
+async function loadPdf(data, name){
+  busy('正在打開 PDF…');
+  try{
+    S.pdf = await pdfjsLib.getDocument({data: new Uint8Array(data.slice(0)), ...PDF_OPTS}).promise;
+    S.fileName = name || 'PDF 考卷';
+    S.pages = Array.from({length:S.pdf.numPages}, (_,i)=>({kind:'pdf', num:i+1}));
+    S.cache.clear(); S.cur = 0;
+    await showPage(0);
+  }catch(e){ console.error(e); busy(false); toast('這個 PDF 打不開，請確認檔案沒有加密或損壞。'); }
+}
+function pdfScale(page){ const w = page.getViewport({scale:1}).width; return Math.min(3, 1800 / w); }
+
+async function pdfTextItems(num){
+  const page = await S.pdf.getPage(num);
+  const vp = page.getViewport({scale: pdfScale(page)});
+  const tc = await page.getTextContent({disableCombineTextItems: true});
+  const items = [];
+  for(const it of tc.items){
+    const str = (it.str||'').replace(/[^①-⑳]+/g, s => s.normalize('NFKC')).trim();
+    if(!str) continue;
+    const tx = pdfjsLib.Util.transform(vp.transform, it.transform);
+    const fs = Math.hypot(tx[2], tx[3]) || 10;
+    const vertical = tc.styles[it.fontName] && tc.styles[it.fontName].vertical;
+    let x, y, w, h;
+    if(vertical){ w = fs; h = Math.max(fs, (it.height||0)*vp.scale); x = tx[4]-fs/2; y = tx[5]; }
+    else { w = Math.max(fs*0.5, (it.width||0)*vp.scale); h = fs; x = tx[4]; y = tx[5]-fs; }
+    items.push({str, x, y, w, h});
+  }
+  const all = items.filter(i => !ZY_ONLY.test(i.str)).map(i=>i.str).join('').replace(/[\u3105-\u312F\u02C7\u02CA\u02CB\u02D9\s]/g,'');
+  const good = (all.match(/[㐀-鿿ㄅ-ㄯA-Za-z0-9，。？！、：；「」（）()＋－×÷＝+\-=]/g)||[]).length;
+  if(all.length < 8 || good/all.length < 0.6) return null;   // 掃描檔或文字是亂碼 → 用辨識
+  return items;
+}
+
+/* ================= 圖片（拍照） ================= */
+function fileToCanvas(file){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const max = 2200, k = Math.min(1, max/Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth*k); c.height = Math.round(img.naturalHeight*k);
+      const g = c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url); res(c);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('img')); };
+    img.src = url;
+  });
+}
+function rotateCanvas(src){
+  const c = document.createElement('canvas'); c.width = src.height; c.height = src.width;
+  const g = c.getContext('2d'); g.translate(c.width,0); g.rotate(Math.PI/2); g.drawImage(src,0,0); return c;
+}
+
+/* ================= 顯示頁面 ================= */
+const cv = $('cv'), ov = $('ov');
+function cacheKey(i){ return i+'|'+S.dir+'|'+S.engine+(S.pages[i].kind==='img' ? '|'+S.pages[i].rot : ''); }
+
+async function showPage(i){
+  stopSpeak();
+  const token = ++S.renderToken;
+  S.cur = i; S.blocks = []; S.ptr = -1; SP.last = null; endStep();
+  $('lib').hidden = true; $('viewer').hidden = false; $('dock').hidden = false;
+  $('editPanel').hidden = !S.edit;
+  $('nowName').textContent = S.fileName;
+  applyZoom();
+  drawBlocks();
+  updateNav();
+  const pg = S.pages[i];
+  busy('正在顯示第 '+(i+1)+' 頁…');
+  try{
+    if(pg.kind === 'pdf'){
+      const page = await S.pdf.getPage(pg.num);
+      const vp = page.getViewport({scale: pdfScale(page)});
+      cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+      const g = cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height);
+      await page.render({canvasContext:g, viewport:vp}).promise;
+    } else {
+      cv.width = pg.canvas.width; cv.height = pg.canvas.height;
+      cv.getContext('2d').drawImage(pg.canvas,0,0);
+    }
+    if(token !== S.renderToken) return;
+    await analyze(i, token);
+  }catch(e){
+    console.error(e);
+    if(token === S.renderToken) toast('這一頁處理失敗：'+(e.message||e));
+  }finally{
+    if(token === S.renderToken) busy(false);
+  }
+}
+
+async function analyze(i, token){
+  const key = cacheKey(i);
+  if(S.cache.has(key)){ S.blocks = S.cache.get(key); S.pageBlocks.set(i, {blocks:S.blocks, W:cv.width, H:cv.height}); drawBlocks(); return; }
+  const pg = S.pages[i];
+  let blocks = null;
+  if(pg.kind === 'pdf'){
+    busy('讀取 PDF 文字…');
+    const items = await pdfTextItems(pg.num);
+    if(items) pg.items = items;
+    const sp = S.saved && S.saved.pages && S.saved.pages[pg.num];
+    if(sp && sp.blocks){
+      // 老師儲存過的報讀設定
+      const fx = cv.width / (sp.W || cv.width), fy = cv.height / (sp.H || cv.height);
+      blocks = sp.blocks.map(o => ({...o, x:o.x*fx, y:o.y*fy, w:o.w*fx, h:o.h*fy}));
+    } else if(items){
+      const d = S.dir === 'auto' ? pickDirFromItems(items) : S.dir;
+      blocks = finishBlocks(orderAndMerge(itemsToLines(items, d), d), d);
+    }
+  }
+  if(!blocks){
+    if(S.engine === 'gemini' && S.key){
+      try{ blocks = await geminiRead(cv, false); }
+      catch(e){ console.error(e); toast('Gemini 辨識失敗（'+e.message+'），改用免費辨識。', 5000); }
+    } else if(S.engine === 'gemini'){
+      toast('還沒有設定 Gemini API Key，先用免費辨識。');
+    }
+    if(!blocks) blocks = finishBlocks(await tessPage(cv, S.dir), S.dir);
+  }
+  if(token !== S.renderToken) return;
+  S.cache.set(key, blocks);
+  S.blocks = blocks;
+  S.pageBlocks.set(i, {blocks, W:cv.width, H:cv.height});
+  drawBlocks();
+  if(!blocks.length) toast('這一頁沒有辨識到文字。可以試試切換橫式／直式，或用「框選朗讀」。', 5000);
+}
+
+function drawBlocks(){
+  analyzeStructure(S.blocks);
+  ov.querySelectorAll('.blk').forEach(n => n.remove());
+  const W = cv.width || 1, H = cv.height || 1;
+  S.blocks.forEach((b, k) => {
+    const mute = absSilent(b), off = !mute && teacherOff(b);
+    const el = document.createElement(mute ? 'div' : 'button');
+    if(!mute) el.type = 'button';
+    el.className = 'blk' + (b.dir === 'v' ? ' v' : '') + (b.isHead ? ' head' : '') + (mute ? ' mute' : '') + (off ? ' noread' : '') + (!b.isHead && b.sec === 'fix' ? ' fix' : '');
+    const pad = 4;
+    el.style.left = ((b.x - pad)/W*100) + '%'; el.style.top = ((b.y - pad)/H*100) + '%';
+    el.style.width = ((b.w + 2*pad)/W*100) + '%'; el.style.height = ((b.h + 2*pad)/H*100) + '%';
+    let badge;
+    if(b.isHead) badge = '🔊';
+    else if(mute) badge = '🔇';
+    else if(off) badge = '🚫' + b.qn;
+    else badge = '🔊' + b.qn;
+    const short = b.isHead ? '大' : mute ? '' : off ? '🚫' : String(b.qn);
+    el.innerHTML = '<span class="n"><span class="full">' + badge + '</span><span class="short">' + short + '</span></span>';
+    if(mute){ el.setAttribute('aria-hidden', 'true'); }
+    else {
+      el.setAttribute('aria-label', b.isHead ? '播放大題：' + b.text : '播放第' + b.qn + '題' + (off ? '（不報讀）' : ''));
+      el.addEventListener('click', () => speakAt(k));
+    }
+    b.el = el;
+    ov.appendChild(el);
+  });
+  drawQPanel();
+  ov.classList.toggle('editing', !!S.edit);
+  if(S.edit) drawEditor();
+  applyCompact();
+}
+// 題目按鈕區：每一題一張大卡片，整張都可以按
+function drawQPanel(){
+  const ol = $('qlist'); ol.innerHTML = '';
+  $('qpanel').hidden = !S.blocks.length;
+  let muteRun = null;
+  S.blocks.forEach((b, k) => {
+    b.card = null;
+    if(quietItem(b)){
+      // 不報讀的小題：不給按鈕，同一大題的全部併成一行說明
+      if(muteRun && muteRun.head === b.head){ muteRun.n++; return; }
+      const li = document.createElement('li'); li.className = 'qmute qitem';
+      li.innerHTML = '<span aria-hidden="true">🔇</span><span></span>';
+      muteRun = {head: b.head, n: 1, el: li};
+      const name = SEC_NAMES[b.sec] || '這一大題';
+      const run0 = muteRun; muteRun.update = () => { li.lastChild.textContent = '這一大題的小題（' + run0.n + ' 題）：' + name + '，不報讀，請自己作答'; };
+      ol.appendChild(li);
+      const run = muteRun; queueMicrotask(() => run.update());
+      return;
+    }
+    muteRun = null;
+    const off = teacherOff(b);
+    const li = document.createElement('li'); if(!b.isHead) li.className = 'qitem';
+    const c = document.createElement('button'); c.type = 'button';
+    c.className = 'qcard' + (b.isHead ? ' head' : '') + (!b.isHead && b.sec === 'fix' ? ' fix' : '') + (off ? ' off' : '');
+    const title = b.isHead ? headerSpeech(b.text).replace(/。$/, '') : '第' + b.qn + '題' + (off ? '（不報讀）' : '');
+    const sub = b.isHead ? '' : itemBody(b.text);
+    c.innerHTML = '<span class="spk" aria-hidden="true">' + (off ? '🚫' : '🔊') + '</span><span class="lbl"><b></b><span></span></span>';
+    const zh = s => s.replace(/:/g, '：').replace(/,/g, '，').replace(/\?/g, '？').replace(/!/g, '！').replace(/\(/g, '（').replace(/\)/g, '）');
+    c.querySelector('b').textContent = zh(title);
+    c.querySelector('.lbl span').textContent = zh(sub);
+    if(!sub) c.querySelector('.lbl span').remove();
+    c.setAttribute('aria-label', '播放' + title);
+    c.addEventListener('click', () => speakAt(k));
+    li.appendChild(c); ol.appendChild(li);
+    b.card = c;
+  });
+}
+// 考卷顯示得很小（手機）時，喇叭標籤縮小，避免互相擋住；放大後恢復
+function applyCompact(){ const w = cv.getBoundingClientRect().width; ov.classList.toggle('compact', w > 0 && w < 440); }
+window.addEventListener('resize', applyCompact);
+
+/* ================= 老師編輯：語音報讀內容 ================= */
+function drawEditor(){
+  const list = $('textList'); list.innerHTML = '';
+  S.blocks.forEach((b, k) => {
+    const li = document.createElement('li');
+    const mute = absSilent(b), off = !mute && teacherOff(b);
+    li.className = 'ed' + (b.isHead ? ' head' : '') + (mute ? ' mute' : '') + (off ? ' off' : '');
+    const top = document.createElement('div'); top.className = 'edtop';
+    const chip = document.createElement('span'); chip.className = 'chip';
+    chip.textContent = b.isHead ? '大題' : (SEC_NAMES[b.sec] ? SEC_NAMES[b.sec] + '・' : '') + '第' + b.qn + '題';
+    top.appendChild(chip);
+    if(b.isHead){
+      const sel = document.createElement('select'); sel.setAttribute('aria-label', '題型');
+      const o = document.createElement('option'); o.value = ''; o.textContent = '題型：自動（' + (SEC_NAMES[b.autoSec] || '其他題型') + '）'; sel.appendChild(o);
+      Object.entries(SEC_NAMES).forEach(([v, n]) => { const x = document.createElement('option'); x.value = v; x.textContent = '題型：' + n; sel.appendChild(x); });
+      sel.value = b.secOv || '';
+      sel.addEventListener('change', () => {
+        const nv = sel.value || null;
+        // 寫注音的禁讀優先：系統偵測是寫注音，要改成別的題型必須再確認一次
+        if(b.autoSec === 'zhuyin' && (nv || 'zhuyin') !== 'zhuyin' && !b._unlock){
+          sel.value = b.secOv || '';
+          const w = document.createElement('span'); w.className = 'warn';
+          w.textContent = '這一大題偵測為「寫注音」，改題型會讓小題開始報讀。';
+          const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'mini del arm'; ok.textContent = '確定要改';
+          ok.addEventListener('click', () => { b._unlock = true; b.secOv = nv; editChanged(); });
+          top.append(w, ok); return;
+        }
+        b.secOv = nv; editChanged();
+      });
+      top.appendChild(sel);
+    }
+    const t = document.createElement('div'); t.className = 't'; t.contentEditable = 'true'; t.textContent = b.text;
+    t.setAttribute('aria-label', '報讀文字');
+    const keepCaret = () => { const s = getSelection(); if(s.rangeCount && t.contains(s.anchorNode)) b._caret = s.anchorOffset; };
+    t.addEventListener('input', () => { b.text = t.textContent; keepCaret(); S.dirty.add(S.cur); setSaveState(); });
+    t.addEventListener('keyup', keepCaret); t.addEventListener('mouseup', keepCaret); t.addEventListener('touchend', keepCaret);
+    const acts = document.createElement('div'); acts.className = 'edacts';
+    acts.appendChild(mkBtn(mute ? '🔊 預聽（學生聽不到）' : '🔊 預聽', '', () => startSpeech(chunks(speechOf(b)).map(c => ({b, c})))));
+    if(mute) { const s = document.createElement('span'); s.className = 'lock'; s.textContent = '🔇 寫注音小題：固定不報讀'; acts.appendChild(s); }
+    else if(b.isHead){ const s = document.createElement('span'); s.className = 'lock'; s.textContent = '🔊 大題名稱：固定報讀'; acts.appendChild(s); }
+    else {
+      acts.appendChild(mkBtn(off ? '🚫 不報讀（按一下開啟）' : '✅ 會報讀（按一下關閉）', off ? 'del arm' : '', () => {
+        b.force = off ? 'read' : 'skip'; editChanged();
+      }));
+    }
+    acts.appendChild(mkBtn('✂ 從游標處分開', '', () => splitAt(k)));
+    if(k > 0) acts.appendChild(mkBtn('⤴ 合併到上一段', '', () => mergeUp(k)));
+    acts.appendChild(mkBtn(b.isHead ? '⇣ 改成小題' : '⇡ 改成大題', '', () => { b.headOv = !b.isHead; editChanged(); }));
+    li.append(top, t, acts); b.li = li; list.appendChild(li);
+  });
+  setSaveState();
+}
+function editChanged(){ S.dirty.add(S.cur); stopSpeak(); drawBlocks(); }
+function splitAt(k){
+  const b = S.blocks[k], t = b.text, pos = b._caret;
+  if(!(pos > 0 && pos < t.length)){ toast('請先在文字裡點一下要分開的位置，再按「分開」。'); return; }
+  const r = pos / t.length;
+  const a = {...b, text: t.slice(0, pos).trim(), orig: t.slice(0, pos).trim()};
+  const c = {...b, text: t.slice(pos).trim(), orig: t.slice(pos).trim(), force: undefined, headOv: undefined, secOv: undefined};
+  delete a._caret; delete c._caret;
+  if(b.dir === 'v'){ a.h = b.h*r; c.y = b.y + b.h*r; c.h = b.h*(1 - r); }
+  else { a.w = b.w*r; c.x = b.x + b.w*r; c.w = b.w*(1 - r); }
+  S.blocks.splice(k, 1, a, c); editChanged();
+}
+function mergeUp(k){
+  const p = S.blocks[k-1], b = S.blocks[k];
+  Object.assign(p, union(p, b));
+  p.text = joinText(p.text, b.text); p.orig = joinText(p.orig || p.text, b.orig || b.text);
+  S.blocks.splice(k, 1); editChanged();
+}
+function setSaveState(){
+  const btn = $('bEdSave'), note = $('edNote');
+  if(!S.remotePath){ btn.hidden = true; note.textContent = '這份考卷不是放在網站上的，修改只在這台裝置、這次開啟時有效。要同步給學生，請從老師端上傳後再按「編輯報讀」。'; return; }
+  btn.hidden = false;
+  btn.disabled = !S.dirty.size;
+  note.textContent = S.dirty.size ? '有 ' + S.dirty.size + ' 頁還沒儲存。' : (S.saved ? '已載入老師儲存的報讀設定。' : '目前是自動辨識的結果。');
+}
+
+/* 儲存到 GitHub：tests/…/考卷.pdf.json，學生打開同一份考卷就會套用 */
+function teacherToken(){
+  const t = store.get('t_token', '');
+  if(t) return t;
+  try{ return JSON.parse(sessionStorage.getItem('erh_t_token') || '""'); }catch(e){ return ''; }
+}
+function u8b64(u){ let s = ''; for(let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
+async function saveEdits(){
+  const tok = teacherToken();
+  const repo = store.get('t_repo', '') || (repoInfo() ? repoInfo().owner + '/' + repoInfo().repo : '');
+  if(!tok || !repo){ toast('這台電腦還沒有在老師端連線。請先打開老師端，貼上權杖並勾選「記住權杖」，再回來儲存。', 7000); return; }
+  const data = S.saved ? JSON.parse(JSON.stringify(S.saved)) : {version:1, pages:{}};
+  S.dirty.forEach(i => {
+    const bl = S.pageBlocks.get(i); if(!bl) return;
+    data.pages[i + 1] = { W: bl.W, H: bl.H, blocks: bl.blocks.map(b => ({
+      x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.w), h: Math.round(b.h), dir: b.dir,
+      text: b.text, orig: b.orig, force: b.force || undefined, headOv: b.headOv == null ? undefined : b.headOv, secOv: b.secOv || undefined
+    })) };
+  });
+  data.updated = new Date().toISOString();
+  const [owner, rp] = repo.split('/');
+  const api = async (path, opt) => {
+    const r = await fetch('https://api.github.com' + path, Object.assign({}, opt, { headers: {
+      'Accept':'application/vnd.github+json', 'Authorization':'Bearer ' + tok, ...(opt && opt.body ? {'Content-Type':'application/json'} : {}) } }));
+    const j = await r.json().catch(() => null);
+    if(!r.ok){ const e = new Error((j && j.message) || ('HTTP ' + r.status)); e.status = r.status; throw e; }
+    return j;
+  };
+  const btn = $('bEdSave'); btn.disabled = true; btn.textContent = '儲存中…';
+  try{
+    const info = await api('/repos/' + owner + '/' + rp);
+    const branch = info.default_branch || 'main';
+    const jp = S.remotePath + '.json', ep = jp.split('/').map(encodeURIComponent).join('/');
+    let sha;
+    try{ sha = (await api('/repos/' + owner + '/' + rp + '/contents/' + ep + '?ref=' + encodeURIComponent(branch))).sha; }catch(e){ if(e.status !== 404) throw e; }
+    await api('/repos/' + owner + '/' + rp + '/contents/' + ep, { method:'PUT', body: JSON.stringify({
+      message: '更新報讀設定 ' + S.fileName, content: u8b64(new TextEncoder().encode(JSON.stringify(data))), branch, ...(sha ? {sha} : {}) }) });
+    S.saved = data; S.dirty.clear();
+    toast('已儲存。約 1～3 分鐘後，學生打開這份考卷就會套用。', 6000);
+  }catch(e){
+    toast(e.status === 401 ? '權杖不正確或過期，請到老師端重新連線。' : e.status === 403 || e.status === 404 ? '權杖沒有這個存放庫的寫入權限。' : '儲存失敗：' + e.message, 7000);
+  }
+  btn.textContent = '💾 儲存並同步給學生'; setSaveState();
+}
+
+function updateNav(){
+  const n = S.pages.length;
+  $('pg').textContent = n ? ('第 '+(S.cur+1)+' / '+n+' 頁') : '－';
+  $('bPrev').disabled = !n || S.cur===0;
+  $('bNext').disabled = !n || S.cur>=n-1;
+  $('bRot').hidden = !(n && S.pages[S.cur].kind==='img');
+  $('bPlay').disabled = $('bSel').disabled = $('bQPrev').disabled = $('bQNext').disabled = !n || $('viewer').hidden;
+  $('bPrev').disabled = $('bPrev').disabled || $('viewer').hidden;
+  $('bNext').disabled = $('bNext').disabled || $('viewer').hidden;
+}
+function applyZoom(){
+  S.zoom = Math.min(3, Math.max(1, Math.round(S.zoom*100)/100));
+  $('paper').style.width = (S.zoom*100)+'%';
+  $('zoomVal').textContent = Math.round(S.zoom*100)+'%';
+  $('bZoomOut').disabled = S.zoom <= 1; $('bZoomIn').disabled = S.zoom >= 3;
+  store.set('zoom', S.zoom);
+  if(typeof applyCompact === 'function') applyCompact();
+}
+
+/* ================= 免費辨識（Tesseract） ================= */
+const workers = {};
+let progressLabel = '辨識文字中';
+function getWorker(lang){
+  if(!workers[lang]){
+    workers[lang] = Tesseract.createWorker(lang, 1, {
+      logger: m => {
+        if($('busy').hidden) return;   // 背景預先下載時不跳出提示
+        if(m.status === 'recognizing text') busy(progressLabel+'… '+Math.round((m.progress||0)*100)+'%');
+        else if(/load|initializ|download/i.test(m.status||'')) busy('第一次使用，正在下載'+(lang.includes('vert')?'直式':'橫式')+'辨識資料…（之後就不用再等）');
+      }
+    }).catch(e => { delete workers[lang]; throw e; });
+  }
+  return workers[lang];
+}
+function tessLines(data){
+  let lines = data.lines;
+  if(!lines || !lines.length){
+    lines = [];
+    (data.blocks||[]).forEach(b => (b.paragraphs||[]).forEach(p => (p.lines||[]).forEach(l => lines.push(l))));
+  }
+  return lines.map(l => ({
+    x:l.bbox.x0, y:l.bbox.y0, w:l.bbox.x1-l.bbox.x0, h:l.bbox.y1-l.bbox.y0,
+    text: cleanText(l.text), conf: l.confidence||0
+  })).filter(l => l.conf >= 35 && meaningful(l.text) && l.w > 4 && l.h > 4);
+}
+async function tessRun(canvas, dir, psm){
+  const lang = dir==='v' ? 'chi_tra_vert' : 'chi_tra';
+  const w = await getWorker(lang);
+  progressLabel = dir==='v' ? '辨識直式文字中' : '辨識橫式文字中';
+  await w.setParameters({ tessedit_pageseg_mode: String(psm), preserve_interword_spaces: '1' });
+  const { data } = await w.recognize(canvas, {}, {text:true, blocks:true});
+  return tessLines(data);
+}
+function score(lines){ return lines.reduce((s,l)=>s + l.conf * l.text.length, 0); }
+async function tessPage(canvas, dir){
+  if(dir === 'auto'){
+    const h = await tessRun(canvas, 'h', 3);
+    const v = await tessRun(canvas, 'v', 3);
+    const d = score(v) > score(h)*1.1 ? 'v' : 'h';
+    toast(d==='v' ? '判斷這頁是直式排列。' : '判斷這頁是橫式排列。');
+    return orderAndMerge(d==='v' ? v : h, d);
+  }
+  return orderAndMerge(await tessRun(canvas, dir, 3), dir);
+}
+
+/* ================= Gemini 辨識 ================= */
+async function geminiRead(canvas, isCrop){
+  busy('Gemini 正在看考卷…');
+  const b64 = canvas.toDataURL('image/jpeg', 0.88).split(',')[1];
+  const dirHint = S.dir==='v' ? '這份考卷主要是直式排列。' : S.dir==='h' ? '這份考卷主要是橫式排列。' : '';
+  const prompt = `這是台灣國小考卷${isCrop?'中被框選起來的一小塊區域':'的一頁'}，要用來報讀給有學習障礙的學生聽。${dirHint}
+請找出圖中要唸的文字，依照正確的閱讀順序輸出：
+1. 橫式文字：由左到右、由上到下。直式文字（國語直排）：每一行由上到下，行與行由右到左；若頁面上下分成好幾個區塊，先讀上面的區塊再讀下面的。
+2. ${isCrop ? '這是框選區域，全部文字合成「一個」項目即可。' : '每一小題（題號、題目、選項）是一個項目，同一行有好幾題也要分開；小題換行時要合在同一個項目；大題名稱（例如「一、寫注音」）自成一個項目；頁首的姓名座號欄可以省略。'}
+2-1. 照原樣輸出，錯別字也不能修正（改錯題要保留錯字）。
+3. 國字旁邊的小注音不要輸出，只輸出國字；如果題目本身就是注音（旁邊沒有國字），就保留注音。
+4. 要學生填寫的空格、括號一律寫成「（　）」，底線寫成「＿＿」。數字與數學符號照原樣。
+5. 只輸出圖上看得到的文字，不要作答、不要解釋。
+6. 每個項目加上 "kind"：大題名稱是 "header"；其他都是 "q"。
+輸出 JSON 陣列，每個元素是 {"text": 文字, "dir": "h" 或 "v", "kind": 類型, "box_2d": [ymin, xmin, ymax, xmax]}，座標是 0 到 1000 的比例。`;
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(S.model)+':generateContent?key='+encodeURIComponent(S.key);
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+    contents:[{parts:[{inline_data:{mime_type:'image/jpeg', data:b64}},{text:prompt}]}],
+    generationConfig:{response_mime_type:'application/json', temperature:0}
+  })});
+  if(!r.ok){
+    let msg = 'HTTP '+r.status;
+    try{ const j = await r.json(); msg = (j.error && j.error.message) || msg; }catch(e){}
+    if(r.status===400 && /API key/i.test(msg)) msg = 'API Key 不正確';
+    if(r.status===404) msg = '找不到模型「'+S.model+'」，請到設定改模型名稱';
+    if(r.status===429) msg = '使用量已達上限，請稍後再試';
+    throw new Error(msg);
+  }
+  const j = await r.json();
+  const txt = ((j.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+  let arr = JSON.parse(txt.replace(/^```(json)?|```$/g,'').trim());
+  if(!Array.isArray(arr)) arr = arr.items || arr.blocks || [];
+  const W = canvas.width, H = canvas.height;
+  return arr.filter(o => o && o.text && meaningful(o.text)).map(o => {
+    const bx = Array.isArray(o.box_2d) && o.box_2d.length===4 ? o.box_2d : [0,0,1000,1000];
+    const y0=bx[0]/1000*H, x0=bx[1]/1000*W, y1=bx[2]/1000*H, x1=bx[3]/1000*W;
+    return {x:Math.min(x0,x1), y:Math.min(y0,y1), w:Math.abs(x1-x0), h:Math.abs(y1-y0), text:cleanText(o.text), dir:o.dir==='v'?'v':'h', kindHint:o.kind};
+  });
+}
+
+/* ================= 框選朗讀 ================= */
+let drag = null;
+const selEl = document.createElement('div'); selEl.className = 'selrect'; selEl.hidden = true; ov.appendChild(selEl);
+function toCanvasXY(e){
+  const r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / r.width * cv.width, y: (e.clientY - r.top) / r.height * cv.height };
+}
+function setSelecting(on){
+  S.selecting = on;
+  ov.classList.toggle('selecting', on);
+  if(on){ stopSpeak(); endStep(); }
+  $('bSel').classList.toggle('on', on);
+  $('selHint').hidden = !on;
+}
+ov.addEventListener('pointerdown', e => {
+  if(!S.selecting) return;
+  unlockSpeech();
+  e.preventDefault();
+  ov.setPointerCapture(e.pointerId);
+  drag = { a: toCanvasXY(e), b: toCanvasXY(e) };
+  paintSel();
+});
+ov.addEventListener('pointermove', e => { if(drag){ drag.b = toCanvasXY(e); paintSel(); } });
+ov.addEventListener('pointerup', async e => {
+  if(!drag) return;
+  drag.b = toCanvasXY(e);
+  const x = Math.max(0, Math.min(drag.a.x, drag.b.x)), y = Math.max(0, Math.min(drag.a.y, drag.b.y));
+  const w = Math.min(cv.width, Math.max(drag.a.x, drag.b.x)) - x, h = Math.min(cv.height, Math.max(drag.a.y, drag.b.y)) - y;
+  drag = null;
+  if(w < 20 || h < 20){
+    selEl.hidden = true;
+    // 只是點一下：唸點到的那一題
+    const hit = S.blocks.findIndex(b => x>=b.x-6 && x<=b.x+b.w+6 && y>=b.y-6 && y<=b.y+b.h+6);
+    if(hit >= 0) speakAt(hit);
+    return;
+  }
+  await readRegion({x,y,w,h});
+});
+ov.addEventListener('pointercancel', () => { drag = null; selEl.hidden = true; });
+function paintSel(){
+  const x = Math.min(drag.a.x, drag.b.x), y = Math.min(drag.a.y, drag.b.y);
+  selEl.style.left = (x/cv.width*100)+'%'; selEl.style.top = (y/cv.height*100)+'%';
+  selEl.style.width = (Math.abs(drag.a.x-drag.b.x)/cv.width*100)+'%'; selEl.style.height = (Math.abs(drag.a.y-drag.b.y)/cv.height*100)+'%';
+  selEl.hidden = false;
+}
+
+async function readRegion(r){
+  stopSpeak();
+  {
+    const hit = S.blocks.filter(b => overlap1d(b.x,b.x+b.w,r.x,r.x+r.w)*overlap1d(b.y,b.y+b.h,r.y,r.y+r.h) > 0.4*b.w*b.h);
+    if(hit.some(absSilent)){ selEl.hidden = true; toast('框到的是寫注音的小題，不報讀，請自己看題目作答。', 5000); return; }
+    if(hit.filter(b => !b.isHead && b.sec === 'fix').length > 1){ selEl.hidden = true; toast('改錯題要一題一題聽，請按題目旁邊的 🔊 喇叭。', 5000); return; }
+  }
+  const dir = S.dir==='auto' ? (r.h > r.w*1.3 ? 'v' : 'h') : S.dir;
+  let text = '';
+  busy('辨識框選的文字…');
+  try{
+    const pg = S.pages[S.cur];
+    if(pg.kind==='pdf' && pg.items){
+      const inside = pg.items.filter(it => { const cx=it.x+it.w/2, cy=it.y+it.h/2; return cx>=r.x && cx<=r.x+r.w && cy>=r.y && cy<=r.y+r.h; });
+      text = orderAndMerge(itemsToLines(inside, dir), dir).map(b=>b.text).join('，');
+    } else {
+      const pad = 8, k = r.w < 700 ? Math.min(3, 900/r.w) : 1;
+      const c = document.createElement('canvas');
+      c.width = Math.round((r.w+2*pad)*k); c.height = Math.round((r.h+2*pad)*k);
+      const g = c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height);
+      g.drawImage(cv, r.x-pad, r.y-pad, r.w+2*pad, r.h+2*pad, 0, 0, c.width, c.height);
+      if(S.engine==='gemini' && S.key){
+        try{ text = (await geminiRead(c, true)).map(b=>b.text).join('，'); }catch(e){ toast('Gemini 辨識失敗，改用免費辨識。'); }
+      }
+      if(!text){
+        const lines = await tessRun(c, dir, dir==='v' ? 5 : 6);
+        text = orderAndMerge(lines, dir).map(b=>b.text).join('，');
+      }
+    }
+  }catch(e){ console.error(e); toast('辨識失敗：'+(e.message||e)); }
+  busy(false);
+  selEl.hidden = true;
+  if(!text){ toast('框框裡沒有辨識到文字，請框大一點，或切換橫式／直式再試。'); return; }
+  const hit = S.blocks.filter(b => overlap1d(b.x,b.x+b.w,r.x,r.x+r.w)*overlap1d(b.y,b.y+b.h,r.y,r.y+r.h) > 0.4*b.w*b.h);
+  if(hit.some(absSilent)){ toast('框到的是寫注音的小題，不報讀，請自己看題目作答。', 5000); return; }
+  const fixItems = hit.filter(b => !b.isHead && b.sec === 'fix');
+  if(fixItems.length > 1){ toast('改錯題要一題一題聽，請按題目旁邊的 🔊 喇叭。', 5000); return; }
+  const off = hit.find(teacherOff);
+  const q = off ? [{b:{temp:true}, c: noReadMsg(off)}] : chunks(toSpeech(text)).map(c => ({b:{temp:true}, c}));
+  SP.last = {type:'q', q};
+  startSpeech(q.slice());
+}
+
+/* ================= 語音（瀏覽器內建自然語音 Web Speech API） ================= */
+let voices = [];
+// 優先：臺灣中文 → 自然／線上語音 → 女聲
+function voiceScore(v){
+  const id = v.name + ' ' + v.lang; let s = 0;
+  if(/zh[-_]TW|Hant|台灣|臺灣|Taiwan/i.test(id)) s += 100;
+  else if(/zh[-_]CN|cmn|Hans|普通话|China|Mandarin/i.test(id)) s += 40;
+  else if(/HK|yue|粵/i.test(id)) s += 5;
+  if(/Natural|Online|Neural|Premium|Enhanced|增強|優化|高品質/i.test(id)) s += 30;
+  if(/HsiaoChen|曉臻|HsiaoYu|曉雨|Yating|雅婷|Hanhan|涵涵|Mei-?Jia|美佳|Google\s*國語|Female|女/i.test(id)) s += 20;
+  if(/Zhiwei|志偉|YunJhe|雲哲|Male|男/i.test(id)) s -= 15;
+  return s;
+}
+function loadVoices(){
+  let all = []; try{ all = speechSynthesis.getVoices(); }catch(e){}
+  voices = all.filter(v => /^(zh|cmn)/i.test(v.lang) || /Chinese|中文|國語|普通话/i.test(v.name));
+  voices.sort((a, b) => voiceScore(b) - voiceScore(a) || a.name.localeCompare(b.name));
+  const sel = $('voice'); sel.innerHTML = '';
+  const best = voices[0];
+  const o0 = document.createElement('option'); o0.value = 'auto';
+  o0.textContent = best ? '自動：' + best.name.replace(/Microsoft |Google | - .*$|\(.*\)/g, '').trim() : '自動（中文語音）';
+  sel.appendChild(o0);
+  voices.forEach(v => { const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = v.name.replace(/Microsoft |Google /, '') + (v.localService ? '' : ' ☁'); sel.appendChild(o); });
+  if([...sel.options].some(o => o.value === S.voiceURI)) sel.value = S.voiceURI; else { S.voiceURI = 'auto'; sel.value = 'auto'; }
+}
+function pickVoice(){
+  if(S.voiceURI !== 'auto'){ const v = voices.find(x => x.voiceURI === S.voiceURI); if(v) return v; }
+  return voices[0] || null;
+}
+if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+else toast('這個瀏覽器不能語音報讀，請改用 Chrome、Edge 或 Safari。', 8000);
+
+let unlocked = false;
+function unlockSpeech(){
+  if(unlocked || !('speechSynthesis' in window)) return;
+  unlocked = true;
+  try{ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); }catch(e){}
+}
+document.addEventListener('pointerdown', unlockSpeech, {once:true, capture:true});
+
+function toSpeech(t){
+  t = cleanText(t);
+  if(S.skipZy) t = t.replace(/[ㄅ-ㄯㆠ-ㆿˊˇˋ˙]+/g, '');
+  t = t.replace(/[①-⑳]/g, c => '，選項' + (c.charCodeAt(0) - 0x245F) + '，');
+  if(S.mathWords){
+    t = t.replace(/[（(][\s　_＿]*[）)]/g, '，括號，')
+         .replace(/[_＿﹍]{2,}/g, '，空格，')
+         .replace(/[□☐▢]/g, '，方格，')
+         .replace(/(\d)\s*[×xX＊*]\s*(?=\d)/g, '$1乘以')
+         .replace(/÷/g, '除以').replace(/[＋+]/g, '加')
+         .replace(/(\d)\s*[－−—-]\s*(?=\d)/g, '$1減')
+         .replace(/[＝=]/g, '等於').replace(/[＞>]/g, '大於').replace(/[＜<]/g, '小於');
+  }
+  return t.replace(/，\s*，/g, '，').replace(/^，|，$/g, '');
+}
+function chunks(t){
+  const parts = t.split(/(?<=[。！？；!?;])/);
+  const out = [];
+  for(let p of parts){
+    while(p.length > 70){
+      let cut = p.lastIndexOf('，', 70); if(cut < 20) cut = 70;
+      out.push(p.slice(0, cut + 1)); p = p.slice(cut + 1);
+    }
+    if(p.trim()) out.push(p);
+  }
+  return out;
+}
+
+// 播放器：queue 是一句一句；暫停時記住唸到哪一句，繼續時從那一句接著唸（各種平板都穩定）
+const SP = { token: 0, q: [], i: 0, state: 'idle', after: null, last: null, keep: null };
+function startSpeech(q, after){
+  if(!('speechSynthesis' in window)) return;
+  const wasBusy = speechSynthesis.speaking || speechSynthesis.pending || SP.state !== 'idle';
+  hardStop();
+  SP.q = q; SP.i = 0; SP.after = after || null; SP.state = 'playing';
+  const tk = ++SP.token;
+  if(wasBusy) setTimeout(() => runNext(tk), 120); else runNext(tk);   // 先停掉上一段，避免兩段語音重疊
+  updateCtl();
+}
+function runNext(tk){
+  if(tk !== SP.token || SP.state !== 'playing') return;
+  if(SP.i >= SP.q.length){
+    SP.state = 'idle'; mark(null); updateCtl();
+    const a = SP.after; SP.after = null; if(a) a();
+    return;
+  }
+  const {b, c} = SP.q[SP.i];
+  if(b && !b.temp) mark(b);
+  const v = pickVoice();
+  const u = new SpeechSynthesisUtterance(c);
+  u.lang = v ? v.lang : 'zh-TW'; if(v) u.voice = v;
+  u.rate = S.rate; u.pitch = 1; u.volume = 1;
+  u.onend = () => { if(tk !== SP.token || SP.state !== 'playing') return; SP.i++; runNext(tk); };
+  u.onerror = e => { if(tk !== SP.token || SP.state !== 'playing') return; if(e && (e.error === 'interrupted' || e.error === 'canceled')) return; SP.i++; runNext(tk); };
+  SP.keep = u;
+  speechSynthesis.speak(u);
+}
+function hardStop(){ SP.token++; try{ speechSynthesis.cancel(); }catch(e){} }
+function stopSpeak(){ hardStop(); SP.state = 'idle'; SP.after = null; mark(null); updateCtl(); }
+function pauseSpeak(){ if(SP.state !== 'playing') return; SP.state = 'paused'; hardStop(); updateCtl(); }
+function resumeSpeak(){
+  if(SP.state !== 'paused') return;
+  SP.state = 'playing'; const tk = ++SP.token;
+  setTimeout(() => runNext(tk), 80); updateCtl();
+}
+function replaySpeak(){
+  const L = SP.last; if(!L){ toast('還沒有播放過。'); return; }
+  if(L.type === 'one') speakOne(L.b);
+  else if(L.type === 'page') speakPage(L.start);
+  else if(L.type === 'q') startSpeech(L.q.slice());
+}
+function updateCtl(){
+  const p = $('bPause'); if(!p) return;
+  if(SP.state === 'paused'){ p.textContent = '▶ 繼續'; p.classList.add('primary'); }
+  else { p.textContent = '⏸ 暫停'; p.classList.remove('primary'); }
+  p.disabled = SP.state === 'idle';
+  $('bStop').disabled = SP.state === 'idle';
+  $('bReplay').disabled = !SP.last;
+}
+function mark(b){
+  document.querySelectorAll('.reading').forEach(n => n.classList.remove('reading'));
+  if(!b) return;
+  const k = S.blocks.indexOf(b); if(k >= 0) S.ptr = k;
+  if(b.el){ b.el.classList.add('reading'); b.el.scrollIntoView({block:'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); }
+  if(b.li) b.li.classList.add('reading');
+  if(b.card){ b.card.classList.add('reading'); b.card.scrollIntoView({block:'nearest'}); }
+}
+
+/* ---------- 依題型決定要唸什麼 ---------- */
+function queueFor(b, single){
+  if(b.isHead) return [{b, c: headerSpeech(b.text)}];   // 大題名稱（含配分）一次唸完
+  if(absSilent(b)) return [];
+  if(teacherOff(b)) return single ? [{b, c: noReadMsg(b)}] : [];
+  return chunks(speechOf(b)).map(c => ({b, c}));
+}
+// 單題：只唸這一題，唸完就停（改錯題也不會接著唸下一題）
+function speakOne(b){
+  const q = queueFor(b, true);
+  if(!q.length){ toast('寫注音的小題不報讀，請自己看題目作答。'); return; }
+  SP.last = {type:'one', b};
+  const inStep = S.step && !b.isHead && b.head === S.step.head;
+  startSpeech(q, inStep ? () => cueAfter(b) : null);
+}
+// 整頁：寫注音小題跳過；遇到改錯題 → 唸完大題名稱就改成逐題模式
+function speakPage(start){
+  start = start || 0;
+  endStep();
+  const q = [];
+  for(let k = start; k < S.blocks.length; k++){
+    const b = S.blocks[k];
+    if(b.isHead && b.sec === 'fix'){
+      const items = S.blocks.filter((x, j) => j > k && !x.isHead && x.head === b && !quietItem(x));
+      const nextH = S.blocks.findIndex((x, j) => j > k && x.isHead);
+      q.push(...queueFor(b, false));
+      if(items.length){
+        q.push({b, c: '這一大題要一題一題聽，請按第' + items[0].qn + '題的喇叭。'});
+        SP.last = {type:'page', start};
+        startSpeech(q, () => enterStep(b, nextH));
+        return;
+      }
+      continue;
+    }
+    if(!b.isHead && b.sec === 'fix') continue;
+    q.push(...queueFor(b, false));
+  }
+  if(!q.length){ toast('這一頁沒有可以報讀的內容。'); return; }
+  SP.last = {type:'page', start};
+  startSpeech(q, () => toast('這一頁唸完了。'));
+}
+function speakAt(k, dirn){
+  dirn = dirn || 1;
+  if(!S.blocks.length){ toast('這一頁還沒有可以唸的文字。'); return; }
+  while(k >= 0 && k < S.blocks.length && quietItem(S.blocks[k])) k += dirn;   // 不報讀的小題直接跳過
+  if(k >= S.blocks.length){ toast('這是這一頁的最後一題了。' + (S.cur < S.pages.length - 1 ? '按 ▶ 看下一頁。' : '')); return; }
+  if(k < 0){ k = S.blocks.findIndex(b => !quietItem(b)); if(k < 0) return; }
+  if(S.step){ const b = S.blocks[k]; if(b.isHead || b.head !== S.step.head) endStep(); }
+  S.ptr = k;
+  speakOne(S.blocks[k]);
+}
+
+/* ---------- 改錯題逐題模式 ---------- */
+function enterStep(head, nextH){
+  S.step = {head, nextH};
+  const first = S.blocks.find(x => !x.isHead && x.head === head && !absSilent(x));
+  setCue(first);
+  $('stepText').textContent = '✏️ ' + (SEC_NAMES[head.sec] || '改錯題') + '：請按 🔊 第' + (first ? first.qn : 1) + '題，一題一題聽。聽完再自己按下一題。';
+  $('bStepNext').hidden = nextH < 0;
+  $('stepBar').hidden = false;
+}
+function cueAfter(b){
+  const items = S.blocks.filter(x => !x.isHead && x.head === b.head && !absSilent(x));
+  const nx = items[items.indexOf(b) + 1];
+  setCue(nx || null);
+  $('stepText').textContent = nx ? '✏️ 第' + b.qn + '題唸完了。要聽下一題，請按 🔊 第' + nx.qn + '題。'
+                                 : '✏️ 這一大題的每一題都有喇叭，可以再聽一次。' + (S.step && S.step.nextH >= 0 ? '做完了就按「繼續下一大題」。' : '');
+}
+function setCue(b){
+  document.querySelectorAll('.blk.cue, .qcard.cue').forEach(n => n.classList.remove('cue'));
+  if(b && b.el){ b.el.classList.add('cue'); b.el.scrollIntoView({block:'nearest'}); }
+  if(b && b.card){ b.card.classList.add('cue'); b.card.scrollIntoView({block:'nearest'}); }
+}
+function endStep(){ S.step = null; setCue(null); const sb = $('stepBar'); if(sb) sb.hidden = true; }
+
+/* ================= 介面事件 ================= */
+function setDir(d){
+  S.dir = d; store.set('dir', d);
+  document.querySelectorAll('#dirSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir===d)));
+}
+setDir(S.dir);
+document.querySelectorAll('#dirSeg button').forEach(b => b.addEventListener('click', () => {
+  if(S.dir === b.dataset.dir) return;
+  setDir(b.dataset.dir);
+  if(S.pages.length) showPage(S.cur);
+}));
+function setRate(r){
+  S.rate = r; store.set('rate2', r);
+  document.querySelectorAll('#rateSeg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.rate === r)));
+}
+setRate(S.rate);
+document.querySelectorAll('#rateSeg button').forEach(b => b.addEventListener('click', () => {
+  setRate(+b.dataset.rate);
+  if(SP.state === 'idle') startSpeech([{b:{temp:true}, c:'這是' + (S.rate < 0.8 ? '慢' : S.rate < 0.95 ? '適中' : '正常') + '的速度。'}]);
+}));
+$('voice').addEventListener('change', e => {
+  S.voiceURI = e.target.value; store.set('voice3', S.voiceURI);
+  startSpeech([{b:{temp:true}, c:'你好，我來幫你唸題目。'}]);
+});
+
+$('bCam').addEventListener('click', () => {
+  // 學生拍照的同時，在背景先準備辨識資料
+  if(!(S.engine==='gemini' && S.key) && window.Tesseract){ try{ getWorker(S.dir==='v' ? 'chi_tra_vert' : 'chi_tra').catch(()=>{}); }catch(e){} }
+  $('fCam').click();
+});
+
+async function openFiles(files){
+  if(!files.length) return;
+  const pdf = files.find(f => f.type==='application/pdf' || /\.pdf$/i.test(f.name));
+  if(pdf){
+    const buf = await pdf.arrayBuffer();
+    const name = pdf.name.replace(/\.pdf$/i,'');
+    if($('saveLocal').checked){
+      try{ await DB.put({id: pdf.name+'|'+pdf.size, name, size: pdf.size, added: Date.now()}, buf); }
+      catch(e){ console.warn(e); toast('這台平板的空間不夠，考卷沒有收進考卷櫃，但還是可以使用。'); }
+    }
+    S.remotePath = ''; S.saved = null;
+    await loadPdf(buf, name);
+    return;
+  }
+  const imgs = files.filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|heic|webp)$/i.test(f.name));
+  if(!imgs.length){ toast('只能打開 PDF 或照片檔。'); return; }
+  S.fileName = imgs.length > 1 ? '照片考卷（'+imgs.length+' 張）' : imgs[0].name.replace(/\.[^.]+$/,'');
+  await addImages(imgs, true);
+}
+$('fOpen').addEventListener('change', async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  await openFiles(files);
+});
+const drop = $('drop');
+drop.addEventListener('click', () => $('fOpen').click());
+drop.addEventListener('keydown', e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); $('fOpen').click(); } });
+['dragenter','dragover'].forEach(ev => document.addEventListener(ev, e => { if(e.dataTransfer && [...e.dataTransfer.types].includes('Files')){ e.preventDefault(); drop.classList.add('over'); } }));
+['dragleave','dragend'].forEach(ev => document.addEventListener(ev, e => { if(!e.relatedTarget) drop.classList.remove('over'); }));
+document.addEventListener('drop', async e => {
+  if(!e.dataTransfer || !e.dataTransfer.files.length) return;
+  e.preventDefault(); drop.classList.remove('over');
+  await openFiles([...e.dataTransfer.files]);
+});
+$('fCam').addEventListener('change', async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  if(!files.length) return;
+  // 拍照：接在目前的照片後面（目前是 PDF 就換成照片）
+  const append = S.pages.length && S.pages[0].kind==='img' && !$('viewer').hidden;
+  if(!append) S.fileName = '拍照考卷';
+  await addImages(files, !append);
+  if(append) toast('已加入第 '+S.pages.length+' 頁。');
+});
+async function addImages(files, replace){
+  if(replace){ S.remotePath = ''; S.saved = null; }
+  busy('正在讀取照片…');
+  try{
+    const canvases = [];
+    for(const f of files) canvases.push(await fileToCanvas(f));
+    if(replace){ S.pages = []; S.pdf = null; S.cache.clear(); }
+    const start = S.pages.length;
+    canvases.forEach(c => S.pages.push({kind:'img', canvas:c, rot:0}));
+    await showPage(start);
+  }catch(e){ busy(false); toast('照片讀不出來，請換一張再試。'); }
+}
+$('bPrev').addEventListener('click', () => { if(S.cur>0) showPage(S.cur-1); });
+$('bNext').addEventListener('click', () => { if(S.cur<S.pages.length-1) showPage(S.cur+1); });
+$('bRot').addEventListener('click', () => {
+  const pg = S.pages[S.cur]; if(!pg || pg.kind!=='img') return;
+  pg.canvas = rotateCanvas(pg.canvas); pg.rot = ((pg.rot||0)+90)%360; showPage(S.cur);
+});
+$('bPlay').addEventListener('click', () => {
+  if(!S.blocks.length){ toast('這一頁還沒有可以唸的文字。'); return; }
+  speakPage(0);
+});
+$('bPause').addEventListener('click', () => SP.state === 'paused' ? resumeSpeak() : pauseSpeak());
+$('bStop').addEventListener('click', stopSpeak);
+$('bReplay').addEventListener('click', replaySpeak);
+$('bStepNext').addEventListener('click', () => { const n = S.step ? S.step.nextH : -1; endStep(); if(n >= 0) speakPage(n); });
+$('bStepEnd').addEventListener('click', () => { stopSpeak(); endStep(); });
+$('bEdSave').addEventListener('click', saveEdits);
+$('bSel').addEventListener('click', () => setSelecting(!S.selecting));
+$('bQNext').addEventListener('click', () => speakAt(S.ptr + 1, 1));
+$('bQPrev').addEventListener('click', () => speakAt(S.ptr <= 0 ? 0 : S.ptr - 1, -1));
+$('bZoomIn').addEventListener('click', () => { S.zoom += 0.25; applyZoom(); });
+$('bZoomOut').addEventListener('click', () => { S.zoom -= 0.25; applyZoom(); });
+document.addEventListener('keydown', e => {
+  if($('viewer').hidden || $('dlg').open || e.target.isContentEditable || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if(e.key==='ArrowDown' || e.key==='ArrowRight'){ e.preventDefault(); speakAt(S.ptr+1, 1); }
+  else if(e.key==='ArrowUp' || e.key==='ArrowLeft'){ e.preventDefault(); speakAt(S.ptr<=0?0:S.ptr-1, -1); }
+  else if(e.key==='Escape'){ stopSpeak(); if(S.selecting) setSelecting(false); }
+});
+$('bLib').addEventListener('click', showLib);
+$('bBack').addEventListener('click', () => { if(S.pages.length) showPage(S.cur); });
+updateNav();
+
+/* ================= 考卷櫃 ================= */
+// 這台平板的考卷：IndexedDB（目錄與檔案分開存，列清單時不必讀整份 PDF）
+const DB = (() => {
+  let p;
+  function open(){
+    if(!p) p = new Promise((res, rej) => {
+      try{
+        const r = indexedDB.open('erh-shelf', 1);
+        r.onupgradeneeded = () => { r.result.createObjectStore('meta', {keyPath:'id'}); r.result.createObjectStore('data', {keyPath:'id'}); };
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      }catch(e){ rej(e); }
+    });
+    return p;
+  }
+  async function tx(stores, mode, fn){
+    const db = await open();
+    return new Promise((res, rej) => {
+      const t = db.transaction(stores, mode); let out;
+      const r = fn(t); if(r) r.onsuccess = () => { out = r.result; };
+      t.oncomplete = () => res(out); t.onerror = t.onabort = () => rej(t.error);
+    });
+  }
+  return {
+    list: () => tx(['meta'], 'readonly', t => t.objectStore('meta').getAll()).then(a => (a||[]).sort((x,y)=>y.added-x.added)),
+    get: id => tx(['data'], 'readonly', t => t.objectStore('data').get(id)).then(r => r && r.data),
+    put: (meta, data) => tx(['meta','data'], 'readwrite', t => { t.objectStore('data').put({id:meta.id, data}); t.objectStore('meta').put(meta); }),
+    del: id => tx(['meta','data'], 'readwrite', t => { t.objectStore('meta').delete(id); t.objectStore('data').delete(id); })
+  };
+})();
+
+// 老師放在網站上的考卷：先找 tests/list.json，沒有就自動列出 GitHub 存放庫 tests 資料夾裡的 PDF
+function repoInfo(){
+  const m = location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i); if(!m) return null;
+  const seg = location.pathname.split('/').filter(Boolean);
+  const repo = (seg.length && !/\.[a-z0-9]+$/i.test(seg[0])) ? decodeURIComponent(seg[0]) : m[1]+'.github.io';
+  return {owner:m[1], repo};
+}
+function encodePath(p){
+  if(/^https?:\/\//i.test(p)) return p;
+  return p.split('/').map(s => { try{ s = decodeURIComponent(s); }catch(e){} return encodeURIComponent(s); }).join('/');
+}
+async function fetchRepoList(force){
+  const cached = store.get('repoList', null);
+  if(!force && cached && Date.now()-cached.t < 5*60*1000) return cached.files;
+  let files = null;
+  try{
+    const r = await fetch('tests/list.json', {cache:'no-cache'});
+    if(r.ok){
+      const j = await r.json();
+      files = (Array.isArray(j) ? j : (j.files||[])).map(f => typeof f==='string'
+        ? {path: /^(tests\/|https?:)/.test(f) ? f : 'tests/'+f}
+        : {path: f.path || f.file, name: f.name, dir: f.dir, subject: f.subject});
+    }
+  }catch(e){}
+  if(!files){
+    const info = repoInfo();
+    if(!info) throw new Error('norepo');
+    let lastErr = 'api';
+    for(const ref of ['HEAD','main','master']){
+      const r = await fetch('https://api.github.com/repos/'+info.owner+'/'+info.repo+'/git/trees/'+ref+'?recursive=1');
+      if(r.ok){
+        const j = await r.json();
+        files = (j.tree||[]).filter(n => n.type==='blob' && /^tests\/.+\.pdf$/i.test(n.path)).map(n => ({path:n.path}));
+        break;
+      }
+      if(r.status===403 || r.status===429){ lastErr = 'rate'; break; }
+    }
+    if(!files){
+      if(cached) return cached.files;
+      throw new Error(lastErr);
+    }
+  }
+  files.forEach(f => {
+    const parts = f.path.replace(/^tests\//,'').split('/');
+    const base = parts.pop();
+    f.name = f.name || base.replace(/\.pdf$/i,'');
+    f.group = f.subject || parts.join(' / ');
+  });
+  files.sort((a,b) => a.group.localeCompare(b.group,'zh-Hant') || a.name.localeCompare(b.name,'zh-Hant',{numeric:true}));
+  store.set('repoList', {t:Date.now(), files});
+  return files;
+}
+function mkBtn(label, cls, fn){
+  const b = document.createElement('button'); b.type='button'; b.className = 'mini '+(cls||''); b.textContent = label;
+  b.addEventListener('click', fn); return b;
+}
+function fmtSize(n){ return n > 1048576 ? (n/1048576).toFixed(1)+' MB' : Math.max(1, Math.round(n/1024))+' KB'; }
+function fmtDate(t){ const d = new Date(t); return (d.getMonth()+1)+'/'+d.getDate(); }
+
+async function loadSaved(path){
+  S.remotePath = /^https?:/i.test(path) ? '' : path.replace(/^\.?\//, '');
+  S.saved = null; S.dirty.clear();
+  if(!S.remotePath) return;
+  try{
+    const r = await fetch(encodePath(S.remotePath) + '.json?v=' + Date.now(), {cache:'no-store'});
+    if(r.ok) S.saved = await r.json();
+  }catch(e){}
+}
+async function openRemote(path, name, dir){
+  if(['h','v','auto'].includes(dir)) setDir(dir);
+  busy('正在載入「'+name+'」…');
+  try{
+    const [r] = await Promise.all([fetch(encodePath(path)), loadSaved(path)]);
+    if(!r.ok) throw new Error(r.status);
+    await loadPdf(await r.arrayBuffer(), name);
+  }catch(e){ busy(false); toast('打不開「'+name+'」，請確認檔案還在網站的 tests 資料夾裡。', 6000); }
+}
+function qrFor(path, dir){
+  S.qrDir = dir || '';
+  fillSettings();
+  $('pdfPath').value = path;
+  $('dlg').showModal();
+  $('bMakeQr').click();
+  $('qrWrap').scrollIntoView({block:'center'});
+}
+
+async function renderRepo(force){
+  const ul = $('repoList'), note = $('repoNote');
+  ul.innerHTML = ''; note.textContent = '讀取中…'; note.hidden = false; $('repoCnt').textContent = '';
+  let files;
+  try{ files = await fetchRepoList(force); }
+  catch(e){
+    note.textContent = e.message==='norepo'
+      ? '這個網站不在 GitHub Pages 上，請用上面的區域打開檔案。'
+      : e.message==='rate'
+        ? '同一個網路短時間讀取太多次，請過幾分鐘再按「重新整理」。'
+        : '讀不到網站上的考卷清單，請檢查網路後按「重新整理」。';
+    note.append(' '); note.appendChild(mkBtn('重新整理', '', () => renderRepo(true)));
+    return;
+  }
+  $('repoCnt').textContent = files.length ? files.length+' 份' : '';
+  if(!files.length){
+    note.textContent = '還沒有考卷。在 GitHub 存放庫建立 tests 資料夾，把 PDF 上傳進去，幾分鐘後就會出現在這裡。';
+    note.append(' '); note.appendChild(mkBtn('重新整理', '', () => renderRepo(true)));
+    return;
+  }
+  note.hidden = true;
+  let g = null;
+  files.forEach(f => {
+    if(f.group !== g){
+      g = f.group;
+      if(g){ const h = document.createElement('li'); h.className = 'grp'; h.textContent = '📁 '+g; ul.appendChild(h); }
+    }
+    const li = document.createElement('li');
+    const n = document.createElement('span'); n.className = 'fname'; n.textContent = '📄 '+f.name;
+    if(f.dir){ const m = document.createElement('span'); m.className = 'fmeta'; m.textContent = {h:'橫式',v:'直式',auto:'自動判斷'}[f.dir] || ''; n.appendChild(m); }
+    li.append(n, mkBtn('打開', 'go', () => openRemote(f.path, f.name, f.dir)), mkBtn('QR', '', () => qrFor(f.path, f.dir)));
+    ul.appendChild(li);
+  });
+  const li = document.createElement('li'); li.className = 'grp';
+  li.appendChild(mkBtn('重新整理清單', '', () => renderRepo(true)));
+  ul.appendChild(li);
+}
+
+async function renderLocal(){
+  const ul = $('localList'), note = $('localNote');
+  ul.innerHTML = ''; $('localCnt').textContent = '';
+  let list;
+  try{ list = await DB.list(); }
+  catch(e){ note.textContent = '這個瀏覽器不能存檔案（可能是無痕模式），請直接用上面的區域打開。'; return; }
+  if(!list.length){ note.hidden = false; note.textContent = '還沒有存任何考卷。從上面打開 PDF 後，會自動收進這裡。'; return; }
+  note.hidden = true;
+  $('localCnt').textContent = list.length+' 份';
+  list.forEach(m => {
+    const li = document.createElement('li');
+    const n = document.createElement('span'); n.className = 'fname';
+    n.textContent = '📄 '+m.name;
+    const meta = document.createElement('span'); meta.className = 'fmeta'; meta.textContent = fmtDate(m.added)+' 加入・'+fmtSize(m.size);
+    n.appendChild(meta);
+    const open = mkBtn('打開', 'go', async () => {
+      busy('正在打開「'+m.name+'」…');
+      try{ const d = await DB.get(m.id); if(!d) throw new Error('missing'); S.remotePath = ''; S.saved = null; await loadPdf(d, m.name); }
+      catch(e){ busy(false); toast('這份考卷讀不出來，可能已被清除，請重新加入。'); renderLocal(); }
+    });
+    let armT;
+    const del = mkBtn('刪除', 'del', async () => {
+      if(!del.classList.contains('arm')){
+        del.classList.add('arm'); del.textContent = '確定刪除？';
+        clearTimeout(armT); armT = setTimeout(() => { del.classList.remove('arm'); del.textContent = '刪除'; }, 3000);
+        return;
+      }
+      try{ await DB.del(m.id); toast('已刪除「'+m.name+'」。'); }catch(e){ toast('刪除失敗，請再試一次。'); }
+      renderLocal();
+    });
+    li.append(n, open, del);
+    ul.appendChild(li);
+  });
+}
+
+function showLib(){
+  stopSpeak(); endStep();
+  if(S.selecting) setSelecting(false);
+  $('viewer').hidden = true; $('lib').hidden = false; $('dock').hidden = true;
+  $('backBar').hidden = !S.pages.length;
+  updateNav();
+  renderRepo(false); renderLocal();
+}
+
+/* ================= 老師設定 ================= */
+function fillSettings(){
+  $('engTess').checked = S.engine==='tess'; $('engGem').checked = S.engine==='gemini';
+  $('apiKey').value = S.key; $('model').value = S.model;
+  $('optZy').checked = S.skipZy; $('optMath').checked = S.mathWords;
+  $('optNoSound').checked = S.noSound; $('optNoShape').checked = S.noShape; $('optNoFill').checked = S.noFill;
+  $('bEditMode').textContent = S.edit ? '關閉老師編輯模式' : '✏️ 開啟老師編輯模式';
+  $('pdfPath').value = S.autoPdf || '';
+}
+$('bSet').addEventListener('click', () => { fillSettings(); $('dlg').showModal(); });
+$('dlg').addEventListener('close', () => {
+  S.qrDir = '';
+  const oldEngine = S.engine;
+  S.engine = $('engGem').checked ? 'gemini' : 'tess';
+  S.key = $('apiKey').value.trim(); S.model = $('model').value.trim() || 'gemini-flash-latest';
+  S.skipZy = $('optZy').checked; S.mathWords = $('optMath').checked;
+  store.set('engine', S.engine); store.set('key', S.key); store.set('model', S.model);
+  store.set('skipZy', S.skipZy); store.set('mathWords', S.mathWords);
+  const nrChanged = S.noSound !== $('optNoSound').checked || S.noShape !== $('optNoShape').checked || S.noFill !== $('optNoFill').checked;
+  S.noSound = $('optNoSound').checked; S.noShape = $('optNoShape').checked; S.noFill = $('optNoFill').checked;
+  store.set('noSound', S.noSound); store.set('noShape2', S.noShape); store.set('noFill', S.noFill);
+  if(nrChanged && S.blocks.length) drawBlocks();
+  if(oldEngine !== S.engine && S.pages.length) showPage(S.cur);
+});
+$('incKey').addEventListener('change', e => $('keyWarn').hidden = !e.target.checked);
+$('bMakeQr').addEventListener('click', () => {
+  const p = new URLSearchParams();
+  p.set('dir', S.qrDir || S.dir);
+  const eng = $('engGem').checked ? 'gemini' : 'tess';
+  p.set('engine', eng);
+  p.set('zy', $('optZy').checked ? '1' : '0');
+  p.set('math', $('optMath').checked ? '1' : '0');
+  p.set('ns', $('optNoSound').checked ? '1' : '0');
+  p.set('nsh', $('optNoShape').checked ? '1' : '0');
+  p.set('nf', $('optNoFill').checked ? '1' : '0');
+  const m = $('model').value.trim(); if(eng==='gemini' && m && m!=='gemini-flash-latest') p.set('model', m);
+  const pdf = $('pdfPath').value.trim(); if(pdf) p.set('pdf', pdf);
+  const k = $('apiKey').value.trim(); if($('incKey').checked && k) p.set('key', k);
+  const url = location.origin + location.pathname + '?' + p.toString();
+  $('qrUrl').textContent = url;
+  const box = $('qrBox'); box.innerHTML = '';
+  try{ new QRCode(box, {text:url, width:180, height:180, correctLevel: QRCode.CorrectLevel.M}); }catch(e){ box.textContent = '（QR Code 產生失敗，請複製連結）'; }
+  $('qrWrap').hidden = false; $('bCopy').hidden = false;
+});
+$('bCopy').addEventListener('click', async () => {
+  const t = $('qrUrl').textContent;
+  try{ await navigator.clipboard.writeText(t); toast('已複製連結。'); }
+  catch(e){ const r=document.createRange(); r.selectNodeContents($('qrUrl')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('請長按或按 Ctrl+C 複製選取的連結。'); }
+});
+$('bEditMode').addEventListener('click', () => {
+  S.edit = !S.edit;
+  $('bEditMode').textContent = S.edit ? '關閉老師編輯模式' : '✏️ 開啟老師編輯模式';
+  $('editPanel').hidden = !S.edit || $('viewer').hidden;
+  if(S.edit && S.blocks.length) drawEditor();
+  toast(S.edit ? '已開啟老師編輯模式，編輯區在考卷下方。' : '已關閉老師編輯模式。');
+});
+$('bClear').addEventListener('click', () => { S.cache.clear(); toast('已清除，切換頁面時會重新辨識。'); });
+
+/* ================= 預先載入 PDF ================= */
+if(S.autoPdf){
+  const nm = S.autoPdf.split('/').pop().replace(/\.pdf$/i,'');
+  (async () => {
+    busy('正在載入老師準備的考卷…');
+    try{
+      const [r] = await Promise.all([fetch(encodePath(S.autoPdf)), loadSaved(S.autoPdf)]);
+      if(!r.ok) throw new Error(r.status);
+      await loadPdf(await r.arrayBuffer(), nm);
+    }catch(e){ busy(false); toast('找不到老師準備的考卷（'+nm+'），請從考卷櫃選，或直接拍照。', 6000); showLib(); }
+  })();
+} else {
+  showLib();
+}
+</script>
+</body>
+</html>
