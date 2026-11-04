@@ -57,6 +57,8 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding-block
 .opts label{display:inline-flex;align-items:center;gap:8px}
 .opts select{min-height:42px;border-radius:10px;border:2px solid var(--line);background:var(--paper);padding:0 8px;max-width:220px}
 .opts input[type=range]{width:120px;accent-color:var(--accent)}
+.vnote{flex:1 1 100%;order:9;color:var(--danger);font-size:.92rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.edgebtn{min-height:38px;padding:0 14px;font-size:.95rem;text-decoration:none;color:var(--accent-ink);background:var(--accent);border-color:var(--accent)}
 .rate-val{font-variant-numeric:tabular-nums;min-width:3.2em;color:var(--ink)}
 
 main{max-width:1100px;margin:0 auto}
@@ -75,6 +77,12 @@ kbd{font-family:var(--font-display);background:var(--accent-soft);border-radius:
 .blk{position:absolute;border:2px solid var(--box-edge);background:var(--box);border-radius:6px;padding:0;cursor:pointer;transition:background .15s}
 .blk:hover{background:var(--mark)}
 .blk.reading{background:var(--mark);border-color:var(--mark-edge);border-width:3px}
+.blk.noread{border-style:dashed;border-color:var(--danger);background:repeating-linear-gradient(45deg,rgba(179,54,31,.10) 0 6px,transparent 6px 12px)}
+.blk.noread .n{background:var(--danger)}
+.blk.noread.reading{background:repeating-linear-gradient(45deg,rgba(179,54,31,.22) 0 6px,transparent 6px 12px)}
+.texts li.noread .t{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--danger)}
+.texts .tog{margin-left:6px;border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:0 8px;min-height:28px;font-size:.88rem}
+.texts li.noread .tog{border-color:var(--danger);color:var(--danger)}
 .blk .n{position:absolute;top:-2px;right:calc(100% + 2px);min-width:26px;height:26px;padding:0 5px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:14px/26px var(--font-display);text-align:center}
 .blk.v .n{right:auto;left:50%;top:auto;bottom:calc(100% + 2px);transform:translateX(-50%)}
 .overlay.selecting .blk{pointer-events:none}
@@ -175,6 +183,7 @@ a{color:var(--accent)}
     <button type="button" data-dir="auto" aria-pressed="false">自動</button>
   </span>
   <label>聲音 <select id="voice"></select></label>
+  <span class="vnote" id="vnote" hidden></span>
   <label>速度 <input id="rate" type="range" min="0.5" max="1.5" step="0.05" value="0.9"><span class="rate-val" id="rateVal">0.9 倍</span></label>
 </div>
 
@@ -275,6 +284,9 @@ a{color:var(--accent)}
     <section>
       <h3>報讀方式</h3>
       <label><input type="checkbox" id="optZy"> <span>不唸國字旁邊的注音符號</span></label>
+      <label><input type="checkbox" id="optNoSound"> <span><b>考注音（字音）的題目不報讀</b>：例如「看國字寫注音」「選出正確的讀音」「多音字」。唸出國字就等於說出答案。</span></label>
+      <label><input type="checkbox" id="optNoShape"> <span>考國字（字形）的題目也不報讀：例如「看注音寫國字」「改錯字」。</span></label>
+      <p class="note">不報讀的題目會用紅色虛線框起來，學生點了會聽到「這一題不能報讀，請自己看題目」。大題說明（例如「一、看國字寫注音」）還是會唸。老師可以在「辨識出來的文字」裡逐題改成會唸或不唸。</p>
       <label><input type="checkbox" id="optMath"> <span>數學符號唸成中文（＋ 唸「加」、＝ 唸「等於」、（　）唸「括號」）</span></label>
     </section>
 
@@ -321,8 +333,10 @@ const S = {
   model: store.get('model','gemini-flash-latest'),
   skipZy: store.get('skipZy', true),
   mathWords: store.get('mathWords', true),
+  noSound: store.get('noSound', true),
+  noShape: store.get('noShape', false),
   rate: store.get('rate', 0.9),
-  voiceURI: store.get('voice',''),
+  voiceURI: store.get('voice2', 'edge:zh-TW-HsiaoChenNeural'),
   selecting: false,
   renderToken: 0,
   ptr: -1,            // 目前唸到第幾題
@@ -338,6 +352,8 @@ const S = {
   if (p.get('model')) { S.model = p.get('model'); store.set('model', S.model); }
   if (p.get('zy')) { S.skipZy = p.get('zy')==='1'; store.set('skipZy', S.skipZy); }
   if (p.get('math')) { S.mathWords = p.get('math')==='1'; store.set('mathWords', S.mathWords); }
+  if (p.get('ns')) { S.noSound = p.get('ns')==='1'; store.set('noSound', S.noSound); }
+  if (p.get('nsh')) { S.noShape = p.get('nsh')==='1'; store.set('noShape', S.noShape); }
   if (p.get('key')) {
     S.key = p.get('key'); store.set('key', S.key);
     p.delete('key');
@@ -365,6 +381,39 @@ function meaningful(t){ return /[A-Za-z0-9ㄅ-ㄯ㐀-鿿]/.test(t); }
 
 /* ================= 版面分析：行 → 題目 ================= */
 const QNUM = /^\s*[（(【\[]?\s*[0-9０-９一二三四五六七八九十]{1,3}\s*[)）】\]、.．:：]/;
+
+/* ---------- 國語字音／字形題：不報讀 ---------- */
+// 大題標題：「一、」「（二）」「第三大題」「甲、」
+const HEAD = /^\s*(第\s*[一二三四五六七八九十]+\s*大?題|[（(]?\s*[一二三四五六七八九十]{1,3}\s*[)）]?\s*[、.．:：]|[甲乙丙丁戊]\s*[、.．:：])/;
+const RE_SHAPE = /看\s*注音\s*寫\s*國字|注音\s*寫\s*國字|寫出\s*(正確的?)?國字|寫國字|國字\s*填寫|字形|錯別字|改錯字|找錯字|錯字|圈出錯/;
+const RE_SOUND = /看\s*國字\s*寫\s*注音|國字\s*注音|寫出?\s*(正確的?)?注音|標(上|出)?注音|注音\s*(填|寫)|(讀|念|唸|發)音|字音|念法|唸法|讀法|破音字|多音字|一字多音|同音字|音同|讀作|念作|唸作|注音.{0,4}(正確|錯誤|不同|相同)|(正確|錯誤|不同|相同)的?注音/;
+function classify(t){
+  t = t || '';
+  if(RE_SHAPE.test(t)) return 'shape';
+  if(RE_SOUND.test(t)) return 'sound';
+  return null;
+}
+// 依閱讀順序：大題標題決定底下各題的類型；單一題目本身有關鍵字也算
+function markNoRead(blocks){
+  let sec = null;
+  for(const b of blocks){
+    const own = classify(b.text) || (['sound','shape'].includes(b.kindHint) ? b.kindHint : null);
+    b.isHead = HEAD.test(b.text) || b.kindHint === 'header';
+    if(b.isHead){ sec = own; b.kind = null; }
+    else b.kind = own || sec;
+  }
+  return blocks;
+}
+function isNoRead(b){
+  if(b.force === 'read') return false;
+  if(b.force === 'skip') return true;
+  return (b.kind === 'sound' && S.noSound) || (b.kind === 'shape' && S.noShape);
+}
+function noReadMsg(b){
+  return b.kind === 'shape' ? '這一題考國字，不能報讀，請自己看題目作答。'
+       : b.kind === 'sound' ? '這一題考注音，不能報讀，請自己看題目作答。'
+       : '這一題老師設定不報讀，請自己看題目作答。';
+}
 function union(a, b){
   const x=Math.min(a.x,b.x), y=Math.min(a.y,b.y);
   return {x, y, w:Math.max(a.x+a.w,b.x+b.w)-x, h:Math.max(a.y+a.h,b.y+b.h)-y};
@@ -579,22 +628,25 @@ async function analyze(i, token){
   S.cache.set(key, blocks);
   S.blocks = blocks;
   drawBlocks();
+  prefetchBlock(blocks.find(b => !isNoRead(b)));
   if(!blocks.length) toast('這一頁沒有辨識到文字。可以試試切換橫式／直式，或用「框選朗讀」。', 5000);
 }
 
 function drawBlocks(){
+  markNoRead(S.blocks);
   ov.querySelectorAll('.blk').forEach(n=>n.remove());
   const W = cv.width||1, H = cv.height||1;
   const list = $('textList'); list.innerHTML = '';
   S.blocks.forEach((b, k) => {
     const el = document.createElement('button');
     el.type = 'button';
-    el.className = 'blk' + (b.dir==='v' ? ' v' : '');
+    const nr = isNoRead(b);
+    el.className = 'blk' + (b.dir==='v' ? ' v' : '') + (nr ? ' noread' : '');
     const pad = 4;
     el.style.left = ((b.x-pad)/W*100)+'%'; el.style.top = ((b.y-pad)/H*100)+'%';
     el.style.width = ((b.w+2*pad)/W*100)+'%'; el.style.height = ((b.h+2*pad)/H*100)+'%';
-    el.setAttribute('aria-label', '第'+(k+1)+'段：'+b.text);
-    el.innerHTML = '<span class="n">'+(k+1)+'</span>';
+    el.setAttribute('aria-label', '第'+(k+1)+'段'+(nr ? '（不報讀）' : '：'+b.text));
+    el.innerHTML = '<span class="n">'+(nr ? '🚫' : '')+(k+1)+'</span>';
     el.addEventListener('click', () => speakAt(k));
     b.el = el;
     ov.appendChild(el);
@@ -604,7 +656,11 @@ function drawBlocks(){
     t.addEventListener('input', () => { b.text = t.textContent; });
     const say = document.createElement('button'); say.type='button'; say.className='say'; say.textContent='🔊 唸';
     say.addEventListener('click', () => speakAt(k));
-    li.append(t, say); b.li = li; list.appendChild(li);
+    const tog = document.createElement('button'); tog.type='button'; tog.className='tog';
+    tog.textContent = nr ? '🚫 不報讀（點我改成會唸）' : '改成不報讀';
+    tog.addEventListener('click', () => { b.force = isNoRead(b) ? 'read' : 'skip'; drawBlocks(); });
+    if(nr) li.classList.add('noread');
+    li.append(t, say, tog); b.li = li; list.appendChild(li);
   });
 }
 
@@ -684,7 +740,8 @@ async function geminiRead(canvas, isCrop){
 3. 國字旁邊的小注音不要輸出，只輸出國字；如果題目本身就是注音（旁邊沒有國字），就保留注音。
 4. 要學生填寫的空格、括號一律寫成「（　）」，底線寫成「＿＿」。數字與數學符號照原樣。
 5. 只輸出圖上看得到的文字，不要作答、不要解釋。
-輸出 JSON 陣列，每個元素是 {"text": 文字, "dir": "h" 或 "v", "box_2d": [ymin, xmin, ymax, xmax]}，座標是 0 到 1000 的比例。`;
+6. 每個項目加上 "kind"：大題說明是 "header"；考字音（看國字寫注音、選讀音、多音字等）是 "sound"；考字形（看注音寫國字、改錯字等）是 "shape"；其他是 "q"。
+輸出 JSON 陣列，每個元素是 {"text": 文字, "dir": "h" 或 "v", "kind": 類型, "box_2d": [ymin, xmin, ymax, xmax]}，座標是 0 到 1000 的比例。`;
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(S.model)+':generateContent?key='+encodeURIComponent(S.key);
   const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
     contents:[{parts:[{inline_data:{mime_type:'image/jpeg', data:b64}},{text:prompt}]}],
@@ -706,7 +763,7 @@ async function geminiRead(canvas, isCrop){
   return arr.filter(o => o && o.text && meaningful(o.text)).map(o => {
     const bx = Array.isArray(o.box_2d) && o.box_2d.length===4 ? o.box_2d : [0,0,1000,1000];
     const y0=bx[0]/1000*H, x0=bx[1]/1000*W, y1=bx[2]/1000*H, x1=bx[3]/1000*W;
-    return {x:Math.min(x0,x1), y:Math.min(y0,y1), w:Math.abs(x1-x0), h:Math.abs(y1-y0), text:cleanText(o.text), dir:o.dir==='v'?'v':'h'};
+    return {x:Math.min(x0,x1), y:Math.min(y0,y1), w:Math.abs(x1-x0), h:Math.abs(y1-y0), text:cleanText(o.text), dir:o.dir==='v'?'v':'h', kindHint:o.kind};
   });
 }
 
@@ -783,29 +840,241 @@ async function readRegion(r){
   busy(false);
   selEl.hidden = true;
   if(!text){ toast('框框裡沒有辨識到文字，請框大一點，或切換橫式／直式再試。'); return; }
-  speakBlocks([{...r, text, temp:true}]);
+  // 框到不報讀的題目，或框到的文字本身是考字音／字形
+  const hitNR = S.blocks.find(b => isNoRead(b) && overlap1d(b.x,b.x+b.w,r.x,r.x+r.w)*overlap1d(b.y,b.y+b.h,r.y,r.y+r.h) > 0.4*b.w*b.h);
+  const tmp = {...r, text, temp:true, kind: classify(text)};
+  if(hitNR || isNoRead(tmp)){ speakBlocks([{...tmp, kind: hitNR ? hitNR.kind : tmp.kind, force:'skip'}]); return; }
+  speakBlocks([tmp]);
 }
 
 /* ================= 語音 ================= */
+// 主要：Microsoft Edge 線上語音 zh-TW-HsiaoChenNeural（曉臻）。連不上時自動改用平板內建語音。
+/* Edge 語音連線驗證碼（Sec-MS-GEC v2，移植自 edge-tts） */
+const S_INITIAL=[0x6A09E667,0xBB67AE85,0x3C6EF372,0xA54FF53A,0x510E527F,0x9B05688C,0x1F83D9AB,0x5BE0CD19];
+const S_STATE=[0xFD9FBEA2,0x91243CE7,0xBE499094,0xCD2E1E0A,0x6C006F49,0x4BD35AB,0xFEB0A7E4,0x3EFFBD2];
+const S_SCHEDULE=[0xEB24BF9E,0x1558691F,0xA0C09EE2,0xCFA32BA,0xA622EE8C,0xD1DD9491,0xC0DD25A0,0xF9E70AB6,0xF0C31573,0x7058CE4E,0x7188E606,0xE5AB33,0xD258B060,0x72766564];
+const S_ROUND_CONSTANTS=[0x428A2F98,0x71374491,0xB5C0FBCF,0xE9B5DBA5,0x3956C25B,0x59F111F1,0x923F82A4,0xAB1C5ED5,0xD807AA98,0x12835B01,0x243185BE,0x550C7DC3,0x72BE5D74,0x80DEB1FE,0x9BDC06A7,0xC19BF174,0xE49B69C1,0xEFBE4786,0xFC19DC6,0x240CA1CC,0x2DE92C6F,0x4A7484AA,0x5CB0A9DC,0x76F988DA,0x983E5152,0xA831C66D,0xB00327C8,0xBF597FC7,0xC6E00BF3,0xD5A79147,0x6CA6351,0x14292967,0x27B70A85,0x2E1B2138,0x4D2C6DFC,0x53380D13,0x650A7354,0x766A0ABB,0x81C2C92E,0x92722C85,0xA2BFE8A1,0xA81A664B,0xC24B8B70,0xC76C51A3,0xD192E819,0xD6990624,0xF40E3585,0x106AA070,0x19A4C116,0x1E376C08,0x2748774C,0x34B0BCB5,0x391C0CB3,0x4ED8AA4A,0x5B9CCA4F,0x682E6FF3,0x748F82EE,0x78A5636F,0x84C87814,0x8CC70208,0x90BEFFFA,0xA4506CEB,0xBEF9A3F7,0xC67178F2];
+const CS_CO=[[0xE82E91B1,0xB32700D0],[0x44DE24C6,0x88DFF51D],[0x3BEB65BC,0x29514038],[0xC89C5933,0xB328CBDF],[0x8D1EC211,0xD405B4D5],[0x314EF5D5,0x26E55F3C],[0xE92491B1,0x607801C6],[0xF0A5B9D5,0x82B2C1FB],[0x6064CF3,0xFA51A3DA],[0xDA79FA60,0x207CC464],[0xBED20560,0x3C3C74F3],[0x89F9C9F8,0xD2D14B61],[0x35FA38C6,0xBB04A2C1],[0xCB49E3C6,0xC5626167]];
+const S_ADJ=0xC9DC06A7, S_SIG0_ADJ=0x59C0B80, S_SIG1_ADJ=0xB92C0, CS_F=0x82893933, CS_A0=0xF2F90B1A, CS_A1=0xB1A0000;const EdgeDRM = (() => {
+  const B = BigInt, M = 0xFFFFFFFFn;
+  const bi = a => a.map(x => Array.isArray(x) ? x.map(B) : B(x));
+  const INIT = bi(S_INITIAL), STATE = bi(S_STATE), SCHED = bi(S_SCHEDULE), RK = bi(S_ROUND_CONSTANTS), CO = bi(CS_CO);
+  const ADJ = B(S_ADJ), SIG0A = B(S_SIG0_ADJ), SIG1A = B(S_SIG1_ADJ), F = B(CS_F), A0 = B(CS_A0), A1 = B(CS_A1);
+  const BK = RK.slice(0, 14).concat([ADJ], RK.slice(15));
+  const rol16 = v => { v &= M; return ((v << 16n) | (v >> 16n)) & M; };
+  const sig0 = v => ((v >> 7n) ^ (v << 25n) ^ (v >> 18n) ^ (v << 14n) ^ (v >> 3n)) & M;
+  const sig1 = v => ((v >> 17n) ^ (v << 15n) ^ (v >> 19n) ^ (v << 13n) ^ (v >> 10n)) & M;
+  function rounds(st, w, first){
+    let [a,b,c,d,e,f,g,h] = st; const K = first === 14 ? BK : RK;
+    for(let i = first; i < 64; i++){
+      const re = e * 0x100000001n, ra = a * 0x100000001n;
+      const t1 = h + ((re >> 6n) ^ (re >> 11n) ^ (re >> 25n)) + (g ^ (e & (f ^ g))) + K[i] + w[i];
+      const t2 = ((ra >> 2n) ^ (ra >> 13n) ^ (ra >> 22n)) + ((a & b) | (c & (a | b)));
+      h = g; g = f; f = e; e = (d + t1) & M; d = c; c = b; b = a; a = (t1 + t2) & M;
+    }
+    return [a,b,c,d,e,f,g,h];
+  }
+  function expand(w, first){
+    for(let i = first; i < 64; i++){
+      const x = w[i-2], y = w[i-15];
+      const s1 = (x >> 17n) ^ (x << 15n) ^ (x >> 19n) ^ (x << 13n) ^ (x >> 10n);
+      const s0 = (y >> 7n) ^ (y << 25n) ^ (y >> 18n) ^ (y << 14n) ^ (y >> 3n);
+      w.push((s1 + w[i-7] + s0 + w[i-16]) & M);
+    }
+  }
+  const be = (u, o, n) => { let v = 0n; for(let k = 0; k < n; k++) v = (v << 8n) | B(u[o+k]); return v; };
+  function shaInit(d7){
+    const w = new Array(14).fill(0n); w.push(be(d7,0,3)); w.push(be(d7,3,4));
+    for(let i = 16; i < 30; i++){
+      let v = SCHED[i-16];
+      if(i-2 >= 14) v += i === 16 ? (sig1(w[i-2]) ^ SIG1A) : sig1(w[i-2]);
+      if(i-7 >= 14) v += w[i-7];
+      if(i-15 >= 14) v += i === 29 ? (sig0(w[i-15]) ^ SIG0A) : sig0(w[i-15]);
+      w.push(v & M);
+    }
+    w.push((sig1(w[28]) + w[23] + sig0(w[15]) + w[14] + ADJ - RK[14]) & M);
+    expand(w, 31);
+    const wk = rounds(STATE, w, 14);
+    return INIT.map((x, k) => (x + wk[k]) & M);
+  }
+  function shaDigest(data){
+    const len = 57 + data.length;
+    const zeros = ((55 - len) % 64 + 64) % 64;
+    const tail = data.slice(7);
+    const p = new Uint8Array(tail.length + 1 + zeros + 8);
+    p.set(tail); p[tail.length] = 0x80;
+    let bits = B(len * 8);
+    for(let k = 7; k >= 0; k--){ p[p.length - 8 + k] = Number(bits & 0xFFn); bits >>= 8n; }
+    let st = shaInit(data.slice(0, 7));
+    for(let o = 0; o < p.length; o += 64){
+      const w = []; for(let k = 0; k < 16; k++) w.push(be(p, o + k*4, 4));
+      expand(w, 16);
+      const wk = rounds(st, w, 0);
+      st = st.map((x, k) => (x + wk[k]) & M);
+    }
+    const out = new Uint8Array(32);
+    st.forEach((x, k) => { for(let j = 0; j < 4; j++) out[k*4+j] = Number((x >> B(24 - 8*j)) & 0xFFn); });
+    return out;
+  }
+  const le = (u, o) => B(u[o]) | (B(u[o+1]) << 8n) | (B(u[o+2]) << 16n) | (B(u[o+3]) << 24n);
+  function cs64(data, dg){
+    let ka = le(dg, 0) | 1n, kb = le(dg, 4) | 1n;
+    const fac = [(ka * F) & M, (kb * F) & M];
+    const terms = CO.map((c, i) => (c[0] * fac[i % 2]) & M), offs = CO.map(c => c[1]);
+    const src = new Uint8Array(data.length + 1); src.set(data, 1);
+    const padLen = Math.ceil(src.length / 4) * 4, pd = new Uint8Array(padLen); pd.set(src);
+    const words = []; for(let o = 0; o < padLen; o += 4) words.push(le(pd, o));
+    if(words.length % 2) words.push(0n);
+    words.forEach((wd, i) => {
+      let t = wd * (i % 2 === 0 ? ka : kb);
+      let of = rol16(wd) * (i % 2 === 0 ? 0xEF0569FBn : 0xC31713DBn);
+      if(i === 0){ t += A0 * fac[0]; of += A1; }
+      terms.push(t & M); offs.push(of & M);
+    });
+    let swapAcc = 0n, swapLast = 0n, state = 0n, acc = 0n;
+    for(let i = 0; i < terms.length; i += 2){
+      const x = terms[i], y = terms[i+1];
+      let t = rol16((offs[i] + x) & M); let q = (t * 0x76F50F34n) & M;
+      swapAcc += (rol16(q) * 0xC3EFEA97n + q) & M;
+      t = rol16((offs[i+1] + y) & M); q = (t * 0x1881CE3Cn) & M;
+      swapLast = (rol16(q) * 0x35BD1EC9n + q) & M;
+      swapAcc = (swapAcc + swapLast) & M;
+      state = (state * ka + x) & M;
+      state = (rol16(state) * 0xCF98B111n) & M;
+      state = (rol16(state) * 0x87085B9Fn) & M;
+      state = (rol16(state) * 0x12CEB96Dn) & M;
+      state = (rol16(state) * 0x257E1D83n) & M;
+      acc += state;
+      t = (state * kb + y) & M;
+      t = (rol16(t) * 0xA27416F5n) & M;
+      t = (rol16(t) * 0xD38396FFn) & M;
+      state = (rol16((rol16(t) * 0x7C932B89n) & M) * 0xBFA49F69n) & M;
+      acc = (acc + state) & M;
+    }
+    return [swapLast ^ state, swapAcc ^ acc];
+  }
+  const hex = u => Array.from(u, x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+  const leHex = v => { const u = new Uint8Array(4); for(let k = 0; k < 4; k++) u[k] = Number((v >> B(8*k)) & 0xFFn); return hex(u); };
+  function token(unix, trusted){
+    let t = unix + 11644473600; t -= t % 300; t *= 1e7;
+    const data = new TextEncoder().encode(t.toFixed(0) + trusted);
+    const dg = shaDigest(data); const [a, b] = cs64(data, dg);
+    return leHex(a) + leHex(b) + '-' + hex(dg);
+  }
+  return { token };
+})();
+
+
+const EDGE_VOICES = [['zh-TW-HsiaoChenNeural','曉臻（女聲・自然柔和）'],['zh-TW-HsiaoYuNeural','曉雨（女聲）'],['zh-TW-YunJheNeural','雲哲（男聲）']];
+const DEFAULT_VOICE = 'edge:zh-TW-HsiaoChenNeural';
+const IS_EDGE = /\bEdg(A|iOS)?\//.test(navigator.userAgent);
+const EDGE = { trusted:'6A5AA1D4EAFF4E9FB37E23D68491D6F4', ver:'2-143.0.3650.75', down:0, skew:0, cache:new Map() };
+// 平板時間不準會被拒絕：用網站伺服器的時間校正
+fetch(location.href.split('#')[0], {method:'HEAD', cache:'no-store'}).then(r => {
+  const d = Date.parse(r.headers.get('Date') || ''); if(d) EDGE.skew = (d - Date.now())/1000;
+}).catch(()=>{});
+const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), x => x.toString(16).padStart(2,'0')).join('');
+const xmlEsc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+function edgeSynth(text, voice, rate){
+  const key = voice+'|'+rate+'|'+text;
+  if(EDGE.cache.has(key)) return EDGE.cache.get(key);
+  const p = new Promise((res, rej) => {
+    let ws;
+    try{
+      const gec = EdgeDRM.token(Date.now()/1000 + EDGE.skew, EDGE.trusted);
+      ws = new WebSocket('wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken='+EDGE.trusted
+        +'&ConnectionId='+rid()+'&Sec-MS-GEC='+gec+'&Sec-MS-GEC-Version='+EDGE.ver);
+    }catch(e){ rej(e); return; }
+    ws.binaryType = 'arraybuffer';
+    const parts = []; let done = false;
+    const finish = (err, val) => { if(done) return; done = true; clearTimeout(timer); try{ ws.close(); }catch(e){} err ? rej(err) : res(val); };
+    const timer = setTimeout(() => finish(new Error('timeout')), 12000);
+    ws.onopen = () => {
+      const ts = new Date().toString();
+      ws.send('X-Timestamp:'+ts+'\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n'
+        +'{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}\r\n');
+      const pct = Math.round((rate-1)*100);
+      const ssml = "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-TW'><voice name='"+voice+"'>"
+        +"<prosody pitch='+0Hz' rate='"+(pct>=0?'+':'')+pct+"%' volume='+0%'>"+xmlEsc(text)+"</prosody></voice></speak>";
+      ws.send('X-RequestId:'+rid()+'\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:'+ts+'Z\r\nPath:ssml\r\n\r\n'+ssml);
+    };
+    ws.onmessage = ev => {
+      if(typeof ev.data === 'string'){
+        if(ev.data.includes('Path:turn.end')){
+          if(!parts.length) finish(new Error('noaudio'));
+          else finish(null, URL.createObjectURL(new Blob(parts, {type:'audio/mpeg'})));
+        }
+        return;
+      }
+      const buf = ev.data; if(buf.byteLength < 2) return;
+      const hl = new DataView(buf).getUint16(0);
+      const head = new TextDecoder().decode(new Uint8Array(buf, 2, Math.min(hl, buf.byteLength-2)));
+      if(head.includes('Path:audio') && buf.byteLength > 2+hl) parts.push(buf.slice(2+hl));
+    };
+    ws.onerror = () => finish(new Error('連線被拒絕'));
+    ws.onclose = () => finish(new Error('closed'));
+  });
+  EDGE.cache.set(key, p);
+  p.catch(() => EDGE.cache.delete(key));
+  if(EDGE.cache.size > 200){ const k = EDGE.cache.keys().next().value; EDGE.cache.get(k).then(u => URL.revokeObjectURL(u)).catch(()=>{}); EDGE.cache.delete(k); }
+  return p;
+}
+function useEdge(){ return S.voiceURI.startsWith('edge:') && Date.now() > EDGE.down; }
+function edgeVoice(){ return S.voiceURI.startsWith('edge:') ? S.voiceURI.slice(5) : 'zh-TW-HsiaoChenNeural'; }
+function edgeFailed(e){
+  console.warn('Edge TTS', e);
+  EDGE.down = Date.now() + 3*60*1000;   // 3 分鐘後再試
+  const n = $('vnote');
+  n.textContent = IS_EDGE ? '⚠ 雲端語音（曉臻）暫時連不上，先用平板內建語音。' : '⚠ 曉臻語音要用 Microsoft Edge 瀏覽器打開才聽得到，現在先用平板內建語音。';
+  if(!IS_EDGE){
+    const ua = navigator.userAgent, href = location.href;
+    const url = (/iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document)) ? 'microsoft-edge-' + href
+      : /Android/.test(ua) ? 'intent://' + href.replace(/^https?:\/\//,'') + '#Intent;scheme=' + location.protocol.replace(':','') + ';package=com.microsoft.emmx;end'
+      : 'microsoft-edge:' + href;
+    const a = document.createElement('a'); a.href = url; a.className = 'btn sm edgebtn'; a.textContent = '📲 用 Edge 打開';
+    n.append(' ', a);
+  }
+  n.hidden = false;
+}
+function prefetchBlock(b){
+  if(!b || !useEdge() || isNoRead(b)) return;
+  chunks(toSpeech(b.text)).slice(0, 2).forEach(c => edgeSynth(c, edgeVoice(), S.rate).catch(edgeFailed));
+}
+
+const player = new Audio(); player.preload = 'auto';
+function silentWav(){
+  const n = 800, b = new ArrayBuffer(44 + n*2), v = new DataView(b);
+  const w = (o, s) => { for(let i = 0; i < s.length; i++) v.setUint8(o+i, s.charCodeAt(i)); };
+  w(0,'RIFF'); v.setUint32(4, 36+n*2, true); w(8,'WAVE'); w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,16000,true); v.setUint32(28,32000,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,'data'); v.setUint32(40,n*2,true);
+  return URL.createObjectURL(new Blob([b], {type:'audio/wav'}));
+}
+
 let voices = [];
 function loadVoices(){
-  const all = speechSynthesis.getVoices();
+  let all = []; try{ all = speechSynthesis.getVoices(); }catch(e){}
   voices = all.filter(v => /^zh|cmn/i.test(v.lang));
   const rank = v => (/TW|Hant|台灣|臺灣|Taiwan/i.test(v.lang+v.name) ? 0 : /HK|yue/i.test(v.lang) ? 2 : 1);
   voices.sort((a,b) => rank(a)-rank(b) || a.name.localeCompare(b.name));
   const sel = $('voice'); sel.innerHTML = '';
-  if(!voices.length){ const o=document.createElement('option'); o.textContent='預設中文'; o.value=''; sel.appendChild(o); return; }
-  voices.forEach(v => { const o=document.createElement('option'); o.value=v.voiceURI; o.textContent=v.name.replace(/Microsoft |Google /,'')+(v.localService?'':' ☁'); sel.appendChild(o); });
-  if(S.voiceURI && voices.some(v=>v.voiceURI===S.voiceURI)) sel.value = S.voiceURI; else S.voiceURI = sel.value;
+  const g1 = document.createElement('optgroup'); g1.label = '雲端語音（Edge）';
+  EDGE_VOICES.forEach(([id, name]) => { const o = document.createElement('option'); o.value = 'edge:'+id; o.textContent = name; g1.appendChild(o); });
+  const g2 = document.createElement('optgroup'); g2.label = '平板內建語音';
+  if(!voices.length){ const o = document.createElement('option'); o.textContent = '預設中文'; o.value = 'local:'; g2.appendChild(o); }
+  voices.forEach(v => { const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = v.name.replace(/Microsoft |Google /,''); g2.appendChild(o); });
+  sel.append(g1, g2);
+  if([...sel.options].some(o => o.value === S.voiceURI)) sel.value = S.voiceURI;
+  else { S.voiceURI = DEFAULT_VOICE; sel.value = DEFAULT_VOICE; }
 }
-if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
-else toast('這個瀏覽器不支援語音朗讀，請改用 Chrome、Edge 或 Safari。', 8000);
+loadVoices();
+if('speechSynthesis' in window) speechSynthesis.onvoiceschanged = loadVoices;
 
 let unlocked = false;
 function unlockSpeech(){
-  if(unlocked || !('speechSynthesis' in window)) return;
+  if(unlocked) return;
   unlocked = true;
-  const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u);
+  try{ player.src = silentWav(); player.play().catch(()=>{}); }catch(e){}
+  if('speechSynthesis' in window){ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); }
 }
 document.addEventListener('pointerdown', unlockSpeech, {once:true, capture:true});
 
@@ -839,6 +1108,8 @@ let speakToken = 0, keep = [];
 function stopSpeak(){
   speakToken++;
   if('speechSynthesis' in window) speechSynthesis.cancel();
+  player.onended = null; player.onerror = null;
+  try{ player.pause(); }catch(e){}
   mark(null);
 }
 function mark(b){
@@ -849,24 +1120,43 @@ function mark(b){
   if(b.li) b.li.classList.add('reading');
 }
 function speakBlocks(list){
-  if(!('speechSynthesis' in window)) return;
   stopSpeak();
   const token = ++speakToken;
-  const voice = voices.find(v => v.voiceURI === S.voiceURI);
+  const local = voices.find(v => v.voiceURI === S.voiceURI) || voices[0];
   const queue = [];
-  list.forEach(b => chunks(toSpeech(b.text)).forEach(c => queue.push({b, c})));
+  list.forEach(b => {
+    if(isNoRead(b)){ if(list.length === 1) queue.push({b, c: noReadMsg(b)}); return; }   // 整頁朗讀時直接跳過
+    chunks(toSpeech(b.text)).forEach(c => queue.push({b, c}));
+  });
+  const sayLocal = (c, done) => {
+    if(!('speechSynthesis' in window)){ done(); return; }
+    const u = new SpeechSynthesisUtterance(c);
+    u.lang = local ? local.lang : 'zh-TW'; if(local) u.voice = local;
+    u.rate = S.rate; u.onend = done; u.onerror = done;
+    keep.push(u); speechSynthesis.speak(u);
+  };
   let i = 0;
-  const next = () => {
+  const next = async () => {
     if(token !== speakToken) return;
     if(i >= queue.length){ mark(null); keep = []; return; }
     const {b, c} = queue[i++];
     if(!b.temp) mark(b);
-    const u = new SpeechSynthesisUtterance(c);
-    u.lang = voice ? voice.lang : 'zh-TW'; if(voice) u.voice = voice;
-    u.rate = S.rate;
-    u.onend = next; u.onerror = next;
-    keep.push(u);
-    speechSynthesis.speak(u);
+    if(useEdge()){
+      try{
+        const url = await edgeSynth(c, edgeVoice(), S.rate);
+        if(token !== speakToken) return;
+        if(queue[i]) edgeSynth(queue[i].c, edgeVoice(), S.rate).catch(()=>{});   // 先準備下一句，減少停頓
+        player.onended = () => next(); player.onerror = () => next();
+        player.src = url;
+        await player.play();
+        return;
+      }catch(e){
+        if(token !== speakToken) return;
+        if(e && e.name === 'NotAllowedError'){ toast('請再點一次，就會開始唸。'); mark(null); return; }
+        edgeFailed(e);
+      }
+    }
+    sayLocal(c, next);
   };
   next();
 }
@@ -876,6 +1166,7 @@ function speakAt(k){
   k = Math.max(0, k);
   S.ptr = k;
   speakBlocks([S.blocks[k]]);
+  prefetchBlock(S.blocks[k+1]);
 }
 
 /* ================= 介面事件 ================= */
@@ -891,7 +1182,12 @@ document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click'
 }));
 $('rate').value = S.rate; $('rateVal').textContent = S.rate+' 倍';
 $('rate').addEventListener('input', e => { S.rate = +e.target.value; $('rateVal').textContent = S.rate+' 倍'; store.set('rate', S.rate); });
-$('voice').addEventListener('change', e => { S.voiceURI = e.target.value; store.set('voice', S.voiceURI); });
+$('voice').addEventListener('change', e => {
+  S.voiceURI = e.target.value; store.set('voice2', S.voiceURI);
+  $('vnote').hidden = true; EDGE.down = 0;
+  const name = (e.target.selectedOptions[0] ? e.target.selectedOptions[0].textContent : '').replace(/（.*$/,'');
+  speakBlocks([{text:'你好，我是'+name+'，我來幫你唸題目。', temp:true}]);
+});
 
 $('bCam').addEventListener('click', () => {
   // 學生拍照的同時，在背景先準備辨識資料
@@ -1171,6 +1467,7 @@ function fillSettings(){
   $('engTess').checked = S.engine==='tess'; $('engGem').checked = S.engine==='gemini';
   $('apiKey').value = S.key; $('model').value = S.model;
   $('optZy').checked = S.skipZy; $('optMath').checked = S.mathWords;
+  $('optNoSound').checked = S.noSound; $('optNoShape').checked = S.noShape;
   $('pdfPath').value = S.autoPdf || '';
 }
 $('bSet').addEventListener('click', () => { fillSettings(); $('dlg').showModal(); });
@@ -1182,6 +1479,10 @@ $('dlg').addEventListener('close', () => {
   S.skipZy = $('optZy').checked; S.mathWords = $('optMath').checked;
   store.set('engine', S.engine); store.set('key', S.key); store.set('model', S.model);
   store.set('skipZy', S.skipZy); store.set('mathWords', S.mathWords);
+  const nrChanged = S.noSound !== $('optNoSound').checked || S.noShape !== $('optNoShape').checked;
+  S.noSound = $('optNoSound').checked; S.noShape = $('optNoShape').checked;
+  store.set('noSound', S.noSound); store.set('noShape', S.noShape);
+  if(nrChanged && S.blocks.length) drawBlocks();
   if(oldEngine !== S.engine && S.pages.length) showPage(S.cur);
 });
 $('incKey').addEventListener('change', e => $('keyWarn').hidden = !e.target.checked);
@@ -1192,6 +1493,8 @@ $('bMakeQr').addEventListener('click', () => {
   p.set('engine', eng);
   p.set('zy', $('optZy').checked ? '1' : '0');
   p.set('math', $('optMath').checked ? '1' : '0');
+  p.set('ns', $('optNoSound').checked ? '1' : '0');
+  p.set('nsh', $('optNoShape').checked ? '1' : '0');
   const m = $('model').value.trim(); if(eng==='gemini' && m && m!=='gemini-flash-latest') p.set('model', m);
   const pdf = $('pdfPath').value.trim(); if(pdf) p.set('pdf', pdf);
   const k = $('apiKey').value.trim(); if($('incKey').checked && k) p.set('key', k);
