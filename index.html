@@ -57,8 +57,6 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding-block
 .opts label{display:inline-flex;align-items:center;gap:8px}
 .opts select{min-height:42px;border-radius:10px;border:2px solid var(--line);background:var(--paper);padding:0 8px;max-width:220px}
 .opts input[type=range]{width:120px;accent-color:var(--accent)}
-.vnote{flex:1 1 100%;order:9;color:var(--danger);font-size:.92rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.edgebtn{min-height:38px;padding:0 14px;font-size:.95rem;text-decoration:none;color:var(--accent-ink);background:var(--accent);border-color:var(--accent)}
 .rate-val{font-variant-numeric:tabular-nums;min-width:3.2em;color:var(--ink)}
 
 main{max-width:1100px;margin:0 auto}
@@ -77,26 +75,51 @@ kbd{font-family:var(--font-display);background:var(--accent-soft);border-radius:
 .blk{position:absolute;border:2px solid var(--box-edge);background:var(--box);border-radius:6px;padding:0;cursor:pointer;transition:background .15s}
 .blk:hover{background:var(--mark)}
 .blk.reading{background:var(--mark);border-color:var(--mark-edge);border-width:3px}
+.blk.head{border-color:var(--accent);background:rgba(15,123,108,.07)}
+.blk.fix .n{background:var(--mark-edge);color:#1c2a33;font-weight:700}
+.blk.mute{border:2px dashed var(--line);background:transparent;cursor:default;pointer-events:none}
+.blk.mute .n{background:var(--line);color:var(--muted)}
+.blk.cue{border-color:var(--mark-edge);border-width:3px;animation:cue 1.3s ease-in-out infinite}
+@keyframes cue{50%{box-shadow:0 0 0 7px rgba(224,168,0,.35)}}
+@media (prefers-reduced-motion:reduce){.blk.cue{animation:none;box-shadow:0 0 0 5px rgba(224,168,0,.35)}}
+.stepbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 10px;padding:12px 14px;border-radius:12px;background:var(--mark);font-family:var(--font-display);font-size:1.1rem}
+.stepbar span{flex:1 1 260px;min-width:0}
+.texts h2{font-family:var(--font-display);font-weight:400;font-size:1.25rem;margin:0}
+.edhead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 0 8px}
+.edhead .note{flex:1 1 240px}
+.texts li.ed{display:grid;gap:6px;padding:10px;border-radius:12px;background:var(--desk)}
+.texts li.ed.head{background:var(--accent-soft)}
+.texts li.ed.mute .t{color:var(--muted)}
+.texts li.ed.off .t{text-decoration:line-through;text-decoration-color:var(--danger)}
+.texts li.ed.reading{outline:3px solid var(--mark-edge)}
+.edtop,.edacts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.edtop select{min-height:38px;border-radius:10px;border:2px solid var(--line);background:var(--paper)}
+.chip{font-family:var(--font-display);background:var(--paper);border-radius:999px;padding:2px 10px;font-size:.92rem}
+.texts .t{display:block;background:var(--paper);border-radius:8px;padding:6px 10px;min-height:2.2em;font-size:1.05rem}
+.lock{color:var(--muted);font-size:.9rem}
+.warn{color:var(--danger);font-size:.88rem}
 .blk.noread{border-style:dashed;border-color:var(--danger);background:repeating-linear-gradient(45deg,rgba(179,54,31,.10) 0 6px,transparent 6px 12px)}
 .blk.noread .n{background:var(--danger)}
 .blk.noread.reading{background:repeating-linear-gradient(45deg,rgba(179,54,31,.22) 0 6px,transparent 6px 12px)}
-.texts li.noread .t{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--danger)}
-.texts .tog{margin-left:6px;border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:0 8px;min-height:28px;font-size:.88rem}
-.texts li.noread .tog{border-color:var(--danger);color:var(--danger)}
 .blk .n{position:absolute;top:-2px;right:calc(100% + 2px);min-width:26px;height:26px;padding:0 5px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:14px/26px var(--font-display);text-align:center}
 .blk.v .n{right:auto;left:50%;top:auto;bottom:calc(100% + 2px);transform:translateX(-50%)}
+.blk .n{min-width:34px;height:34px;line-height:34px;font-size:15px;white-space:nowrap;padding:0 8px}
+.blk .n,.blk.head .n{z-index:2}
+.blk .n .short{display:none}
+.overlay.compact .blk .n{min-width:18px;height:18px;line-height:18px;font-size:11px;padding:0 3px;border-radius:5px}
+.overlay.compact .blk .n .full{display:none}
+.overlay.compact .blk .n .short{display:inline}
+.overlay.compact .blk.mute .n{display:none}
 .overlay.selecting .blk{pointer-events:none}
 .selrect{position:absolute;border:3px dashed var(--danger);background:rgba(255,212,59,.18);pointer-events:none;border-radius:4px}
 .hint{display:flex;gap:10px;align-items:center;margin:0 0 10px;padding:10px 14px;border-radius:12px;background:var(--mark);color:var(--ink);font-family:var(--font-display)}
 
 .texts{margin-top:16px;background:var(--paper);border-radius:var(--r);padding:6px 16px 14px}
-.texts summary{cursor:pointer;padding:10px 0;font-family:var(--font-display);font-size:1.05rem}
 .texts ol{margin:0;padding-left:1.8em;display:grid;gap:6px}
 .texts li{padding:6px 8px;border-radius:8px;line-height:1.7}
+.texts .t{outline:none}
 .texts li.reading{background:var(--mark)}
-.texts .t{outline:none;display:inline}
 .texts .t:focus{box-shadow:0 0 0 2px var(--accent);border-radius:4px}
-.texts .say{margin-left:6px;border:0;background:var(--accent-soft);border-radius:8px;padding:0 8px;min-height:28px}
 .texts p{color:var(--muted);font-size:.9rem;margin:8px 0 0}
 
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--paper);border-top:1px solid var(--line);
@@ -177,14 +200,17 @@ a{color:var(--accent)}
 </header>
 
 <div class="opts">
-  <span class="seg" role="group" aria-label="文字排列">
+  <span class="seg" id="dirSeg" role="group" aria-label="文字排列">
     <button type="button" data-dir="h" aria-pressed="true">橫式</button>
     <button type="button" data-dir="v" aria-pressed="false">直式（國語）</button>
     <button type="button" data-dir="auto" aria-pressed="false">自動</button>
   </span>
   <label>聲音 <select id="voice"></select></label>
-  <span class="vnote" id="vnote" hidden></span>
-  <label>速度 <input id="rate" type="range" min="0.5" max="1.5" step="0.05" value="0.9"><span class="rate-val" id="rateVal">0.9 倍</span></label>
+  <span class="seg" id="rateSeg" role="group" aria-label="語速">
+    <button type="button" data-rate="0.75" aria-pressed="false">慢 0.75</button>
+    <button type="button" data-rate="0.85" aria-pressed="true">0.85 倍</button>
+    <button type="button" data-rate="1" aria-pressed="false">1.0 倍</button>
+  </span>
 </div>
 
 <main>
@@ -231,6 +257,12 @@ a{color:var(--accent)}
         <button class="btn icon" id="bZoomIn" type="button" aria-label="放大">＋</button>
       </span>
       <button class="btn" id="bRot" type="button" title="照片拍歪了可以轉向">⟳ 轉向</button>
+      <button class="btn" id="bSel" type="button">✋ 框選朗讀</button>
+    </div>
+    <div class="stepbar" id="stepBar" hidden>
+      <span id="stepText"></span>
+      <button class="btn primary" id="bStepNext" type="button">▶ 繼續下一大題</button>
+      <button class="btn" id="bStepEnd" type="button">結束</button>
     </div>
     <p class="hint" id="selHint" hidden>✋ 用手指拖曳，把要聽的文字框起來。再按一次「框選朗讀」可以關掉。</p>
     <div class="paperWrap">
@@ -239,11 +271,15 @@ a{color:var(--accent)}
       <div class="overlay" id="ov"></div>
     </div>
     </div>
-    <details class="texts" id="texts">
-      <summary>辨識出來的文字（老師可以檢查、修改）</summary>
+    <section class="texts" id="editPanel" hidden>
+      <div class="edhead">
+        <h2>✏️ 老師編輯：語音報讀內容</h2>
+        <span class="note" id="edNote"></span>
+        <button class="btn primary" id="bEdSave" type="button" hidden>💾 儲存並同步給學生</button>
+      </div>
+      <p class="note">可以修改每一段要唸的文字、分開或合併題目、改大題的題型、關閉單一小題的語音。題目畫面不會被修改，錯別字也會照原樣保留。寫注音的小題固定不報讀。</p>
       <ol id="textList"></ol>
-      <p>直接點文字就能修改，修改後再按「唸」會用新的文字報讀。修改只在這台裝置、這次開啟時有效。</p>
-    </details>
+    </section>
   </section>
 </main>
 
@@ -256,9 +292,10 @@ a{color:var(--accent)}
     <button class="btn" id="bQPrev" type="button">⏮ 上一題</button>
     <button class="btn primary" id="bQNext" type="button">下一題 ⏭</button>
     <span class="sp"></span>
-    <button class="btn" id="bAll" type="button">🔊 整頁朗讀</button>
-    <button class="btn" id="bStop" type="button">⏹ 停止</button>
-    <button class="btn" id="bSel" type="button">✋ 框選朗讀</button>
+    <button class="btn" id="bPlay" type="button">🔊 整頁播放</button>
+    <button class="btn" id="bPause" type="button" disabled>⏸ 暫停</button>
+    <button class="btn" id="bStop" type="button" disabled>⏹ 停止</button>
+    <button class="btn" id="bReplay" type="button" disabled>🔁 重播</button>
   </div>
 </nav>
 
@@ -284,9 +321,11 @@ a{color:var(--accent)}
     <section>
       <h3>報讀方式</h3>
       <label><input type="checkbox" id="optZy"> <span>不唸國字旁邊的注音符號</span></label>
-      <label><input type="checkbox" id="optNoSound"> <span><b>考注音（字音）的題目不報讀</b>：例如「看國字寫注音」「選出正確的讀音」「多音字」。唸出國字就等於說出答案。</span></label>
-      <label><input type="checkbox" id="optNoShape"> <span>考國字（字形）的題目也不報讀：例如「看注音寫國字」「改錯字」。</span></label>
-      <p class="note">不報讀的題目會用紅色虛線框起來，學生點了會聽到「這一題不能報讀，請自己看題目」。大題說明（例如「一、看國字寫注音」）還是會唸。老師可以在「辨識出來的文字」裡逐題改成會唸或不唸。</p>
+      <p class="note"><b>固定規則：</b>「寫注音」大題只唸大題名稱，小題完全不唸；「改錯字、圈出錯字、找出錯別字」每次只唸一小題，由學生自己按下一題。</p>
+      <label><input type="checkbox" id="optNoShape"> <span>「看注音寫國字」的小題不報讀</span></label>
+      <label><input type="checkbox" id="optNoFill"> <span>「填空題」的小題不報讀</span></label>
+      <label><input type="checkbox" id="optNoSound"> <span>問「讀音」的題目不報讀（例如選擇題「下列哪個字的讀音不同」）</span></label>
+      <p class="note">不報讀的題目會用紅色虛線框起來，學生點了會聽到「這一題不報讀，請自己看題目」。</p>
       <label><input type="checkbox" id="optMath"> <span>數學符號唸成中文（＋ 唸「加」、＝ 唸「等於」、（　）唸「括號」）</span></label>
     </section>
 
@@ -298,6 +337,12 @@ a{color:var(--accent)}
       <p class="warn" id="keyWarn" hidden>拿到這個連結或 QR Code 的人都能使用你的 Key，請只給自己的學生，不要貼到公開網頁。</p>
       <div class="row"><button type="button" class="btn" id="bMakeQr">產生學生連結</button><button type="button" class="btn" id="bCopy" hidden>複製連結</button></div>
       <div class="qr" id="qrWrap" hidden><div id="qrBox"></div><code id="qrUrl"></code></div>
+    </section>
+
+    <section>
+      <h3>老師編輯模式</h3>
+      <p class="note">打開後，考卷下方會出現「語音報讀內容」編輯區，可以預聽、修改、分段、改題型。網站上的考卷可以直接儲存並同步給學生。</p>
+      <div class="row"><button type="button" class="btn" id="bEditMode">✏️ 開啟老師編輯模式</button></div>
     </section>
 
     <section>
@@ -335,8 +380,10 @@ const S = {
   mathWords: store.get('mathWords', true),
   noSound: store.get('noSound', true),
   noShape: store.get('noShape', false),
-  rate: store.get('rate', 0.9),
-  voiceURI: store.get('voice2', 'edge:zh-TW-HsiaoChenNeural'),
+  noFill: store.get('noFill', false),
+  rate: [0.75, 0.85, 1].includes(store.get('rate2', 0.85)) ? store.get('rate2', 0.85) : 0.85,
+  voiceURI: store.get('voice3', 'auto'),
+  edit: false, dirty: new Set(), pageBlocks: new Map(), saved: null, remotePath: '', step: null,
   selecting: false,
   renderToken: 0,
   ptr: -1,            // 目前唸到第幾題
@@ -354,6 +401,8 @@ const S = {
   if (p.get('math')) { S.mathWords = p.get('math')==='1'; store.set('mathWords', S.mathWords); }
   if (p.get('ns')) { S.noSound = p.get('ns')==='1'; store.set('noSound', S.noSound); }
   if (p.get('nsh')) { S.noShape = p.get('nsh')==='1'; store.set('noShape', S.noShape); }
+  if (p.get('nf')) { S.noFill = p.get('nf')==='1'; store.set('noFill', S.noFill); }
+  S.edit = p.get('edit') === '1';
   if (p.get('key')) {
     S.key = p.get('key'); store.set('key', S.key);
     p.delete('key');
@@ -382,38 +431,96 @@ function meaningful(t){ return /[A-Za-z0-9ㄅ-ㄯ㐀-鿿]/.test(t); }
 /* ================= 版面分析：行 → 題目 ================= */
 const QNUM = /^\s*[（(【\[]?\s*[0-9０-９一二三四五六七八九十]{1,3}\s*[)）】\]、.．:：]/;
 
-/* ---------- 國語字音／字形題：不報讀 ---------- */
+/* ---------- 國語題型：大題／小題結構與報讀規則 ---------- */
 // 大題標題：「一、」「（二）」「第三大題」「甲、」
 const HEAD = /^\s*(第\s*[一二三四五六七八九十]+\s*大?題|[（(]?\s*[一二三四五六七八九十]{1,3}\s*[)）]?\s*[、.．:：]|[甲乙丙丁戊]\s*[、.．:：])/;
-const RE_SHAPE = /看\s*注音\s*寫\s*國字|注音\s*寫\s*國字|寫出\s*(正確的?)?國字|寫國字|國字\s*填寫|字形|錯別字|改錯字|找錯字|錯字|圈出錯/;
-const RE_SOUND = /看\s*國字\s*寫\s*注音|國字\s*注音|寫出?\s*(正確的?)?注音|標(上|出)?注音|注音\s*(填|寫)|(讀|念|唸|發)音|字音|念法|唸法|讀法|破音字|多音字|一字多音|同音字|音同|讀作|念作|唸作|注音.{0,4}(正確|錯誤|不同|相同)|(正確|錯誤|不同|相同)的?注音/;
-function classify(t){
-  t = t || '';
-  if(RE_SHAPE.test(t)) return 'shape';
-  if(RE_SOUND.test(t)) return 'sound';
-  return null;
-}
-// 依閱讀順序：大題標題決定底下各題的類型；單一題目本身有關鍵字也算
-function markNoRead(blocks){
-  let sec = null;
+const SEC_NAMES = {zhuyin:'寫注音', fix:'改錯字', shape:'看注音寫國字', fill:'填空題', choice:'選擇題', tf:'是非題', reading:'閱讀測驗', sentence:'造句題', other:'其他題型'};
+// 順序重要：「看注音寫國字」要比「寫注音」先判斷
+const SEC_RULES = [
+  ['shape',   /看\s*注音\s*寫\s*國字|注音\s*寫\s*國字|寫出\s*(正確的?)?國字|國字\s*填寫|寫國字/],
+  ['zhuyin',  /寫\s*注音|國字\s*注音|寫出\s*(正確的?)?注音|為\s*國字\s*注音|標(上|出)?\s*注音|注音\s*(填|寫)/],
+  ['fix',     /改錯|錯別字|錯字|圈出.{0,4}錯|找出.{0,4}錯/],
+  ['fill',    /填空|填入|填填看|填一填/],
+  ['choice',  /選擇/],
+  ['tf',      /是非|對錯|判斷/],
+  ['reading', /閱讀/],
+  ['sentence',/造句|照樣|仿寫/],
+];
+function secOf(t){ for(const [k, re] of SEC_RULES) if(re.test(t || '')) return k; return null; }
+// 小題本身在問讀音（例如選擇題「下列哪一個字的讀音不同」）
+const SOUND_ITEM = /(讀|念|唸|發)音|字音|念法|唸法|讀法|破音字|多音字|一字多音|同音字|音同|讀作|念作|唸作|注音.{0,4}(正確|錯誤|不同|相同)|(正確|錯誤|不同|相同)的?注音/;
+const QNO = /^\s*[（(]?\s*([0-9０-９]{1,2})\s*[)）]?\s*[.．、:：]/;
+function qnum(t){ const m = (t || '').normalize('NFKC').match(QNO); return m ? +m[1] : 0; }
+
+function analyzeStructure(blocks){
+  let head = null, n = 0;
   for(const b of blocks){
-    const own = classify(b.text) || (['sound','shape'].includes(b.kindHint) ? b.kindHint : null);
-    b.isHead = HEAD.test(b.text) || b.kindHint === 'header';
-    if(b.isHead){ sec = own; b.kind = null; }
-    else b.kind = own || sec;
+    const src = b.orig != null ? b.orig : b.text;
+    if(b.orig == null) b.orig = b.text;      // 保留 OCR 原文：題型判斷用原文，老師改語音文字也不影響
+    b.isHead = b.headOv != null ? b.headOv : (HEAD.test(src) || b.kindHint === 'header');
+    if(b.isHead){
+      b.autoSec = secOf(src) || (b.kindHint === 'sound' ? 'zhuyin' : b.kindHint === 'shape' ? 'shape' : null);
+      b.sec = b.secOv || b.autoSec || 'other';
+      b.head = null; b.qn = 0; head = b; n = 0;
+    } else {
+      b.head = head; n++;
+      b.sec = head ? head.sec : (secOf(src) === 'zhuyin' ? 'zhuyin' : null);
+      b.qn = qnum(src) || n;
+      b.kind = SOUND_ITEM.test(src) ? 'sound' : null;
+    }
   }
   return blocks;
 }
-function isNoRead(b){
-  if(b.force === 'read') return false;
+// 寫注音小題：任何播放方式都不讀（整頁、重播、框選、上一題／下一題）
+function absSilent(b){ return !!b && !b.isHead && b.sec === 'zhuyin'; }
+// 老師設定不報讀的題目
+function teacherOff(b){
   if(b.force === 'skip') return true;
-  return (b.kind === 'sound' && S.noSound) || (b.kind === 'shape' && S.noShape);
+  if(b.isHead || b.force === 'read') return false;
+  return (b.sec === 'shape' && S.noShape) || (b.sec === 'fill' && S.noFill) || (b.kind === 'sound' && S.noSound);
 }
+function silent(b){ return absSilent(b) || teacherOff(b); }
 function noReadMsg(b){
-  return b.kind === 'shape' ? '這一題考國字，不能報讀，請自己看題目作答。'
-       : b.kind === 'sound' ? '這一題考注音，不能報讀，請自己看題目作答。'
-       : '這一題老師設定不報讀，請自己看題目作答。';
+  if(b.force === 'skip') return '這一題老師設定不報讀，請自己看題目作答。';
+  if(b.sec === 'shape') return '這一題考國字，不報讀，請自己看題目作答。';
+  if(b.sec === 'fill') return '這一題不報讀，請自己看題目作答。';
+  if(b.kind === 'sound') return '這一題考讀音，不報讀，請自己看題目作答。';
+  return '這一題不報讀，請自己看題目作答。';
 }
+function headerSpeech(t){
+  t = cleanText(t);
+  const m = t.match(/^\s*[（(]?\s*([一二三四五六七八九十]{1,3})\s*[)）]?\s*[、.．:：]\s*(.*)$/);
+  const s = m ? '第' + m[1] + '大題，' + toSpeech(m[2]) : toSpeech(t);
+  return s.replace(/[。，,\s]+$/, '') + '。';
+}
+function speechOf(b){ return b.isHead ? headerSpeech(b.text) : toSpeech(b.text); }
+
+// 一行裡有好幾題（1.… 2.… 3.…）就分開，每一小題一個框
+function splitMulti(blocks){
+  const out = [];
+  for(const b of blocks){
+    const t = b.text, first = qnum(t);
+    if(!first){ out.push(b); continue; }
+    const cuts = []; let want = first + 1;
+    const re = /(?:[\s　）)。？?！!，,]|^)([0-9０-９]{1,2})\s*[.．、](?![0-9０-９])/g; let m;
+    while((m = re.exec(t))){
+      if(m.index === 0) continue;
+      if(+m[1].normalize('NFKC') === want){ cuts.push(m.index + m[0].indexOf(m[1])); want++; }
+    }
+    if(!cuts.length){ out.push(b); continue; }
+    const pos = [0, ...cuts, t.length];
+    for(let i = 0; i < pos.length - 1; i++){
+      const r0 = pos[i] / t.length, r1 = pos[i+1] / t.length, piece = t.slice(pos[i], pos[i+1]).trim();
+      if(!piece) continue;
+      const nb = {...b, text: piece, orig: piece};
+      if(b.dir === 'v'){ nb.y = b.y + b.h*r0; nb.h = b.h*(r1 - r0); }
+      else { nb.x = b.x + b.w*r0; nb.w = b.w*(r1 - r0); }
+      out.push(nb);
+    }
+  }
+  return out;
+}
+
 function union(a, b){
   const x=Math.min(a.x,b.x), y=Math.min(a.y,b.y);
   return {x, y, w:Math.max(a.x+a.w,b.x+b.w)-x, h:Math.max(a.y+a.h,b.y+b.h)-y};
@@ -443,7 +550,7 @@ function orderAndMerge(lines, dir){
         if(cur){
           const gap = cur.last.x - (c.x + c.w);
           const sameTop = Math.abs(c.y - cur.last.y) < Math.max(2*avgW, 0.25*cur.last.h);
-          if(gap < 1.6*avgW && sameTop && !QNUM.test(c.text)){
+          if(gap < 1.6*avgW && sameTop && !QNUM.test(c.text) && !HEAD.test(c.text)){
             Object.assign(cur, union(cur, c)); cur.text = joinText(cur.text, c.text); cur.last = c; continue;
           }
           out.push(cur);
@@ -460,7 +567,9 @@ function orderAndMerge(lines, dir){
       if(cur){
         const gap = r.y - (cur.last.y + cur.last.h);
         const aligned = Math.abs(r.x - cur.last.x) < 3*avgH || overlap1d(r.x,r.x+r.w,cur.x,cur.x+cur.w) > 0.5*r.w;
-        if(gap < 0.7*avgH && gap > -0.5*avgH && aligned && !QNUM.test(r.text)){
+        // 沒有題號的行＝上一題換行（考卷行距通常很大，所以放寬）；有題號或大題名稱才是新的一題
+        const isNew = QNUM.test(r.text) || HEAD.test(r.text);
+        if(!isNew && gap < 1.5*avgH && gap > -0.5*avgH && aligned){
           Object.assign(cur, union(cur, r)); cur.text = joinText(cur.text, r.text); cur.last = r; continue;
         }
         out.push(cur);
@@ -572,8 +681,9 @@ function cacheKey(i){ return i+'|'+S.dir+'|'+S.engine+(S.pages[i].kind==='img' ?
 async function showPage(i){
   stopSpeak();
   const token = ++S.renderToken;
-  S.cur = i; S.blocks = []; S.ptr = -1;
+  S.cur = i; S.blocks = []; S.ptr = -1; SP.last = null; endStep();
   $('lib').hidden = true; $('viewer').hidden = false; $('dock').hidden = false;
+  $('editPanel').hidden = !S.edit;
   $('nowName').textContent = S.fileName;
   applyZoom();
   drawBlocks();
@@ -603,16 +713,21 @@ async function showPage(i){
 
 async function analyze(i, token){
   const key = cacheKey(i);
-  if(S.cache.has(key)){ S.blocks = S.cache.get(key); drawBlocks(); return; }
+  if(S.cache.has(key)){ S.blocks = S.cache.get(key); S.pageBlocks.set(i, {blocks:S.blocks, W:cv.width, H:cv.height}); drawBlocks(); return; }
   const pg = S.pages[i];
   let blocks = null;
   if(pg.kind === 'pdf'){
     busy('讀取 PDF 文字…');
     const items = await pdfTextItems(pg.num);
-    if(items){
-      pg.items = items;
+    if(items) pg.items = items;
+    const sp = S.saved && S.saved.pages && S.saved.pages[pg.num];
+    if(sp && sp.blocks){
+      // 老師儲存過的報讀設定
+      const fx = cv.width / (sp.W || cv.width), fy = cv.height / (sp.H || cv.height);
+      blocks = sp.blocks.map(o => ({...o, x:o.x*fx, y:o.y*fy, w:o.w*fx, h:o.h*fy}));
+    } else if(items){
       const d = S.dir === 'auto' ? pickDirFromItems(items) : S.dir;
-      blocks = orderAndMerge(itemsToLines(items, d), d);
+      blocks = splitMulti(orderAndMerge(itemsToLines(items, d), d));
     }
   }
   if(!blocks){
@@ -622,46 +737,171 @@ async function analyze(i, token){
     } else if(S.engine === 'gemini'){
       toast('還沒有設定 Gemini API Key，先用免費辨識。');
     }
-    if(!blocks) blocks = await tessPage(cv, S.dir);
+    if(!blocks) blocks = splitMulti(await tessPage(cv, S.dir));
   }
   if(token !== S.renderToken) return;
   S.cache.set(key, blocks);
   S.blocks = blocks;
+  S.pageBlocks.set(i, {blocks, W:cv.width, H:cv.height});
   drawBlocks();
-  prefetchBlock(blocks.find(b => !isNoRead(b)));
   if(!blocks.length) toast('這一頁沒有辨識到文字。可以試試切換橫式／直式，或用「框選朗讀」。', 5000);
 }
 
 function drawBlocks(){
-  markNoRead(S.blocks);
-  ov.querySelectorAll('.blk').forEach(n=>n.remove());
-  const W = cv.width||1, H = cv.height||1;
-  const list = $('textList'); list.innerHTML = '';
+  analyzeStructure(S.blocks);
+  ov.querySelectorAll('.blk').forEach(n => n.remove());
+  const W = cv.width || 1, H = cv.height || 1;
   S.blocks.forEach((b, k) => {
-    const el = document.createElement('button');
-    el.type = 'button';
-    const nr = isNoRead(b);
-    el.className = 'blk' + (b.dir==='v' ? ' v' : '') + (nr ? ' noread' : '');
+    const mute = absSilent(b), off = !mute && teacherOff(b);
+    const el = document.createElement(mute ? 'div' : 'button');
+    if(!mute) el.type = 'button';
+    el.className = 'blk' + (b.dir === 'v' ? ' v' : '') + (b.isHead ? ' head' : '') + (mute ? ' mute' : '') + (off ? ' noread' : '') + (!b.isHead && b.sec === 'fix' ? ' fix' : '');
     const pad = 4;
-    el.style.left = ((b.x-pad)/W*100)+'%'; el.style.top = ((b.y-pad)/H*100)+'%';
-    el.style.width = ((b.w+2*pad)/W*100)+'%'; el.style.height = ((b.h+2*pad)/H*100)+'%';
-    el.setAttribute('aria-label', '第'+(k+1)+'段'+(nr ? '（不報讀）' : '：'+b.text));
-    el.innerHTML = '<span class="n">'+(nr ? '🚫' : '')+(k+1)+'</span>';
-    el.addEventListener('click', () => speakAt(k));
+    el.style.left = ((b.x - pad)/W*100) + '%'; el.style.top = ((b.y - pad)/H*100) + '%';
+    el.style.width = ((b.w + 2*pad)/W*100) + '%'; el.style.height = ((b.h + 2*pad)/H*100) + '%';
+    let badge;
+    if(b.isHead) badge = '🔊 大題';
+    else if(mute) badge = '🔇';
+    else if(off) badge = '🚫 ' + b.qn;
+    else if(b.sec === 'fix') badge = '🔊 第' + b.qn + '題';
+    else badge = '🔊 ' + b.qn;
+    const short = b.isHead ? '大' : mute ? '' : off ? '🚫' : String(b.qn);
+    el.innerHTML = '<span class="n"><span class="full">' + badge + '</span><span class="short">' + short + '</span></span>';
+    if(mute){ el.setAttribute('aria-hidden', 'true'); }
+    else {
+      el.setAttribute('aria-label', b.isHead ? '播放大題：' + b.text : '播放第' + b.qn + '題' + (off ? '（不報讀）' : ''));
+      el.addEventListener('click', () => speakAt(k));
+    }
     b.el = el;
     ov.appendChild(el);
-
-    const li = document.createElement('li');
-    const t = document.createElement('span'); t.className='t'; t.contentEditable='true'; t.textContent = b.text;
-    t.addEventListener('input', () => { b.text = t.textContent; });
-    const say = document.createElement('button'); say.type='button'; say.className='say'; say.textContent='🔊 唸';
-    say.addEventListener('click', () => speakAt(k));
-    const tog = document.createElement('button'); tog.type='button'; tog.className='tog';
-    tog.textContent = nr ? '🚫 不報讀（點我改成會唸）' : '改成不報讀';
-    tog.addEventListener('click', () => { b.force = isNoRead(b) ? 'read' : 'skip'; drawBlocks(); });
-    if(nr) li.classList.add('noread');
-    li.append(t, say, tog); b.li = li; list.appendChild(li);
   });
+  if(S.edit) drawEditor();
+  applyCompact();
+}
+// 考卷顯示得很小（手機）時，喇叭標籤縮小，避免互相擋住；放大後恢復
+function applyCompact(){ const w = cv.getBoundingClientRect().width; ov.classList.toggle('compact', w > 0 && w < 640); }
+window.addEventListener('resize', applyCompact);
+
+/* ================= 老師編輯：語音報讀內容 ================= */
+function drawEditor(){
+  const list = $('textList'); list.innerHTML = '';
+  S.blocks.forEach((b, k) => {
+    const li = document.createElement('li');
+    const mute = absSilent(b), off = !mute && teacherOff(b);
+    li.className = 'ed' + (b.isHead ? ' head' : '') + (mute ? ' mute' : '') + (off ? ' off' : '');
+    const top = document.createElement('div'); top.className = 'edtop';
+    const chip = document.createElement('span'); chip.className = 'chip';
+    chip.textContent = b.isHead ? '大題' : (SEC_NAMES[b.sec] ? SEC_NAMES[b.sec] + '・' : '') + '第' + b.qn + '題';
+    top.appendChild(chip);
+    if(b.isHead){
+      const sel = document.createElement('select'); sel.setAttribute('aria-label', '題型');
+      const o = document.createElement('option'); o.value = ''; o.textContent = '題型：自動（' + (SEC_NAMES[b.autoSec] || '其他題型') + '）'; sel.appendChild(o);
+      Object.entries(SEC_NAMES).forEach(([v, n]) => { const x = document.createElement('option'); x.value = v; x.textContent = '題型：' + n; sel.appendChild(x); });
+      sel.value = b.secOv || '';
+      sel.addEventListener('change', () => {
+        const nv = sel.value || null;
+        // 寫注音的禁讀優先：系統偵測是寫注音，要改成別的題型必須再確認一次
+        if(b.autoSec === 'zhuyin' && (nv || 'zhuyin') !== 'zhuyin' && !b._unlock){
+          sel.value = b.secOv || '';
+          const w = document.createElement('span'); w.className = 'warn';
+          w.textContent = '這一大題偵測為「寫注音」，改題型會讓小題開始報讀。';
+          const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'mini del arm'; ok.textContent = '確定要改';
+          ok.addEventListener('click', () => { b._unlock = true; b.secOv = nv; editChanged(); });
+          top.append(w, ok); return;
+        }
+        b.secOv = nv; editChanged();
+      });
+      top.appendChild(sel);
+    }
+    const t = document.createElement('div'); t.className = 't'; t.contentEditable = 'true'; t.textContent = b.text;
+    t.setAttribute('aria-label', '報讀文字');
+    const keepCaret = () => { const s = getSelection(); if(s.rangeCount && t.contains(s.anchorNode)) b._caret = s.anchorOffset; };
+    t.addEventListener('input', () => { b.text = t.textContent; keepCaret(); S.dirty.add(S.cur); setSaveState(); });
+    t.addEventListener('keyup', keepCaret); t.addEventListener('mouseup', keepCaret); t.addEventListener('touchend', keepCaret);
+    const acts = document.createElement('div'); acts.className = 'edacts';
+    acts.appendChild(mkBtn(mute ? '🔊 預聽（學生聽不到）' : '🔊 預聽', '', () => startSpeech(chunks(speechOf(b)).map(c => ({b, c})))));
+    if(mute) { const s = document.createElement('span'); s.className = 'lock'; s.textContent = '🔇 寫注音小題：固定不報讀'; acts.appendChild(s); }
+    else if(!b.isHead || true){
+      acts.appendChild(mkBtn(off ? '🚫 不報讀（按一下開啟）' : '✅ 會報讀（按一下關閉）', off ? 'del arm' : '', () => {
+        b.force = off ? 'read' : 'skip'; editChanged();
+      }));
+    }
+    acts.appendChild(mkBtn('✂ 從游標處分開', '', () => splitAt(k)));
+    if(k > 0) acts.appendChild(mkBtn('⤴ 合併到上一段', '', () => mergeUp(k)));
+    acts.appendChild(mkBtn(b.isHead ? '⇣ 改成小題' : '⇡ 改成大題', '', () => { b.headOv = !b.isHead; editChanged(); }));
+    li.append(top, t, acts); b.li = li; list.appendChild(li);
+  });
+  setSaveState();
+}
+function editChanged(){ S.dirty.add(S.cur); stopSpeak(); drawBlocks(); }
+function splitAt(k){
+  const b = S.blocks[k], t = b.text, pos = b._caret;
+  if(!(pos > 0 && pos < t.length)){ toast('請先在文字裡點一下要分開的位置，再按「分開」。'); return; }
+  const r = pos / t.length;
+  const a = {...b, text: t.slice(0, pos).trim(), orig: t.slice(0, pos).trim()};
+  const c = {...b, text: t.slice(pos).trim(), orig: t.slice(pos).trim(), force: undefined, headOv: undefined, secOv: undefined};
+  delete a._caret; delete c._caret;
+  if(b.dir === 'v'){ a.h = b.h*r; c.y = b.y + b.h*r; c.h = b.h*(1 - r); }
+  else { a.w = b.w*r; c.x = b.x + b.w*r; c.w = b.w*(1 - r); }
+  S.blocks.splice(k, 1, a, c); editChanged();
+}
+function mergeUp(k){
+  const p = S.blocks[k-1], b = S.blocks[k];
+  Object.assign(p, union(p, b));
+  p.text = joinText(p.text, b.text); p.orig = joinText(p.orig || p.text, b.orig || b.text);
+  S.blocks.splice(k, 1); editChanged();
+}
+function setSaveState(){
+  const btn = $('bEdSave'), note = $('edNote');
+  if(!S.remotePath){ btn.hidden = true; note.textContent = '這份考卷不是放在網站上的，修改只在這台裝置、這次開啟時有效。要同步給學生，請從老師端上傳後再按「編輯報讀」。'; return; }
+  btn.hidden = false;
+  btn.disabled = !S.dirty.size;
+  note.textContent = S.dirty.size ? '有 ' + S.dirty.size + ' 頁還沒儲存。' : (S.saved ? '已載入老師儲存的報讀設定。' : '目前是自動辨識的結果。');
+}
+
+/* 儲存到 GitHub：tests/…/考卷.pdf.json，學生打開同一份考卷就會套用 */
+function teacherToken(){
+  const t = store.get('t_token', '');
+  if(t) return t;
+  try{ return JSON.parse(sessionStorage.getItem('erh_t_token') || '""'); }catch(e){ return ''; }
+}
+function u8b64(u){ let s = ''; for(let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
+async function saveEdits(){
+  const tok = teacherToken();
+  const repo = store.get('t_repo', '') || (repoInfo() ? repoInfo().owner + '/' + repoInfo().repo : '');
+  if(!tok || !repo){ toast('這台電腦還沒有在老師端連線。請先打開老師端，貼上權杖並勾選「記住權杖」，再回來儲存。', 7000); return; }
+  const data = S.saved ? JSON.parse(JSON.stringify(S.saved)) : {version:1, pages:{}};
+  S.dirty.forEach(i => {
+    const bl = S.pageBlocks.get(i); if(!bl) return;
+    data.pages[i + 1] = { W: bl.W, H: bl.H, blocks: bl.blocks.map(b => ({
+      x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.w), h: Math.round(b.h), dir: b.dir,
+      text: b.text, orig: b.orig, force: b.force || undefined, headOv: b.headOv == null ? undefined : b.headOv, secOv: b.secOv || undefined
+    })) };
+  });
+  data.updated = new Date().toISOString();
+  const [owner, rp] = repo.split('/');
+  const api = async (path, opt) => {
+    const r = await fetch('https://api.github.com' + path, Object.assign({}, opt, { headers: {
+      'Accept':'application/vnd.github+json', 'Authorization':'Bearer ' + tok, ...(opt && opt.body ? {'Content-Type':'application/json'} : {}) } }));
+    const j = await r.json().catch(() => null);
+    if(!r.ok){ const e = new Error((j && j.message) || ('HTTP ' + r.status)); e.status = r.status; throw e; }
+    return j;
+  };
+  const btn = $('bEdSave'); btn.disabled = true; btn.textContent = '儲存中…';
+  try{
+    const info = await api('/repos/' + owner + '/' + rp);
+    const branch = info.default_branch || 'main';
+    const jp = S.remotePath + '.json', ep = jp.split('/').map(encodeURIComponent).join('/');
+    let sha;
+    try{ sha = (await api('/repos/' + owner + '/' + rp + '/contents/' + ep + '?ref=' + encodeURIComponent(branch))).sha; }catch(e){ if(e.status !== 404) throw e; }
+    await api('/repos/' + owner + '/' + rp + '/contents/' + ep, { method:'PUT', body: JSON.stringify({
+      message: '更新報讀設定 ' + S.fileName, content: u8b64(new TextEncoder().encode(JSON.stringify(data))), branch, ...(sha ? {sha} : {}) }) });
+    S.saved = data; S.dirty.clear();
+    toast('已儲存。約 1～3 分鐘後，學生打開這份考卷就會套用。', 6000);
+  }catch(e){
+    toast(e.status === 401 ? '權杖不正確或過期，請到老師端重新連線。' : e.status === 403 || e.status === 404 ? '權杖沒有這個存放庫的寫入權限。' : '儲存失敗：' + e.message, 7000);
+  }
+  btn.textContent = '💾 儲存並同步給學生'; setSaveState();
 }
 
 function updateNav(){
@@ -670,7 +910,7 @@ function updateNav(){
   $('bPrev').disabled = !n || S.cur===0;
   $('bNext').disabled = !n || S.cur>=n-1;
   $('bRot').hidden = !(n && S.pages[S.cur].kind==='img');
-  $('bAll').disabled = $('bSel').disabled = $('bQPrev').disabled = $('bQNext').disabled = !n || $('viewer').hidden;
+  $('bPlay').disabled = $('bSel').disabled = $('bQPrev').disabled = $('bQNext').disabled = !n || $('viewer').hidden;
   $('bPrev').disabled = $('bPrev').disabled || $('viewer').hidden;
   $('bNext').disabled = $('bNext').disabled || $('viewer').hidden;
 }
@@ -680,6 +920,7 @@ function applyZoom(){
   $('zoomVal').textContent = Math.round(S.zoom*100)+'%';
   $('bZoomOut').disabled = S.zoom <= 1; $('bZoomIn').disabled = S.zoom >= 3;
   store.set('zoom', S.zoom);
+  if(typeof applyCompact === 'function') applyCompact();
 }
 
 /* ================= 免費辨識（Tesseract） ================= */
@@ -736,11 +977,12 @@ async function geminiRead(canvas, isCrop){
   const prompt = `這是台灣國小考卷${isCrop?'中被框選起來的一小塊區域':'的一頁'}，要用來報讀給有學習障礙的學生聽。${dirHint}
 請找出圖中要唸的文字，依照正確的閱讀順序輸出：
 1. 橫式文字：由左到右、由上到下。直式文字（國語直排）：每一行由上到下，行與行由右到左；若頁面上下分成好幾個區塊，先讀上面的區塊再讀下面的。
-2. ${isCrop ? '這是框選區域，全部文字合成「一個」項目即可。' : '每一題（題號、題目、選項）是一個項目；大題的說明文字自成一個項目；頁首的姓名座號欄可以省略。'}
+2. ${isCrop ? '這是框選區域，全部文字合成「一個」項目即可。' : '每一小題（題號、題目、選項）是一個項目，同一行有好幾題也要分開；小題換行時要合在同一個項目；大題名稱（例如「一、寫注音」）自成一個項目；頁首的姓名座號欄可以省略。'}
+2-1. 照原樣輸出，錯別字也不能修正（改錯題要保留錯字）。
 3. 國字旁邊的小注音不要輸出，只輸出國字；如果題目本身就是注音（旁邊沒有國字），就保留注音。
 4. 要學生填寫的空格、括號一律寫成「（　）」，底線寫成「＿＿」。數字與數學符號照原樣。
 5. 只輸出圖上看得到的文字，不要作答、不要解釋。
-6. 每個項目加上 "kind"：大題說明是 "header"；考字音（看國字寫注音、選讀音、多音字等）是 "sound"；考字形（看注音寫國字、改錯字等）是 "shape"；其他是 "q"。
+6. 每個項目加上 "kind"：大題名稱是 "header"；其他都是 "q"。
 輸出 JSON 陣列，每個元素是 {"text": 文字, "dir": "h" 或 "v", "kind": 類型, "box_2d": [ymin, xmin, ymax, xmax]}，座標是 0 到 1000 的比例。`;
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(S.model)+':generateContent?key='+encodeURIComponent(S.key);
   const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
@@ -814,6 +1056,11 @@ function paintSel(){
 
 async function readRegion(r){
   stopSpeak();
+  {
+    const hit = S.blocks.filter(b => overlap1d(b.x,b.x+b.w,r.x,r.x+r.w)*overlap1d(b.y,b.y+b.h,r.y,r.y+r.h) > 0.4*b.w*b.h);
+    if(hit.some(absSilent)){ selEl.hidden = true; toast('框到的是寫注音的小題，不報讀，請自己看題目作答。', 5000); return; }
+    if(hit.filter(b => !b.isHead && b.sec === 'fix').length > 1){ selEl.hidden = true; toast('改錯題要一題一題聽，請按題目旁邊的 🔊 喇叭。', 5000); return; }
+  }
   const dir = S.dir==='auto' ? (r.h > r.w*1.3 ? 'v' : 'h') : S.dir;
   let text = '';
   busy('辨識框選的文字…');
@@ -840,241 +1087,53 @@ async function readRegion(r){
   busy(false);
   selEl.hidden = true;
   if(!text){ toast('框框裡沒有辨識到文字，請框大一點，或切換橫式／直式再試。'); return; }
-  // 框到不報讀的題目，或框到的文字本身是考字音／字形
-  const hitNR = S.blocks.find(b => isNoRead(b) && overlap1d(b.x,b.x+b.w,r.x,r.x+r.w)*overlap1d(b.y,b.y+b.h,r.y,r.y+r.h) > 0.4*b.w*b.h);
-  const tmp = {...r, text, temp:true, kind: classify(text)};
-  if(hitNR || isNoRead(tmp)){ speakBlocks([{...tmp, kind: hitNR ? hitNR.kind : tmp.kind, force:'skip'}]); return; }
-  speakBlocks([tmp]);
+  const hit = S.blocks.filter(b => overlap1d(b.x,b.x+b.w,r.x,r.x+r.w)*overlap1d(b.y,b.y+b.h,r.y,r.y+r.h) > 0.4*b.w*b.h);
+  if(hit.some(absSilent)){ toast('框到的是寫注音的小題，不報讀，請自己看題目作答。', 5000); return; }
+  const fixItems = hit.filter(b => !b.isHead && b.sec === 'fix');
+  if(fixItems.length > 1){ toast('改錯題要一題一題聽，請按題目旁邊的 🔊 喇叭。', 5000); return; }
+  const off = hit.find(teacherOff);
+  const q = off ? [{b:{temp:true}, c: noReadMsg(off)}] : chunks(toSpeech(text)).map(c => ({b:{temp:true}, c}));
+  SP.last = {type:'q', q};
+  startSpeech(q.slice());
 }
 
-/* ================= 語音 ================= */
-// 主要：Microsoft Edge 線上語音 zh-TW-HsiaoChenNeural（曉臻）。連不上時自動改用平板內建語音。
-/* Edge 語音連線驗證碼（Sec-MS-GEC v2，移植自 edge-tts） */
-const S_INITIAL=[0x6A09E667,0xBB67AE85,0x3C6EF372,0xA54FF53A,0x510E527F,0x9B05688C,0x1F83D9AB,0x5BE0CD19];
-const S_STATE=[0xFD9FBEA2,0x91243CE7,0xBE499094,0xCD2E1E0A,0x6C006F49,0x4BD35AB,0xFEB0A7E4,0x3EFFBD2];
-const S_SCHEDULE=[0xEB24BF9E,0x1558691F,0xA0C09EE2,0xCFA32BA,0xA622EE8C,0xD1DD9491,0xC0DD25A0,0xF9E70AB6,0xF0C31573,0x7058CE4E,0x7188E606,0xE5AB33,0xD258B060,0x72766564];
-const S_ROUND_CONSTANTS=[0x428A2F98,0x71374491,0xB5C0FBCF,0xE9B5DBA5,0x3956C25B,0x59F111F1,0x923F82A4,0xAB1C5ED5,0xD807AA98,0x12835B01,0x243185BE,0x550C7DC3,0x72BE5D74,0x80DEB1FE,0x9BDC06A7,0xC19BF174,0xE49B69C1,0xEFBE4786,0xFC19DC6,0x240CA1CC,0x2DE92C6F,0x4A7484AA,0x5CB0A9DC,0x76F988DA,0x983E5152,0xA831C66D,0xB00327C8,0xBF597FC7,0xC6E00BF3,0xD5A79147,0x6CA6351,0x14292967,0x27B70A85,0x2E1B2138,0x4D2C6DFC,0x53380D13,0x650A7354,0x766A0ABB,0x81C2C92E,0x92722C85,0xA2BFE8A1,0xA81A664B,0xC24B8B70,0xC76C51A3,0xD192E819,0xD6990624,0xF40E3585,0x106AA070,0x19A4C116,0x1E376C08,0x2748774C,0x34B0BCB5,0x391C0CB3,0x4ED8AA4A,0x5B9CCA4F,0x682E6FF3,0x748F82EE,0x78A5636F,0x84C87814,0x8CC70208,0x90BEFFFA,0xA4506CEB,0xBEF9A3F7,0xC67178F2];
-const CS_CO=[[0xE82E91B1,0xB32700D0],[0x44DE24C6,0x88DFF51D],[0x3BEB65BC,0x29514038],[0xC89C5933,0xB328CBDF],[0x8D1EC211,0xD405B4D5],[0x314EF5D5,0x26E55F3C],[0xE92491B1,0x607801C6],[0xF0A5B9D5,0x82B2C1FB],[0x6064CF3,0xFA51A3DA],[0xDA79FA60,0x207CC464],[0xBED20560,0x3C3C74F3],[0x89F9C9F8,0xD2D14B61],[0x35FA38C6,0xBB04A2C1],[0xCB49E3C6,0xC5626167]];
-const S_ADJ=0xC9DC06A7, S_SIG0_ADJ=0x59C0B80, S_SIG1_ADJ=0xB92C0, CS_F=0x82893933, CS_A0=0xF2F90B1A, CS_A1=0xB1A0000;const EdgeDRM = (() => {
-  const B = BigInt, M = 0xFFFFFFFFn;
-  const bi = a => a.map(x => Array.isArray(x) ? x.map(B) : B(x));
-  const INIT = bi(S_INITIAL), STATE = bi(S_STATE), SCHED = bi(S_SCHEDULE), RK = bi(S_ROUND_CONSTANTS), CO = bi(CS_CO);
-  const ADJ = B(S_ADJ), SIG0A = B(S_SIG0_ADJ), SIG1A = B(S_SIG1_ADJ), F = B(CS_F), A0 = B(CS_A0), A1 = B(CS_A1);
-  const BK = RK.slice(0, 14).concat([ADJ], RK.slice(15));
-  const rol16 = v => { v &= M; return ((v << 16n) | (v >> 16n)) & M; };
-  const sig0 = v => ((v >> 7n) ^ (v << 25n) ^ (v >> 18n) ^ (v << 14n) ^ (v >> 3n)) & M;
-  const sig1 = v => ((v >> 17n) ^ (v << 15n) ^ (v >> 19n) ^ (v << 13n) ^ (v >> 10n)) & M;
-  function rounds(st, w, first){
-    let [a,b,c,d,e,f,g,h] = st; const K = first === 14 ? BK : RK;
-    for(let i = first; i < 64; i++){
-      const re = e * 0x100000001n, ra = a * 0x100000001n;
-      const t1 = h + ((re >> 6n) ^ (re >> 11n) ^ (re >> 25n)) + (g ^ (e & (f ^ g))) + K[i] + w[i];
-      const t2 = ((ra >> 2n) ^ (ra >> 13n) ^ (ra >> 22n)) + ((a & b) | (c & (a | b)));
-      h = g; g = f; f = e; e = (d + t1) & M; d = c; c = b; b = a; a = (t1 + t2) & M;
-    }
-    return [a,b,c,d,e,f,g,h];
-  }
-  function expand(w, first){
-    for(let i = first; i < 64; i++){
-      const x = w[i-2], y = w[i-15];
-      const s1 = (x >> 17n) ^ (x << 15n) ^ (x >> 19n) ^ (x << 13n) ^ (x >> 10n);
-      const s0 = (y >> 7n) ^ (y << 25n) ^ (y >> 18n) ^ (y << 14n) ^ (y >> 3n);
-      w.push((s1 + w[i-7] + s0 + w[i-16]) & M);
-    }
-  }
-  const be = (u, o, n) => { let v = 0n; for(let k = 0; k < n; k++) v = (v << 8n) | B(u[o+k]); return v; };
-  function shaInit(d7){
-    const w = new Array(14).fill(0n); w.push(be(d7,0,3)); w.push(be(d7,3,4));
-    for(let i = 16; i < 30; i++){
-      let v = SCHED[i-16];
-      if(i-2 >= 14) v += i === 16 ? (sig1(w[i-2]) ^ SIG1A) : sig1(w[i-2]);
-      if(i-7 >= 14) v += w[i-7];
-      if(i-15 >= 14) v += i === 29 ? (sig0(w[i-15]) ^ SIG0A) : sig0(w[i-15]);
-      w.push(v & M);
-    }
-    w.push((sig1(w[28]) + w[23] + sig0(w[15]) + w[14] + ADJ - RK[14]) & M);
-    expand(w, 31);
-    const wk = rounds(STATE, w, 14);
-    return INIT.map((x, k) => (x + wk[k]) & M);
-  }
-  function shaDigest(data){
-    const len = 57 + data.length;
-    const zeros = ((55 - len) % 64 + 64) % 64;
-    const tail = data.slice(7);
-    const p = new Uint8Array(tail.length + 1 + zeros + 8);
-    p.set(tail); p[tail.length] = 0x80;
-    let bits = B(len * 8);
-    for(let k = 7; k >= 0; k--){ p[p.length - 8 + k] = Number(bits & 0xFFn); bits >>= 8n; }
-    let st = shaInit(data.slice(0, 7));
-    for(let o = 0; o < p.length; o += 64){
-      const w = []; for(let k = 0; k < 16; k++) w.push(be(p, o + k*4, 4));
-      expand(w, 16);
-      const wk = rounds(st, w, 0);
-      st = st.map((x, k) => (x + wk[k]) & M);
-    }
-    const out = new Uint8Array(32);
-    st.forEach((x, k) => { for(let j = 0; j < 4; j++) out[k*4+j] = Number((x >> B(24 - 8*j)) & 0xFFn); });
-    return out;
-  }
-  const le = (u, o) => B(u[o]) | (B(u[o+1]) << 8n) | (B(u[o+2]) << 16n) | (B(u[o+3]) << 24n);
-  function cs64(data, dg){
-    let ka = le(dg, 0) | 1n, kb = le(dg, 4) | 1n;
-    const fac = [(ka * F) & M, (kb * F) & M];
-    const terms = CO.map((c, i) => (c[0] * fac[i % 2]) & M), offs = CO.map(c => c[1]);
-    const src = new Uint8Array(data.length + 1); src.set(data, 1);
-    const padLen = Math.ceil(src.length / 4) * 4, pd = new Uint8Array(padLen); pd.set(src);
-    const words = []; for(let o = 0; o < padLen; o += 4) words.push(le(pd, o));
-    if(words.length % 2) words.push(0n);
-    words.forEach((wd, i) => {
-      let t = wd * (i % 2 === 0 ? ka : kb);
-      let of = rol16(wd) * (i % 2 === 0 ? 0xEF0569FBn : 0xC31713DBn);
-      if(i === 0){ t += A0 * fac[0]; of += A1; }
-      terms.push(t & M); offs.push(of & M);
-    });
-    let swapAcc = 0n, swapLast = 0n, state = 0n, acc = 0n;
-    for(let i = 0; i < terms.length; i += 2){
-      const x = terms[i], y = terms[i+1];
-      let t = rol16((offs[i] + x) & M); let q = (t * 0x76F50F34n) & M;
-      swapAcc += (rol16(q) * 0xC3EFEA97n + q) & M;
-      t = rol16((offs[i+1] + y) & M); q = (t * 0x1881CE3Cn) & M;
-      swapLast = (rol16(q) * 0x35BD1EC9n + q) & M;
-      swapAcc = (swapAcc + swapLast) & M;
-      state = (state * ka + x) & M;
-      state = (rol16(state) * 0xCF98B111n) & M;
-      state = (rol16(state) * 0x87085B9Fn) & M;
-      state = (rol16(state) * 0x12CEB96Dn) & M;
-      state = (rol16(state) * 0x257E1D83n) & M;
-      acc += state;
-      t = (state * kb + y) & M;
-      t = (rol16(t) * 0xA27416F5n) & M;
-      t = (rol16(t) * 0xD38396FFn) & M;
-      state = (rol16((rol16(t) * 0x7C932B89n) & M) * 0xBFA49F69n) & M;
-      acc = (acc + state) & M;
-    }
-    return [swapLast ^ state, swapAcc ^ acc];
-  }
-  const hex = u => Array.from(u, x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
-  const leHex = v => { const u = new Uint8Array(4); for(let k = 0; k < 4; k++) u[k] = Number((v >> B(8*k)) & 0xFFn); return hex(u); };
-  function token(unix, trusted){
-    let t = unix + 11644473600; t -= t % 300; t *= 1e7;
-    const data = new TextEncoder().encode(t.toFixed(0) + trusted);
-    const dg = shaDigest(data); const [a, b] = cs64(data, dg);
-    return leHex(a) + leHex(b) + '-' + hex(dg);
-  }
-  return { token };
-})();
-
-
-const EDGE_VOICES = [['zh-TW-HsiaoChenNeural','曉臻（女聲・自然柔和）'],['zh-TW-HsiaoYuNeural','曉雨（女聲）'],['zh-TW-YunJheNeural','雲哲（男聲）']];
-const DEFAULT_VOICE = 'edge:zh-TW-HsiaoChenNeural';
-const IS_EDGE = /\bEdg(A|iOS)?\//.test(navigator.userAgent);
-const EDGE = { trusted:'6A5AA1D4EAFF4E9FB37E23D68491D6F4', ver:'2-143.0.3650.75', down:0, skew:0, cache:new Map() };
-// 平板時間不準會被拒絕：用網站伺服器的時間校正
-fetch(location.href.split('#')[0], {method:'HEAD', cache:'no-store'}).then(r => {
-  const d = Date.parse(r.headers.get('Date') || ''); if(d) EDGE.skew = (d - Date.now())/1000;
-}).catch(()=>{});
-const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), x => x.toString(16).padStart(2,'0')).join('');
-const xmlEsc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
-function edgeSynth(text, voice, rate){
-  const key = voice+'|'+rate+'|'+text;
-  if(EDGE.cache.has(key)) return EDGE.cache.get(key);
-  const p = new Promise((res, rej) => {
-    let ws;
-    try{
-      const gec = EdgeDRM.token(Date.now()/1000 + EDGE.skew, EDGE.trusted);
-      ws = new WebSocket('wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken='+EDGE.trusted
-        +'&ConnectionId='+rid()+'&Sec-MS-GEC='+gec+'&Sec-MS-GEC-Version='+EDGE.ver);
-    }catch(e){ rej(e); return; }
-    ws.binaryType = 'arraybuffer';
-    const parts = []; let done = false;
-    const finish = (err, val) => { if(done) return; done = true; clearTimeout(timer); try{ ws.close(); }catch(e){} err ? rej(err) : res(val); };
-    const timer = setTimeout(() => finish(new Error('timeout')), 12000);
-    ws.onopen = () => {
-      const ts = new Date().toString();
-      ws.send('X-Timestamp:'+ts+'\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n'
-        +'{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}\r\n');
-      const pct = Math.round((rate-1)*100);
-      const ssml = "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-TW'><voice name='"+voice+"'>"
-        +"<prosody pitch='+0Hz' rate='"+(pct>=0?'+':'')+pct+"%' volume='+0%'>"+xmlEsc(text)+"</prosody></voice></speak>";
-      ws.send('X-RequestId:'+rid()+'\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:'+ts+'Z\r\nPath:ssml\r\n\r\n'+ssml);
-    };
-    ws.onmessage = ev => {
-      if(typeof ev.data === 'string'){
-        if(ev.data.includes('Path:turn.end')){
-          if(!parts.length) finish(new Error('noaudio'));
-          else finish(null, URL.createObjectURL(new Blob(parts, {type:'audio/mpeg'})));
-        }
-        return;
-      }
-      const buf = ev.data; if(buf.byteLength < 2) return;
-      const hl = new DataView(buf).getUint16(0);
-      const head = new TextDecoder().decode(new Uint8Array(buf, 2, Math.min(hl, buf.byteLength-2)));
-      if(head.includes('Path:audio') && buf.byteLength > 2+hl) parts.push(buf.slice(2+hl));
-    };
-    ws.onerror = () => finish(new Error('連線被拒絕'));
-    ws.onclose = () => finish(new Error('closed'));
-  });
-  EDGE.cache.set(key, p);
-  p.catch(() => EDGE.cache.delete(key));
-  if(EDGE.cache.size > 200){ const k = EDGE.cache.keys().next().value; EDGE.cache.get(k).then(u => URL.revokeObjectURL(u)).catch(()=>{}); EDGE.cache.delete(k); }
-  return p;
-}
-function useEdge(){ return S.voiceURI.startsWith('edge:') && Date.now() > EDGE.down; }
-function edgeVoice(){ return S.voiceURI.startsWith('edge:') ? S.voiceURI.slice(5) : 'zh-TW-HsiaoChenNeural'; }
-function edgeFailed(e){
-  console.warn('Edge TTS', e);
-  EDGE.down = Date.now() + 3*60*1000;   // 3 分鐘後再試
-  const n = $('vnote');
-  n.textContent = IS_EDGE ? '⚠ 雲端語音（曉臻）暫時連不上，先用平板內建語音。' : '⚠ 曉臻語音要用 Microsoft Edge 瀏覽器打開才聽得到，現在先用平板內建語音。';
-  if(!IS_EDGE){
-    const ua = navigator.userAgent, href = location.href;
-    const url = (/iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document)) ? 'microsoft-edge-' + href
-      : /Android/.test(ua) ? 'intent://' + href.replace(/^https?:\/\//,'') + '#Intent;scheme=' + location.protocol.replace(':','') + ';package=com.microsoft.emmx;end'
-      : 'microsoft-edge:' + href;
-    const a = document.createElement('a'); a.href = url; a.className = 'btn sm edgebtn'; a.textContent = '📲 用 Edge 打開';
-    n.append(' ', a);
-  }
-  n.hidden = false;
-}
-function prefetchBlock(b){
-  if(!b || !useEdge() || isNoRead(b)) return;
-  chunks(toSpeech(b.text)).slice(0, 2).forEach(c => edgeSynth(c, edgeVoice(), S.rate).catch(edgeFailed));
-}
-
-const player = new Audio(); player.preload = 'auto';
-function silentWav(){
-  const n = 800, b = new ArrayBuffer(44 + n*2), v = new DataView(b);
-  const w = (o, s) => { for(let i = 0; i < s.length; i++) v.setUint8(o+i, s.charCodeAt(i)); };
-  w(0,'RIFF'); v.setUint32(4, 36+n*2, true); w(8,'WAVE'); w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
-  v.setUint32(24,16000,true); v.setUint32(28,32000,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,'data'); v.setUint32(40,n*2,true);
-  return URL.createObjectURL(new Blob([b], {type:'audio/wav'}));
-}
-
+/* ================= 語音（瀏覽器內建自然語音 Web Speech API） ================= */
 let voices = [];
+// 優先：臺灣中文 → 自然／線上語音 → 女聲
+function voiceScore(v){
+  const id = v.name + ' ' + v.lang; let s = 0;
+  if(/zh[-_]TW|Hant|台灣|臺灣|Taiwan/i.test(id)) s += 100;
+  else if(/zh[-_]CN|cmn|Hans|普通话|China|Mandarin/i.test(id)) s += 40;
+  else if(/HK|yue|粵/i.test(id)) s += 5;
+  if(/Natural|Online|Neural|Premium|Enhanced|增強|優化|高品質/i.test(id)) s += 30;
+  if(/HsiaoChen|曉臻|HsiaoYu|曉雨|Yating|雅婷|Hanhan|涵涵|Mei-?Jia|美佳|Google\s*國語|Female|女/i.test(id)) s += 20;
+  if(/Zhiwei|志偉|YunJhe|雲哲|Male|男/i.test(id)) s -= 15;
+  return s;
+}
 function loadVoices(){
   let all = []; try{ all = speechSynthesis.getVoices(); }catch(e){}
-  voices = all.filter(v => /^zh|cmn/i.test(v.lang));
-  const rank = v => (/TW|Hant|台灣|臺灣|Taiwan/i.test(v.lang+v.name) ? 0 : /HK|yue/i.test(v.lang) ? 2 : 1);
-  voices.sort((a,b) => rank(a)-rank(b) || a.name.localeCompare(b.name));
+  voices = all.filter(v => /^(zh|cmn)/i.test(v.lang) || /Chinese|中文|國語|普通话/i.test(v.name));
+  voices.sort((a, b) => voiceScore(b) - voiceScore(a) || a.name.localeCompare(b.name));
   const sel = $('voice'); sel.innerHTML = '';
-  const g1 = document.createElement('optgroup'); g1.label = '雲端語音（Edge）';
-  EDGE_VOICES.forEach(([id, name]) => { const o = document.createElement('option'); o.value = 'edge:'+id; o.textContent = name; g1.appendChild(o); });
-  const g2 = document.createElement('optgroup'); g2.label = '平板內建語音';
-  if(!voices.length){ const o = document.createElement('option'); o.textContent = '預設中文'; o.value = 'local:'; g2.appendChild(o); }
-  voices.forEach(v => { const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = v.name.replace(/Microsoft |Google /,''); g2.appendChild(o); });
-  sel.append(g1, g2);
-  if([...sel.options].some(o => o.value === S.voiceURI)) sel.value = S.voiceURI;
-  else { S.voiceURI = DEFAULT_VOICE; sel.value = DEFAULT_VOICE; }
+  const best = voices[0];
+  const o0 = document.createElement('option'); o0.value = 'auto';
+  o0.textContent = best ? '自動：' + best.name.replace(/Microsoft |Google | - .*$|\(.*\)/g, '').trim() : '自動（中文語音）';
+  sel.appendChild(o0);
+  voices.forEach(v => { const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = v.name.replace(/Microsoft |Google /, '') + (v.localService ? '' : ' ☁'); sel.appendChild(o); });
+  if([...sel.options].some(o => o.value === S.voiceURI)) sel.value = S.voiceURI; else { S.voiceURI = 'auto'; sel.value = 'auto'; }
 }
-loadVoices();
-if('speechSynthesis' in window) speechSynthesis.onvoiceschanged = loadVoices;
+function pickVoice(){
+  if(S.voiceURI !== 'auto'){ const v = voices.find(x => x.voiceURI === S.voiceURI); if(v) return v; }
+  return voices[0] || null;
+}
+if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+else toast('這個瀏覽器不能語音報讀，請改用 Chrome、Edge 或 Safari。', 8000);
 
 let unlocked = false;
 function unlockSpeech(){
-  if(unlocked) return;
+  if(unlocked || !('speechSynthesis' in window)) return;
   unlocked = true;
-  try{ player.src = silentWav(); player.play().catch(()=>{}); }catch(e){}
-  if('speechSynthesis' in window){ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); }
+  try{ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); }catch(e){}
 }
 document.addEventListener('pointerdown', unlockSpeech, {once:true, capture:true});
 
@@ -1090,7 +1149,7 @@ function toSpeech(t){
          .replace(/(\d)\s*[－−—-]\s*(?=\d)/g, '$1減')
          .replace(/[＝=]/g, '等於').replace(/[＞>]/g, '大於').replace(/[＜<]/g, '小於');
   }
-  return t.replace(/，\s*，/g, '，').replace(/^，|，$/g,'');
+  return t.replace(/，\s*，/g, '，').replace(/^，|，$/g, '');
 }
 function chunks(t){
   const parts = t.split(/(?<=[。！？；!?;])/);
@@ -1098,95 +1157,168 @@ function chunks(t){
   for(let p of parts){
     while(p.length > 70){
       let cut = p.lastIndexOf('，', 70); if(cut < 20) cut = 70;
-      out.push(p.slice(0, cut+1)); p = p.slice(cut+1);
+      out.push(p.slice(0, cut + 1)); p = p.slice(cut + 1);
     }
     if(p.trim()) out.push(p);
   }
   return out;
 }
-let speakToken = 0, keep = [];
-function stopSpeak(){
-  speakToken++;
-  if('speechSynthesis' in window) speechSynthesis.cancel();
-  player.onended = null; player.onerror = null;
-  try{ player.pause(); }catch(e){}
-  mark(null);
+
+// 播放器：queue 是一句一句；暫停時記住唸到哪一句，繼續時從那一句接著唸（各種平板都穩定）
+const SP = { token: 0, q: [], i: 0, state: 'idle', after: null, last: null, keep: null };
+function startSpeech(q, after){
+  if(!('speechSynthesis' in window)) return;
+  const wasBusy = speechSynthesis.speaking || speechSynthesis.pending || SP.state !== 'idle';
+  hardStop();
+  SP.q = q; SP.i = 0; SP.after = after || null; SP.state = 'playing';
+  const tk = ++SP.token;
+  if(wasBusy) setTimeout(() => runNext(tk), 120); else runNext(tk);   // 先停掉上一段，避免兩段語音重疊
+  updateCtl();
+}
+function runNext(tk){
+  if(tk !== SP.token || SP.state !== 'playing') return;
+  if(SP.i >= SP.q.length){
+    SP.state = 'idle'; mark(null); updateCtl();
+    const a = SP.after; SP.after = null; if(a) a();
+    return;
+  }
+  const {b, c} = SP.q[SP.i];
+  if(b && !b.temp) mark(b);
+  const v = pickVoice();
+  const u = new SpeechSynthesisUtterance(c);
+  u.lang = v ? v.lang : 'zh-TW'; if(v) u.voice = v;
+  u.rate = S.rate; u.pitch = 1; u.volume = 1;
+  u.onend = () => { if(tk !== SP.token || SP.state !== 'playing') return; SP.i++; runNext(tk); };
+  u.onerror = e => { if(tk !== SP.token || SP.state !== 'playing') return; if(e && (e.error === 'interrupted' || e.error === 'canceled')) return; SP.i++; runNext(tk); };
+  SP.keep = u;
+  speechSynthesis.speak(u);
+}
+function hardStop(){ SP.token++; try{ speechSynthesis.cancel(); }catch(e){} }
+function stopSpeak(){ hardStop(); SP.state = 'idle'; SP.after = null; mark(null); updateCtl(); }
+function pauseSpeak(){ if(SP.state !== 'playing') return; SP.state = 'paused'; hardStop(); updateCtl(); }
+function resumeSpeak(){
+  if(SP.state !== 'paused') return;
+  SP.state = 'playing'; const tk = ++SP.token;
+  setTimeout(() => runNext(tk), 80); updateCtl();
+}
+function replaySpeak(){
+  const L = SP.last; if(!L){ toast('還沒有播放過。'); return; }
+  if(L.type === 'one') speakOne(L.b);
+  else if(L.type === 'page') speakPage(L.start);
+  else if(L.type === 'q') startSpeech(L.q.slice());
+}
+function updateCtl(){
+  const p = $('bPause'); if(!p) return;
+  if(SP.state === 'paused'){ p.textContent = '▶ 繼續'; p.classList.add('primary'); }
+  else { p.textContent = '⏸ 暫停'; p.classList.remove('primary'); }
+  p.disabled = SP.state === 'idle';
+  $('bStop').disabled = SP.state === 'idle';
+  $('bReplay').disabled = !SP.last;
 }
 function mark(b){
-  document.querySelectorAll('.reading').forEach(n=>n.classList.remove('reading'));
+  document.querySelectorAll('.reading').forEach(n => n.classList.remove('reading'));
   if(!b) return;
   const k = S.blocks.indexOf(b); if(k >= 0) S.ptr = k;
-  if(b.el){ b.el.classList.add('reading'); b.el.scrollIntoView({block:'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }
+  if(b.el){ b.el.classList.add('reading'); b.el.scrollIntoView({block:'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); }
   if(b.li) b.li.classList.add('reading');
 }
-function speakBlocks(list){
-  stopSpeak();
-  const token = ++speakToken;
-  const local = voices.find(v => v.voiceURI === S.voiceURI) || voices[0];
-  const queue = [];
-  list.forEach(b => {
-    if(isNoRead(b)){ if(list.length === 1) queue.push({b, c: noReadMsg(b)}); return; }   // 整頁朗讀時直接跳過
-    chunks(toSpeech(b.text)).forEach(c => queue.push({b, c}));
-  });
-  const sayLocal = (c, done) => {
-    if(!('speechSynthesis' in window)){ done(); return; }
-    const u = new SpeechSynthesisUtterance(c);
-    u.lang = local ? local.lang : 'zh-TW'; if(local) u.voice = local;
-    u.rate = S.rate; u.onend = done; u.onerror = done;
-    keep.push(u); speechSynthesis.speak(u);
-  };
-  let i = 0;
-  const next = async () => {
-    if(token !== speakToken) return;
-    if(i >= queue.length){ mark(null); keep = []; return; }
-    const {b, c} = queue[i++];
-    if(!b.temp) mark(b);
-    if(useEdge()){
-      try{
-        const url = await edgeSynth(c, edgeVoice(), S.rate);
-        if(token !== speakToken) return;
-        if(queue[i]) edgeSynth(queue[i].c, edgeVoice(), S.rate).catch(()=>{});   // 先準備下一句，減少停頓
-        player.onended = () => next(); player.onerror = () => next();
-        player.src = url;
-        await player.play();
+
+/* ---------- 依題型決定要唸什麼 ---------- */
+function queueFor(b, single){
+  if(absSilent(b)) return [];
+  if(teacherOff(b)) return single ? [{b, c: noReadMsg(b)}] : [];
+  return chunks(speechOf(b)).map(c => ({b, c}));
+}
+// 單題：只唸這一題，唸完就停（改錯題也不會接著唸下一題）
+function speakOne(b){
+  const q = queueFor(b, true);
+  if(!q.length){ toast('寫注音的小題不報讀，請自己看題目作答。'); return; }
+  SP.last = {type:'one', b};
+  const inStep = S.step && !b.isHead && b.head === S.step.head;
+  startSpeech(q, inStep ? () => cueAfter(b) : null);
+}
+// 整頁：寫注音小題跳過；遇到改錯題 → 唸完大題名稱就改成逐題模式
+function speakPage(start){
+  start = start || 0;
+  endStep();
+  const q = [];
+  for(let k = start; k < S.blocks.length; k++){
+    const b = S.blocks[k];
+    if(b.isHead && b.sec === 'fix'){
+      const items = S.blocks.filter((x, j) => j > k && !x.isHead && x.head === b && !absSilent(x));
+      const nextH = S.blocks.findIndex((x, j) => j > k && x.isHead);
+      q.push(...queueFor(b, false));
+      if(items.length){
+        q.push({b, c: '這一大題要一題一題聽，請按第' + items[0].qn + '題的喇叭。'});
+        SP.last = {type:'page', start};
+        startSpeech(q, () => enterStep(b, nextH));
         return;
-      }catch(e){
-        if(token !== speakToken) return;
-        if(e && e.name === 'NotAllowedError'){ toast('請再點一次，就會開始唸。'); mark(null); return; }
-        edgeFailed(e);
       }
+      continue;
     }
-    sayLocal(c, next);
-  };
-  next();
+    if(!b.isHead && b.sec === 'fix') continue;
+    q.push(...queueFor(b, false));
+  }
+  if(!q.length){ toast('這一頁沒有可以報讀的內容。'); return; }
+  SP.last = {type:'page', start};
+  startSpeech(q, () => toast('這一頁唸完了。'));
 }
-function speakAt(k){
+function speakAt(k, dirn){
+  dirn = dirn || 1;
   if(!S.blocks.length){ toast('這一頁還沒有可以唸的文字。'); return; }
-  if(k >= S.blocks.length){ toast('這是這一頁的最後一題了。'+(S.cur < S.pages.length-1 ? '按 ▶ 看下一頁。' : '')); k = S.blocks.length-1; }
-  k = Math.max(0, k);
+  while(k >= 0 && k < S.blocks.length && absSilent(S.blocks[k])) k += dirn;   // 寫注音小題直接跳過
+  if(k >= S.blocks.length){ toast('這是這一頁的最後一題了。' + (S.cur < S.pages.length - 1 ? '按 ▶ 看下一頁。' : '')); return; }
+  if(k < 0){ k = S.blocks.findIndex(b => !absSilent(b)); if(k < 0) return; }
+  if(S.step){ const b = S.blocks[k]; if(b.isHead || b.head !== S.step.head) endStep(); }
   S.ptr = k;
-  speakBlocks([S.blocks[k]]);
-  prefetchBlock(S.blocks[k+1]);
+  speakOne(S.blocks[k]);
 }
+
+/* ---------- 改錯題逐題模式 ---------- */
+function enterStep(head, nextH){
+  S.step = {head, nextH};
+  const first = S.blocks.find(x => !x.isHead && x.head === head && !absSilent(x));
+  setCue(first);
+  $('stepText').textContent = '✏️ ' + (SEC_NAMES[head.sec] || '改錯題') + '：請按 🔊 第' + (first ? first.qn : 1) + '題，一題一題聽。聽完再自己按下一題。';
+  $('bStepNext').hidden = nextH < 0;
+  $('stepBar').hidden = false;
+}
+function cueAfter(b){
+  const items = S.blocks.filter(x => !x.isHead && x.head === b.head && !absSilent(x));
+  const nx = items[items.indexOf(b) + 1];
+  setCue(nx || null);
+  $('stepText').textContent = nx ? '✏️ 第' + b.qn + '題唸完了。要聽下一題，請按 🔊 第' + nx.qn + '題。'
+                                 : '✏️ 這一大題的每一題都有喇叭，可以再聽一次。' + (S.step && S.step.nextH >= 0 ? '做完了就按「繼續下一大題」。' : '');
+}
+function setCue(b){
+  document.querySelectorAll('.blk.cue').forEach(n => n.classList.remove('cue'));
+  if(b && b.el){ b.el.classList.add('cue'); b.el.scrollIntoView({block:'nearest'}); }
+}
+function endStep(){ S.step = null; setCue(null); const sb = $('stepBar'); if(sb) sb.hidden = true; }
 
 /* ================= 介面事件 ================= */
 function setDir(d){
   S.dir = d; store.set('dir', d);
-  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir===d)));
+  document.querySelectorAll('#dirSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir===d)));
 }
 setDir(S.dir);
-document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+document.querySelectorAll('#dirSeg button').forEach(b => b.addEventListener('click', () => {
   if(S.dir === b.dataset.dir) return;
   setDir(b.dataset.dir);
   if(S.pages.length) showPage(S.cur);
 }));
-$('rate').value = S.rate; $('rateVal').textContent = S.rate+' 倍';
-$('rate').addEventListener('input', e => { S.rate = +e.target.value; $('rateVal').textContent = S.rate+' 倍'; store.set('rate', S.rate); });
+function setRate(r){
+  S.rate = r; store.set('rate2', r);
+  document.querySelectorAll('#rateSeg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.rate === r)));
+}
+setRate(S.rate);
+document.querySelectorAll('#rateSeg button').forEach(b => b.addEventListener('click', () => {
+  setRate(+b.dataset.rate);
+  if(SP.state === 'idle') startSpeech([{b:{temp:true}, c:'這是' + (S.rate < 0.8 ? '慢' : S.rate < 0.95 ? '適中' : '正常') + '的速度。'}]);
+}));
 $('voice').addEventListener('change', e => {
-  S.voiceURI = e.target.value; store.set('voice2', S.voiceURI);
-  $('vnote').hidden = true; EDGE.down = 0;
-  const name = (e.target.selectedOptions[0] ? e.target.selectedOptions[0].textContent : '').replace(/（.*$/,'');
-  speakBlocks([{text:'你好，我是'+name+'，我來幫你唸題目。', temp:true}]);
+  S.voiceURI = e.target.value; store.set('voice3', S.voiceURI);
+  startSpeech([{b:{temp:true}, c:'你好，我來幫你唸題目。'}]);
 });
 
 $('bCam').addEventListener('click', () => {
@@ -1205,6 +1337,7 @@ async function openFiles(files){
       try{ await DB.put({id: pdf.name+'|'+pdf.size, name, size: pdf.size, added: Date.now()}, buf); }
       catch(e){ console.warn(e); toast('這台平板的空間不夠，考卷沒有收進考卷櫃，但還是可以使用。'); }
     }
+    S.remotePath = ''; S.saved = null;
     await loadPdf(buf, name);
     return;
   }
@@ -1237,6 +1370,7 @@ $('fCam').addEventListener('change', async e => {
   if(append) toast('已加入第 '+S.pages.length+' 頁。');
 });
 async function addImages(files, replace){
+  if(replace){ S.remotePath = ''; S.saved = null; }
   busy('正在讀取照片…');
   try{
     const canvases = [];
@@ -1253,20 +1387,25 @@ $('bRot').addEventListener('click', () => {
   const pg = S.pages[S.cur]; if(!pg || pg.kind!=='img') return;
   pg.canvas = rotateCanvas(pg.canvas); pg.rot = ((pg.rot||0)+90)%360; showPage(S.cur);
 });
-$('bAll').addEventListener('click', () => {
+$('bPlay').addEventListener('click', () => {
   if(!S.blocks.length){ toast('這一頁還沒有可以唸的文字。'); return; }
-  speakBlocks(S.blocks);
+  speakPage(0);
 });
+$('bPause').addEventListener('click', () => SP.state === 'paused' ? resumeSpeak() : pauseSpeak());
 $('bStop').addEventListener('click', stopSpeak);
+$('bReplay').addEventListener('click', replaySpeak);
+$('bStepNext').addEventListener('click', () => { const n = S.step ? S.step.nextH : -1; endStep(); if(n >= 0) speakPage(n); });
+$('bStepEnd').addEventListener('click', () => { stopSpeak(); endStep(); });
+$('bEdSave').addEventListener('click', saveEdits);
 $('bSel').addEventListener('click', () => setSelecting(!S.selecting));
-$('bQNext').addEventListener('click', () => speakAt(S.ptr + 1));
-$('bQPrev').addEventListener('click', () => speakAt(S.ptr <= 0 ? 0 : S.ptr - 1));
+$('bQNext').addEventListener('click', () => speakAt(S.ptr + 1, 1));
+$('bQPrev').addEventListener('click', () => speakAt(S.ptr <= 0 ? 0 : S.ptr - 1, -1));
 $('bZoomIn').addEventListener('click', () => { S.zoom += 0.25; applyZoom(); });
 $('bZoomOut').addEventListener('click', () => { S.zoom -= 0.25; applyZoom(); });
 document.addEventListener('keydown', e => {
   if($('viewer').hidden || $('dlg').open || e.target.isContentEditable || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
-  if(e.key==='ArrowDown' || e.key==='ArrowRight'){ e.preventDefault(); speakAt(S.ptr+1); }
-  else if(e.key==='ArrowUp' || e.key==='ArrowLeft'){ e.preventDefault(); speakAt(S.ptr<=0?0:S.ptr-1); }
+  if(e.key==='ArrowDown' || e.key==='ArrowRight'){ e.preventDefault(); speakAt(S.ptr+1, 1); }
+  else if(e.key==='ArrowUp' || e.key==='ArrowLeft'){ e.preventDefault(); speakAt(S.ptr<=0?0:S.ptr-1, -1); }
   else if(e.key==='Escape'){ stopSpeak(); if(S.selecting) setSelecting(false); }
 });
 $('bLib').addEventListener('click', showLib);
@@ -1362,11 +1501,20 @@ function mkBtn(label, cls, fn){
 function fmtSize(n){ return n > 1048576 ? (n/1048576).toFixed(1)+' MB' : Math.max(1, Math.round(n/1024))+' KB'; }
 function fmtDate(t){ const d = new Date(t); return (d.getMonth()+1)+'/'+d.getDate(); }
 
+async function loadSaved(path){
+  S.remotePath = /^https?:/i.test(path) ? '' : path.replace(/^\.?\//, '');
+  S.saved = null; S.dirty.clear();
+  if(!S.remotePath) return;
+  try{
+    const r = await fetch(encodePath(S.remotePath) + '.json?v=' + Date.now(), {cache:'no-store'});
+    if(r.ok) S.saved = await r.json();
+  }catch(e){}
+}
 async function openRemote(path, name, dir){
   if(['h','v','auto'].includes(dir)) setDir(dir);
   busy('正在載入「'+name+'」…');
   try{
-    const r = await fetch(encodePath(path));
+    const [r] = await Promise.all([fetch(encodePath(path)), loadSaved(path)]);
     if(!r.ok) throw new Error(r.status);
     await loadPdf(await r.arrayBuffer(), name);
   }catch(e){ busy(false); toast('打不開「'+name+'」，請確認檔案還在網站的 tests 資料夾裡。', 6000); }
@@ -1435,7 +1583,7 @@ async function renderLocal(){
     n.appendChild(meta);
     const open = mkBtn('打開', 'go', async () => {
       busy('正在打開「'+m.name+'」…');
-      try{ const d = await DB.get(m.id); if(!d) throw new Error('missing'); await loadPdf(d, m.name); }
+      try{ const d = await DB.get(m.id); if(!d) throw new Error('missing'); S.remotePath = ''; S.saved = null; await loadPdf(d, m.name); }
       catch(e){ busy(false); toast('這份考卷讀不出來，可能已被清除，請重新加入。'); renderLocal(); }
     });
     let armT;
@@ -1454,7 +1602,7 @@ async function renderLocal(){
 }
 
 function showLib(){
-  stopSpeak();
+  stopSpeak(); endStep();
   if(S.selecting) setSelecting(false);
   $('viewer').hidden = true; $('lib').hidden = false; $('dock').hidden = true;
   $('backBar').hidden = !S.pages.length;
@@ -1467,7 +1615,8 @@ function fillSettings(){
   $('engTess').checked = S.engine==='tess'; $('engGem').checked = S.engine==='gemini';
   $('apiKey').value = S.key; $('model').value = S.model;
   $('optZy').checked = S.skipZy; $('optMath').checked = S.mathWords;
-  $('optNoSound').checked = S.noSound; $('optNoShape').checked = S.noShape;
+  $('optNoSound').checked = S.noSound; $('optNoShape').checked = S.noShape; $('optNoFill').checked = S.noFill;
+  $('bEditMode').textContent = S.edit ? '關閉老師編輯模式' : '✏️ 開啟老師編輯模式';
   $('pdfPath').value = S.autoPdf || '';
 }
 $('bSet').addEventListener('click', () => { fillSettings(); $('dlg').showModal(); });
@@ -1479,9 +1628,9 @@ $('dlg').addEventListener('close', () => {
   S.skipZy = $('optZy').checked; S.mathWords = $('optMath').checked;
   store.set('engine', S.engine); store.set('key', S.key); store.set('model', S.model);
   store.set('skipZy', S.skipZy); store.set('mathWords', S.mathWords);
-  const nrChanged = S.noSound !== $('optNoSound').checked || S.noShape !== $('optNoShape').checked;
-  S.noSound = $('optNoSound').checked; S.noShape = $('optNoShape').checked;
-  store.set('noSound', S.noSound); store.set('noShape', S.noShape);
+  const nrChanged = S.noSound !== $('optNoSound').checked || S.noShape !== $('optNoShape').checked || S.noFill !== $('optNoFill').checked;
+  S.noSound = $('optNoSound').checked; S.noShape = $('optNoShape').checked; S.noFill = $('optNoFill').checked;
+  store.set('noSound', S.noSound); store.set('noShape', S.noShape); store.set('noFill', S.noFill);
   if(nrChanged && S.blocks.length) drawBlocks();
   if(oldEngine !== S.engine && S.pages.length) showPage(S.cur);
 });
@@ -1495,6 +1644,7 @@ $('bMakeQr').addEventListener('click', () => {
   p.set('math', $('optMath').checked ? '1' : '0');
   p.set('ns', $('optNoSound').checked ? '1' : '0');
   p.set('nsh', $('optNoShape').checked ? '1' : '0');
+  p.set('nf', $('optNoFill').checked ? '1' : '0');
   const m = $('model').value.trim(); if(eng==='gemini' && m && m!=='gemini-flash-latest') p.set('model', m);
   const pdf = $('pdfPath').value.trim(); if(pdf) p.set('pdf', pdf);
   const k = $('apiKey').value.trim(); if($('incKey').checked && k) p.set('key', k);
@@ -1509,6 +1659,13 @@ $('bCopy').addEventListener('click', async () => {
   try{ await navigator.clipboard.writeText(t); toast('已複製連結。'); }
   catch(e){ const r=document.createRange(); r.selectNodeContents($('qrUrl')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('請長按或按 Ctrl+C 複製選取的連結。'); }
 });
+$('bEditMode').addEventListener('click', () => {
+  S.edit = !S.edit;
+  $('bEditMode').textContent = S.edit ? '關閉老師編輯模式' : '✏️ 開啟老師編輯模式';
+  $('editPanel').hidden = !S.edit || $('viewer').hidden;
+  if(S.edit && S.blocks.length) drawEditor();
+  toast(S.edit ? '已開啟老師編輯模式，編輯區在考卷下方。' : '已關閉老師編輯模式。');
+});
 $('bClear').addEventListener('click', () => { S.cache.clear(); toast('已清除，切換頁面時會重新辨識。'); });
 
 /* ================= 預先載入 PDF ================= */
@@ -1517,7 +1674,7 @@ if(S.autoPdf){
   (async () => {
     busy('正在載入老師準備的考卷…');
     try{
-      const r = await fetch(encodePath(S.autoPdf));
+      const [r] = await Promise.all([fetch(encodePath(S.autoPdf)), loadSaved(S.autoPdf)]);
       if(!r.ok) throw new Error(r.status);
       await loadPdf(await r.arrayBuffer(), nm);
     }catch(e){ busy(false); toast('找不到老師準備的考卷（'+nm+'），請從考卷櫃選，或直接拍照。', 6000); showLib(); }

@@ -313,6 +313,7 @@ async function refreshList(){
       readListJson()
     ]);
     const metaBy = new Map(meta.map(m => [typeof m==='string' ? m : (m.path||m.file), m]));
+    G.blobs = new Map((tree.tree||[]).filter(n => n.type==='blob').map(n => [n.path, n.sha]));
     G.files = (tree.tree||[]).filter(n => n.type==='blob' && /^tests\/.+\.pdf$/i.test(n.path)).map(n => {
       const m = metaBy.get(n.path) || {};
       const parts = n.path.replace(/^tests\//,'').split('/'); const base = parts.pop();
@@ -373,6 +374,9 @@ function renderList(){
     });
     const qr = mk('QR', '', () => showQr(f));
     const view = document.createElement('a'); view.className = 'btn sm'; view.textContent = '預覽'; view.href = studentUrl(f, false); view.target = '_blank'; view.rel = 'noopener';
+    const edit = document.createElement('a'); edit.className = 'btn sm primary'; edit.textContent = '✏️ 編輯報讀'; edit.href = studentUrl(f, false) + '&edit=1'; edit.target = '_blank';
+    edit.title = '檢查辨識文字、調整分段與題型、設定單題是否報讀，儲存後同步給學生';
+    if(G.blobs && G.blobs.has(f.path + '.json')) nm.append(' ✓已調整');
     let armT;
     const del = mk('刪除', 'del', async () => {
       if(!del.classList.contains('arm')){
@@ -383,14 +387,23 @@ function renderList(){
       del.disabled = true; del.textContent = '刪除中…';
       try{
         await gh('/repos/'+G.owner+'/'+G.repo+'/contents/'+encPath(f.path), {method:'DELETE', body: JSON.stringify({message:'刪除考卷 '+f.name, sha:f.sha, branch:G.branch})});
+        await delJson(f.path);
         G.files = G.files.filter(x => x !== f);
         await saveListJson('刪除考卷 '+f.name);
         renderList(); toast('已刪除「'+f.name+'」。');
       }catch(e){ toast('刪除失敗：'+e.message); del.disabled = false; del.textContent = '刪除'; del.classList.remove('arm'); }
     });
-    li.append(nm, sel, view, qr, del);
+    li.append(nm, sel, edit, view, qr, del);
     ul.appendChild(li);
   });
+}
+async function delJson(pdfPath){
+  const jp = pdfPath + '.json', sha = G.blobs && G.blobs.get(jp);
+  if(!sha) return false;
+  try{
+    await gh('/repos/'+G.owner+'/'+G.repo+'/contents/'+encPath(jp), {method:'DELETE', body: JSON.stringify({message:'清除報讀設定 '+jp, sha, branch:G.branch})});
+    G.blobs.delete(jp); return true;
+  }catch(e){ console.warn(e); return false; }
 }
 function mk(label, cls, fn){ const b = document.createElement('button'); b.type='button'; b.className='btn sm '+(cls||''); b.textContent=label; b.addEventListener('click', fn); return b; }
 $('bRefresh').addEventListener('click', () => G.ready ? refreshList() : toast('請先連線。'));
@@ -405,6 +418,7 @@ function studentUrl(f, withKey){
   const mt = ls.get('erh_mathWords', null); if(mt !== null) p.set('math', mt ? '1' : '0');
   const ns = ls.get('erh_noSound', null); if(ns !== null) p.set('ns', ns ? '1' : '0');
   const nsh = ls.get('erh_noShape', null); if(nsh !== null) p.set('nsh', nsh ? '1' : '0');
+  const nf = ls.get('erh_noFill', null); if(nf !== null) p.set('nf', nf ? '1' : '0');
   const key = ls.get('erh_key', ''); if(withKey && key) p.set('key', key);
   return studentBase() + '?' + p.toString();
 }
@@ -506,7 +520,9 @@ $('bUpload').addEventListener('click', async () => {
       const rec = { path, sha: r.content.sha, name, subject: it.subject, dir: it.dir, added: Date.now() };
       if(exist) Object.assign(exist, rec); else G.files.push(rec);
       it.status = 'done'; ok++;
-      setSt(it, 'ok', '✓ 已上傳'+(exist ? '（取代同名考卷）' : ''));
+      let cleared = false;
+      if(exist) cleared = await delJson(path);   // 換了新考卷，舊的報讀設定不適用
+      setSt(it, 'ok', '✓ 已上傳'+(exist ? '（取代同名考卷'+(cleared ? '，舊的報讀調整已清除' : '')+'）' : ''));
     }catch(e){
       it.inputs.forEach(x => x.disabled = false);
       setSt(it, 'bad', '✗ 上傳失敗：'+(e.status===422 && /sha/.test(e.message) ? '同名檔案剛被修改過，請按「重新整理」後再上傳' : e.message));
