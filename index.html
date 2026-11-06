@@ -72,16 +72,26 @@ kbd{font-family:var(--font-display);background:var(--accent-soft);border-radius:
 .paper canvas{display:block;width:100%;height:auto;background:#fff}
 .overlay{position:absolute;inset:0}
 .overlay.selecting{cursor:crosshair;touch-action:none;background:rgba(0,0,0,.04)}
-.blk{position:absolute;border:2px solid var(--box-edge);background:var(--box);border-radius:6px;padding:0;cursor:pointer;transition:background .15s}
-.blk:hover{background:var(--mark)}
-.blk.reading{background:var(--mark);border-color:var(--mark-edge);border-width:3px}
-.blk.head{border-color:var(--accent);background:rgba(15,123,108,.07)}
-.blk.fix .n{background:var(--mark-edge);color:#1c2a33;font-weight:700}
+.blk{position:absolute;border:2px solid transparent;background:transparent;border-radius:6px;padding:0;cursor:pointer;transition:background .15s}
+.blk:hover{background:transparent}
+.blk.reading{background:rgba(255,212,59,.38);border-color:transparent}
+.overlay.editing .blk.head{border-color:var(--accent);background:rgba(15,123,108,.07)}
+.overlay.editing .blk.fix .n{background:var(--mark-edge);color:#1c2a33;font-weight:700}
 .blk.mute{border:2px dashed var(--line);background:transparent;cursor:default;pointer-events:none}
 .blk.mute .n{background:var(--line);color:var(--muted)}
-.blk.cue{border-color:var(--mark-edge);border-width:3px;animation:cue 1.3s ease-in-out infinite}
+.blk.cue{border-color:transparent;animation:cuefill 1.6s ease-in-out infinite}
+@keyframes cuefill{0%,100%{background:transparent}50%{background:rgba(255,212,59,.28)}}
 @keyframes cue{50%{box-shadow:0 0 0 7px rgba(224,168,0,.35)}}
-@media (prefers-reduced-motion:reduce){.blk.cue{animation:none;box-shadow:0 0 0 5px rgba(224,168,0,.35)}}
+@media (prefers-reduced-motion:reduce){.blk.cue{animation:none;background:rgba(255,212,59,.2)}}
+.taphint{margin:0 0 8px;color:var(--muted);font-family:var(--font-display);font-size:1.05rem}
+.qrcard{background:var(--paper);border-radius:var(--r);padding:16px 18px;display:flex;flex-wrap:wrap;gap:18px;align-items:center}
+.qrimg{background:#fff;padding:10px;border-radius:10px;line-height:0;flex:none}
+.qrtxt{flex:1 1 260px;min-width:0;display:grid;gap:8px}
+.qrtxt h2{font-family:var(--font-display);font-weight:400;font-size:1.25rem;margin:0}
+#siteQrLink{word-break:break-all;font-size:.8rem;background:var(--desk);padding:4px 8px;border-radius:8px}
+.qrdlg{justify-items:center;text-align:center}
+#qrBig{background:#fff;padding:14px;border-radius:12px;line-height:0}
+#qrLink{word-break:break-all;font-size:.8rem;background:var(--desk);padding:6px 8px;border-radius:8px;max-width:100%;text-align:left}
 .stepbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 10px;padding:12px 14px;border-radius:12px;background:var(--mark);font-family:var(--font-display);font-size:1.1rem}
 .stepbar span{flex:1 1 260px;min-width:0}
 .texts h2{font-family:var(--font-display);font-weight:400;font-size:1.25rem;margin:0}
@@ -98,19 +108,27 @@ kbd{font-family:var(--font-display);background:var(--accent-soft);border-radius:
 .texts .t{display:block;background:var(--paper);border-radius:8px;padding:6px 10px;min-height:2.2em;font-size:1.05rem}
 .lock{color:var(--muted);font-size:.9rem}
 .warn{color:var(--danger);font-size:.88rem}
-.blk.noread{border-style:dashed;border-color:var(--danger);background:repeating-linear-gradient(45deg,rgba(179,54,31,.10) 0 6px,transparent 6px 12px)}
-.blk.noread .n{background:var(--danger)}
-.blk.noread.reading{background:repeating-linear-gradient(45deg,rgba(179,54,31,.22) 0 6px,transparent 6px 12px)}
+.overlay.editing .blk.noread{border-style:dashed;border-color:var(--danger);background:repeating-linear-gradient(45deg,rgba(179,54,31,.10) 0 6px,transparent 6px 12px)}
+.overlay.editing .blk.noread .n{background:var(--danger)}
+.overlay.editing .blk.noread.reading{background:repeating-linear-gradient(45deg,rgba(179,54,31,.22) 0 6px,transparent 6px 12px)}
 .blk .n{position:absolute;top:-2px;right:calc(100% + 2px);min-width:26px;height:26px;padding:0 5px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:14px/26px var(--font-display);text-align:center}
 .blk.v .n{right:auto;left:50%;top:auto;bottom:calc(100% + 2px);transform:translateX(-50%)}
-.blk .n{min-width:34px;height:34px;line-height:34px;font-size:15px;white-space:nowrap;padding:0 8px}
+.blk .n{min-width:30px;height:30px;line-height:30px;font-size:14px;white-space:nowrap;padding:0 7px;border-radius:15px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.blk.mute .n{display:none}
+.blk .n{top:50%;transform:translateY(-50%)}
+.blk.v .n{top:auto;transform:translateX(-50%)}
 .blk .n,.blk.head .n{z-index:2}
 .blk .n .short{display:none}
-.overlay.compact .blk .n{min-width:18px;height:18px;line-height:18px;font-size:11px;padding:0 3px;border-radius:5px}
+.overlay.compact .blk .n{min-width:22px;height:22px;line-height:22px;font-size:12px;padding:0 4px;border-radius:11px}
 .overlay.compact .blk .n .full{display:none}
 .overlay.compact .blk .n .short{display:inline}
 .overlay.compact .blk.mute .n{display:none}
-.overlay.selecting .blk{pointer-events:none}
+.overlay.selecting .blk{display:none}
+.blk .n{display:none!important}
+.blk.mute{display:none}
+.overlay.editing .blk{border-color:var(--box-edge)}
+.overlay.editing .blk .n{display:inline-block!important}
+.overlay.editing .blk.mute{display:block;border:2px dashed var(--line)}
 .selrect{position:absolute;border:3px dashed var(--danger);background:rgba(255,212,59,.18);pointer-events:none;border-radius:4px}
 .hint{display:flex;gap:10px;align-items:center;margin:0 0 10px;padding:10px 14px;border-radius:12px;background:var(--mark);color:var(--ink);font-family:var(--font-display)}
 
@@ -183,12 +201,38 @@ a{color:var(--accent)}
 .now{flex:1 1 200px;min-width:0;font-family:var(--font-display);font-size:1.15rem;overflow-wrap:anywhere}
 .zoom{display:inline-flex;align-items:center;gap:4px}
 .zoom .val{font-variant-numeric:tabular-nums;min-width:3.4em;text-align:center}
-.paperWrap{overflow:auto;padding:30px 0 4px 32px}
+.paperWrap{overflow:auto;padding:30px 0 4px 52px;min-width:0}
+@media (max-width:640px){.paperWrap{padding-left:30px}}
+.workarea{display:grid;gap:14px;align-items:start}
+@media (min-width:900px){.workarea:not(.nopanel){grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr)}
+  .qpanel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px);max-height:calc(100vh - 150px);overflow:auto}}
+.qpanel{background:var(--paper);border-radius:var(--r);padding:12px;display:grid;gap:8px;min-width:0}
+.qpanel h2{font-family:var(--font-display);font-weight:400;font-size:1.2rem;margin:2px 4px}
+.qpanel ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.qcard{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:8px 12px 8px 8px;border-radius:14px;border:2px solid var(--line);background:var(--desk);text-align:left;font:inherit;color:inherit;cursor:pointer}
+.qcard .spk{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-size:1.6rem}
+.qcard .lbl{display:grid;gap:2px;min-width:0}
+.qcard .lbl b{font-family:var(--font-display);font-weight:400;font-size:1.2rem}
+.qcard .lbl span{color:var(--muted);font-size:.92rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.qcard.head{background:var(--accent-soft);border-color:var(--accent)}
+.qcard.head .lbl b{font-size:1.25rem}
+.qcard.fix .spk{background:var(--mark-edge);color:#1c2a33}
+.qcard.off .spk{background:var(--danger);color:var(--paper)}
+.qcard.reading{background:var(--mark);border-color:var(--mark-edge);border-width:3px}
+.qcard.cue{border-color:var(--mark-edge);border-width:3px;animation:cue 1.3s ease-in-out infinite}
+.qcard:active{transform:scale(.98)}
+.redo{display:grid;gap:6px;padding:8px 10px;border-radius:12px;background:var(--desk);font-size:.9rem;color:var(--muted)}
+.redobtns{display:flex;flex-wrap:wrap;gap:6px}
+.redobtns .mini[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.qmute{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;border:2px dashed var(--line);color:var(--muted)}
+.qitem{margin-left:18px}
 .paper{margin:0 auto}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>/* QRCode.js (MIT License, davidshimjs) — 內建在網站裡，不用另外連網載入 */
+var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this.parsedData=[];for(var b=[],d=0,e=this.data.length;e>d;d++){var f=this.data.charCodeAt(d);f>65536?(b[0]=240|(1835008&f)>>>18,b[1]=128|(258048&f)>>>12,b[2]=128|(4032&f)>>>6,b[3]=128|63&f):f>2048?(b[0]=224|(61440&f)>>>12,b[1]=128|(4032&f)>>>6,b[2]=128|63&f):f>128?(b[0]=192|(1984&f)>>>6,b[1]=128|63&f):b[0]=f,this.parsedData=this.parsedData.concat(b)}this.parsedData.length!=this.data.length&&(this.parsedData.unshift(191),this.parsedData.unshift(187),this.parsedData.unshift(239))}function b(a,b){this.typeNumber=a,this.errorCorrectLevel=b,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=[]}function i(a,b){if(void 0==a.length)throw new Error(a.length+"/"+b);for(var c=0;c<a.length&&0==a[c];)c++;this.num=new Array(a.length-c+b);for(var d=0;d<a.length-c;d++)this.num[d]=a[d+c]}function j(a,b){this.totalCount=a,this.dataCount=b}function k(){this.buffer=[],this.length=0}function m(){return"undefined"!=typeof CanvasRenderingContext2D}function n(){var a=!1,b=navigator.userAgent;return/android/i.test(b)&&(a=!0,aMat=b.toString().match(/android ([0-9]\.[0-9])/i),aMat&&aMat[1]&&(a=parseFloat(aMat[1]))),a}function r(a,b){for(var c=1,e=s(a),f=0,g=l.length;g>=f;f++){var h=0;switch(b){case d.L:h=l[f][0];break;case d.M:h=l[f][1];break;case d.Q:h=l[f][2];break;case d.H:h=l[f][3]}if(h>=e)break;c++}if(c>l.length)throw new Error("Too long data");return c}function s(a){var b=encodeURI(a).toString().replace(/\%[0-9a-fA-F]{2}/g,"a");return b.length+(b.length!=a?3:0)}a.prototype={getLength:function(){return this.parsedData.length},write:function(a){for(var b=0,c=this.parsedData.length;c>b;b++)a.put(this.parsedData[b],8)}},b.prototype={addData:function(b){var c=new a(b);this.dataList.push(c),this.dataCache=null},isDark:function(a,b){if(0>a||this.moduleCount<=a||0>b||this.moduleCount<=b)throw new Error(a+","+b);return this.modules[a][b]},getModuleCount:function(){return this.moduleCount},make:function(){this.makeImpl(!1,this.getBestMaskPattern())},makeImpl:function(a,c){this.moduleCount=4*this.typeNumber+17,this.modules=new Array(this.moduleCount);for(var d=0;d<this.moduleCount;d++){this.modules[d]=new Array(this.moduleCount);for(var e=0;e<this.moduleCount;e++)this.modules[d][e]=null}this.setupPositionProbePattern(0,0),this.setupPositionProbePattern(this.moduleCount-7,0),this.setupPositionProbePattern(0,this.moduleCount-7),this.setupPositionAdjustPattern(),this.setupTimingPattern(),this.setupTypeInfo(a,c),this.typeNumber>=7&&this.setupTypeNumber(a),null==this.dataCache&&(this.dataCache=b.createData(this.typeNumber,this.errorCorrectLevel,this.dataList)),this.mapData(this.dataCache,c)},setupPositionProbePattern:function(a,b){for(var c=-1;7>=c;c++)if(!(-1>=a+c||this.moduleCount<=a+c))for(var d=-1;7>=d;d++)-1>=b+d||this.moduleCount<=b+d||(this.modules[a+c][b+d]=c>=0&&6>=c&&(0==d||6==d)||d>=0&&6>=d&&(0==c||6==c)||c>=2&&4>=c&&d>=2&&4>=d?!0:!1)},getBestMaskPattern:function(){for(var a=0,b=0,c=0;8>c;c++){this.makeImpl(!0,c);var d=f.getLostPoint(this);(0==c||a>d)&&(a=d,b=c)}return b},createMovieClip:function(a,b,c){var d=a.createEmptyMovieClip(b,c),e=1;this.make();for(var f=0;f<this.modules.length;f++)for(var g=f*e,h=0;h<this.modules[f].length;h++){var i=h*e,j=this.modules[f][h];j&&(d.beginFill(0,100),d.moveTo(i,g),d.lineTo(i+e,g),d.lineTo(i+e,g+e),d.lineTo(i,g+e),d.endFill())}return d},setupTimingPattern:function(){for(var a=8;a<this.moduleCount-8;a++)null==this.modules[a][6]&&(this.modules[a][6]=0==a%2);for(var b=8;b<this.moduleCount-8;b++)null==this.modules[6][b]&&(this.modules[6][b]=0==b%2)},setupPositionAdjustPattern:function(){for(var a=f.getPatternPosition(this.typeNumber),b=0;b<a.length;b++)for(var c=0;c<a.length;c++){var d=a[b],e=a[c];if(null==this.modules[d][e])for(var g=-2;2>=g;g++)for(var h=-2;2>=h;h++)this.modules[d+g][e+h]=-2==g||2==g||-2==h||2==h||0==g&&0==h?!0:!1}},setupTypeNumber:function(a){for(var b=f.getBCHTypeNumber(this.typeNumber),c=0;18>c;c++){var d=!a&&1==(1&b>>c);this.modules[Math.floor(c/3)][c%3+this.moduleCount-8-3]=d}for(var c=0;18>c;c++){var d=!a&&1==(1&b>>c);this.modules[c%3+this.moduleCount-8-3][Math.floor(c/3)]=d}},setupTypeInfo:function(a,b){for(var c=this.errorCorrectLevel<<3|b,d=f.getBCHTypeInfo(c),e=0;15>e;e++){var g=!a&&1==(1&d>>e);6>e?this.modules[e][8]=g:8>e?this.modules[e+1][8]=g:this.modules[this.moduleCount-15+e][8]=g}for(var e=0;15>e;e++){var g=!a&&1==(1&d>>e);8>e?this.modules[8][this.moduleCount-e-1]=g:9>e?this.modules[8][15-e-1+1]=g:this.modules[8][15-e-1]=g}this.modules[this.moduleCount-8][8]=!a},mapData:function(a,b){for(var c=-1,d=this.moduleCount-1,e=7,g=0,h=this.moduleCount-1;h>0;h-=2)for(6==h&&h--;;){for(var i=0;2>i;i++)if(null==this.modules[d][h-i]){var j=!1;g<a.length&&(j=1==(1&a[g]>>>e));var k=f.getMask(b,d,h-i);k&&(j=!j),this.modules[d][h-i]=j,e--,-1==e&&(g++,e=7)}if(d+=c,0>d||this.moduleCount<=d){d-=c,c=-c;break}}}},b.PAD0=236,b.PAD1=17,b.createData=function(a,c,d){for(var e=j.getRSBlocks(a,c),g=new k,h=0;h<d.length;h++){var i=d[h];g.put(i.mode,4),g.put(i.getLength(),f.getLengthInBits(i.mode,a)),i.write(g)}for(var l=0,h=0;h<e.length;h++)l+=e[h].dataCount;if(g.getLengthInBits()>8*l)throw new Error("code length overflow. ("+g.getLengthInBits()+">"+8*l+")");for(g.getLengthInBits()+4<=8*l&&g.put(0,4);0!=g.getLengthInBits()%8;)g.putBit(!1);for(;;){if(g.getLengthInBits()>=8*l)break;if(g.put(b.PAD0,8),g.getLengthInBits()>=8*l)break;g.put(b.PAD1,8)}return b.createBytes(g,e)},b.createBytes=function(a,b){for(var c=0,d=0,e=0,g=new Array(b.length),h=new Array(b.length),j=0;j<b.length;j++){var k=b[j].dataCount,l=b[j].totalCount-k;d=Math.max(d,k),e=Math.max(e,l),g[j]=new Array(k);for(var m=0;m<g[j].length;m++)g[j][m]=255&a.buffer[m+c];c+=k;var n=f.getErrorCorrectPolynomial(l),o=new i(g[j],n.getLength()-1),p=o.mod(n);h[j]=new Array(n.getLength()-1);for(var m=0;m<h[j].length;m++){var q=m+p.getLength()-h[j].length;h[j][m]=q>=0?p.get(q):0}}for(var r=0,m=0;m<b.length;m++)r+=b[m].totalCount;for(var s=new Array(r),t=0,m=0;d>m;m++)for(var j=0;j<b.length;j++)m<g[j].length&&(s[t++]=g[j][m]);for(var m=0;e>m;m++)for(var j=0;j<b.length;j++)m<h[j].length&&(s[t++]=h[j][m]);return s};for(var c={MODE_NUMBER:1,MODE_ALPHA_NUM:2,MODE_8BIT_BYTE:4,MODE_KANJI:8},d={L:1,M:0,Q:3,H:2},e={PATTERN000:0,PATTERN001:1,PATTERN010:2,PATTERN011:3,PATTERN100:4,PATTERN101:5,PATTERN110:6,PATTERN111:7},f={PATTERN_POSITION_TABLE:[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],G15:1335,G18:7973,G15_MASK:21522,getBCHTypeInfo:function(a){for(var b=a<<10;f.getBCHDigit(b)-f.getBCHDigit(f.G15)>=0;)b^=f.G15<<f.getBCHDigit(b)-f.getBCHDigit(f.G15);return(a<<10|b)^f.G15_MASK},getBCHTypeNumber:function(a){for(var b=a<<12;f.getBCHDigit(b)-f.getBCHDigit(f.G18)>=0;)b^=f.G18<<f.getBCHDigit(b)-f.getBCHDigit(f.G18);return a<<12|b},getBCHDigit:function(a){for(var b=0;0!=a;)b++,a>>>=1;return b},getPatternPosition:function(a){return f.PATTERN_POSITION_TABLE[a-1]},getMask:function(a,b,c){switch(a){case e.PATTERN000:return 0==(b+c)%2;case e.PATTERN001:return 0==b%2;case e.PATTERN010:return 0==c%3;case e.PATTERN011:return 0==(b+c)%3;case e.PATTERN100:return 0==(Math.floor(b/2)+Math.floor(c/3))%2;case e.PATTERN101:return 0==b*c%2+b*c%3;case e.PATTERN110:return 0==(b*c%2+b*c%3)%2;case e.PATTERN111:return 0==(b*c%3+(b+c)%2)%2;default:throw new Error("bad maskPattern:"+a)}},getErrorCorrectPolynomial:function(a){for(var b=new i([1],0),c=0;a>c;c++)b=b.multiply(new i([1,g.gexp(c)],0));return b},getLengthInBits:function(a,b){if(b>=1&&10>b)switch(a){case c.MODE_NUMBER:return 10;case c.MODE_ALPHA_NUM:return 9;case c.MODE_8BIT_BYTE:return 8;case c.MODE_KANJI:return 8;default:throw new Error("mode:"+a)}else if(27>b)switch(a){case c.MODE_NUMBER:return 12;case c.MODE_ALPHA_NUM:return 11;case c.MODE_8BIT_BYTE:return 16;case c.MODE_KANJI:return 10;default:throw new Error("mode:"+a)}else{if(!(41>b))throw new Error("type:"+b);switch(a){case c.MODE_NUMBER:return 14;case c.MODE_ALPHA_NUM:return 13;case c.MODE_8BIT_BYTE:return 16;case c.MODE_KANJI:return 12;default:throw new Error("mode:"+a)}}},getLostPoint:function(a){for(var b=a.getModuleCount(),c=0,d=0;b>d;d++)for(var e=0;b>e;e++){for(var f=0,g=a.isDark(d,e),h=-1;1>=h;h++)if(!(0>d+h||d+h>=b))for(var i=-1;1>=i;i++)0>e+i||e+i>=b||(0!=h||0!=i)&&g==a.isDark(d+h,e+i)&&f++;f>5&&(c+=3+f-5)}for(var d=0;b-1>d;d++)for(var e=0;b-1>e;e++){var j=0;a.isDark(d,e)&&j++,a.isDark(d+1,e)&&j++,a.isDark(d,e+1)&&j++,a.isDark(d+1,e+1)&&j++,(0==j||4==j)&&(c+=3)}for(var d=0;b>d;d++)for(var e=0;b-6>e;e++)a.isDark(d,e)&&!a.isDark(d,e+1)&&a.isDark(d,e+2)&&a.isDark(d,e+3)&&a.isDark(d,e+4)&&!a.isDark(d,e+5)&&a.isDark(d,e+6)&&(c+=40);for(var e=0;b>e;e++)for(var d=0;b-6>d;d++)a.isDark(d,e)&&!a.isDark(d+1,e)&&a.isDark(d+2,e)&&a.isDark(d+3,e)&&a.isDark(d+4,e)&&!a.isDark(d+5,e)&&a.isDark(d+6,e)&&(c+=40);for(var k=0,e=0;b>e;e++)for(var d=0;b>d;d++)a.isDark(d,e)&&k++;var l=Math.abs(100*k/b/b-50)/5;return c+=10*l}},g={glog:function(a){if(1>a)throw new Error("glog("+a+")");return g.LOG_TABLE[a]},gexp:function(a){for(;0>a;)a+=255;for(;a>=256;)a-=255;return g.EXP_TABLE[a]},EXP_TABLE:new Array(256),LOG_TABLE:new Array(256)},h=0;8>h;h++)g.EXP_TABLE[h]=1<<h;for(var h=8;256>h;h++)g.EXP_TABLE[h]=g.EXP_TABLE[h-4]^g.EXP_TABLE[h-5]^g.EXP_TABLE[h-6]^g.EXP_TABLE[h-8];for(var h=0;255>h;h++)g.LOG_TABLE[g.EXP_TABLE[h]]=h;i.prototype={get:function(a){return this.num[a]},getLength:function(){return this.num.length},multiply:function(a){for(var b=new Array(this.getLength()+a.getLength()-1),c=0;c<this.getLength();c++)for(var d=0;d<a.getLength();d++)b[c+d]^=g.gexp(g.glog(this.get(c))+g.glog(a.get(d)));return new i(b,0)},mod:function(a){if(this.getLength()-a.getLength()<0)return this;for(var b=g.glog(this.get(0))-g.glog(a.get(0)),c=new Array(this.getLength()),d=0;d<this.getLength();d++)c[d]=this.get(d);for(var d=0;d<a.getLength();d++)c[d]^=g.gexp(g.glog(a.get(d))+b);return new i(c,0).mod(a)}},j.RS_BLOCK_TABLE=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],j.getRSBlocks=function(a,b){var c=j.getRsBlockTable(a,b);if(void 0==c)throw new Error("bad rs block @ typeNumber:"+a+"/errorCorrectLevel:"+b);for(var d=c.length/3,e=[],f=0;d>f;f++)for(var g=c[3*f+0],h=c[3*f+1],i=c[3*f+2],k=0;g>k;k++)e.push(new j(h,i));return e},j.getRsBlockTable=function(a,b){switch(b){case d.L:return j.RS_BLOCK_TABLE[4*(a-1)+0];case d.M:return j.RS_BLOCK_TABLE[4*(a-1)+1];case d.Q:return j.RS_BLOCK_TABLE[4*(a-1)+2];case d.H:return j.RS_BLOCK_TABLE[4*(a-1)+3];default:return void 0}},k.prototype={get:function(a){var b=Math.floor(a/8);return 1==(1&this.buffer[b]>>>7-a%8)},put:function(a,b){for(var c=0;b>c;c++)this.putBit(1==(1&a>>>b-c-1))},getLengthInBits:function(){return this.length},putBit:function(a){var b=Math.floor(this.length/8);this.buffer.length<=b&&this.buffer.push(0),a&&(this.buffer[b]|=128>>>this.length%8),this.length++}};var l=[[17,14,11,7],[32,26,20,14],[53,42,32,24],[78,62,46,34],[106,84,60,44],[134,106,74,58],[154,122,86,64],[192,152,108,84],[230,180,130,98],[271,213,151,119],[321,251,177,137],[367,287,203,155],[425,331,241,177],[458,362,258,194],[520,412,292,220],[586,450,322,250],[644,504,364,280],[718,560,394,310],[792,624,442,338],[858,666,482,382],[929,711,509,403],[1003,779,565,439],[1091,857,611,461],[1171,911,661,511],[1273,997,715,535],[1367,1059,751,593],[1465,1125,805,625],[1528,1190,868,658],[1628,1264,908,698],[1732,1370,982,742],[1840,1452,1030,790],[1952,1538,1112,842],[2068,1628,1168,898],[2188,1722,1228,958],[2303,1809,1283,983],[2431,1911,1351,1051],[2563,1989,1423,1093],[2699,2099,1499,1139],[2809,2213,1579,1219],[2953,2331,1663,1273]],o=function(){var a=function(a,b){this._el=a,this._htOption=b};return a.prototype.draw=function(a){function g(a,b){var c=document.createElementNS("http://www.w3.org/2000/svg",a);for(var d in b)b.hasOwnProperty(d)&&c.setAttribute(d,b[d]);return c}var b=this._htOption,c=this._el,d=a.getModuleCount();Math.floor(b.width/d),Math.floor(b.height/d),this.clear();var h=g("svg",{viewBox:"0 0 "+String(d)+" "+String(d),width:"100%",height:"100%",fill:b.colorLight});h.setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:xlink","http://www.w3.org/1999/xlink"),c.appendChild(h),h.appendChild(g("rect",{fill:b.colorDark,width:"1",height:"1",id:"template"}));for(var i=0;d>i;i++)for(var j=0;d>j;j++)if(a.isDark(i,j)){var k=g("use",{x:String(i),y:String(j)});k.setAttributeNS("http://www.w3.org/1999/xlink","href","#template"),h.appendChild(k)}},a.prototype.clear=function(){for(;this._el.hasChildNodes();)this._el.removeChild(this._el.lastChild)},a}(),p="svg"===document.documentElement.tagName.toLowerCase(),q=p?o:m()?function(){function a(){this._elImage.src=this._elCanvas.toDataURL("image/png"),this._elImage.style.display="block",this._elCanvas.style.display="none"}function d(a,b){var c=this;if(c._fFail=b,c._fSuccess=a,null===c._bSupportDataURI){var d=document.createElement("img"),e=function(){c._bSupportDataURI=!1,c._fFail&&_fFail.call(c)},f=function(){c._bSupportDataURI=!0,c._fSuccess&&c._fSuccess.call(c)};return d.onabort=e,d.onerror=e,d.onload=f,d.src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==",void 0}c._bSupportDataURI===!0&&c._fSuccess?c._fSuccess.call(c):c._bSupportDataURI===!1&&c._fFail&&c._fFail.call(c)}if(this._android&&this._android<=2.1){var b=1/window.devicePixelRatio,c=CanvasRenderingContext2D.prototype.drawImage;CanvasRenderingContext2D.prototype.drawImage=function(a,d,e,f,g,h,i,j){if("nodeName"in a&&/img/i.test(a.nodeName))for(var l=arguments.length-1;l>=1;l--)arguments[l]=arguments[l]*b;else"undefined"==typeof j&&(arguments[1]*=b,arguments[2]*=b,arguments[3]*=b,arguments[4]*=b);c.apply(this,arguments)}}var e=function(a,b){this._bIsPainted=!1,this._android=n(),this._htOption=b,this._elCanvas=document.createElement("canvas"),this._elCanvas.width=b.width,this._elCanvas.height=b.height,a.appendChild(this._elCanvas),this._el=a,this._oContext=this._elCanvas.getContext("2d"),this._bIsPainted=!1,this._elImage=document.createElement("img"),this._elImage.style.display="none",this._el.appendChild(this._elImage),this._bSupportDataURI=null};return e.prototype.draw=function(a){var b=this._elImage,c=this._oContext,d=this._htOption,e=a.getModuleCount(),f=d.width/e,g=d.height/e,h=Math.round(f),i=Math.round(g);b.style.display="none",this.clear();for(var j=0;e>j;j++)for(var k=0;e>k;k++){var l=a.isDark(j,k),m=k*f,n=j*g;c.strokeStyle=l?d.colorDark:d.colorLight,c.lineWidth=1,c.fillStyle=l?d.colorDark:d.colorLight,c.fillRect(m,n,f,g),c.strokeRect(Math.floor(m)+.5,Math.floor(n)+.5,h,i),c.strokeRect(Math.ceil(m)-.5,Math.ceil(n)-.5,h,i)}this._bIsPainted=!0},e.prototype.makeImage=function(){this._bIsPainted&&d.call(this,a)},e.prototype.isPainted=function(){return this._bIsPainted},e.prototype.clear=function(){this._oContext.clearRect(0,0,this._elCanvas.width,this._elCanvas.height),this._bIsPainted=!1},e.prototype.round=function(a){return a?Math.floor(1e3*a)/1e3:a},e}():function(){var a=function(a,b){this._el=a,this._htOption=b};return a.prototype.draw=function(a){for(var b=this._htOption,c=this._el,d=a.getModuleCount(),e=Math.floor(b.width/d),f=Math.floor(b.height/d),g=['<table style="border:0;border-collapse:collapse;">'],h=0;d>h;h++){g.push("<tr>");for(var i=0;d>i;i++)g.push('<td style="border:0;border-collapse:collapse;padding:0;margin:0;width:'+e+"px;height:"+f+"px;background-color:"+(a.isDark(h,i)?b.colorDark:b.colorLight)+';"></td>');g.push("</tr>")}g.push("</table>"),c.innerHTML=g.join("");var j=c.childNodes[0],k=(b.width-j.offsetWidth)/2,l=(b.height-j.offsetHeight)/2;k>0&&l>0&&(j.style.margin=l+"px "+k+"px")},a.prototype.clear=function(){this._el.innerHTML=""},a}();QRCode=function(a,b){if(this._htOption={width:256,height:256,typeNumber:4,colorDark:"#000000",colorLight:"#ffffff",correctLevel:d.H},"string"==typeof b&&(b={text:b}),b)for(var c in b)this._htOption[c]=b[c];"string"==typeof a&&(a=document.getElementById(a)),this._android=n(),this._el=a,this._oQRCode=null,this._oDrawing=new q(this._el,this._htOption),this._htOption.text&&this.makeCode(this._htOption.text)},QRCode.prototype.makeCode=function(a){this._oQRCode=new b(r(a,this._htOption.correctLevel),this._htOption.correctLevel),this._oQRCode.addData(a),this._oQRCode.make(),this._el.title=a,this._oDrawing.draw(this._oQRCode),this.makeImage()},QRCode.prototype.makeImage=function(){"function"==typeof this._oDrawing.makeImage&&(!this._android||this._android>=3)&&this._oDrawing.makeImage()},QRCode.prototype.clear=function(){this._oDrawing.clear()},QRCode.CorrectLevel=d}();
+</script>
 </head>
 <body>
 
@@ -196,13 +240,15 @@ a{color:var(--accent)}
   <h1 class="brand">評量報讀小幫手<small>拍考卷或開 PDF，點題目就唸給你聽</small></h1>
   <button class="btn primary" id="bCam" type="button">📷 拍考卷</button>
   <button class="btn" id="bLib" type="button">📚 考卷櫃</button>
+  <button class="btn" id="bQR" type="button">📱 QR Code</button>
   <button class="btn icon" id="bSet" type="button" aria-label="老師設定" title="老師設定">⚙️</button>
 </header>
 
 <div class="opts">
   <span class="seg" id="dirSeg" role="group" aria-label="文字排列">
     <button type="button" data-dir="h" aria-pressed="true">橫式</button>
-    <button type="button" data-dir="v" aria-pressed="false">直式（國語）</button>
+    <button type="button" data-dir="v" aria-pressed="false">直式・整頁</button>
+    <button type="button" data-dir="v2" aria-pressed="false">直式・上下兩半</button>
     <button type="button" data-dir="auto" aria-pressed="false">自動</button>
   </span>
   <label>聲音 <select id="voice"></select></label>
@@ -222,19 +268,28 @@ a{color:var(--accent)}
       📄 把 PDF 或考卷照片拖到這裡
       <span>或點這裡選擇檔案（可以一次選好幾張照片）</span>
     </div>
-    <label class="savechk"><input type="checkbox" id="saveLocal" checked> 打開的 PDF 同時收進「這台平板的考卷」，下次直接點就能用</label>
+    <label class="savechk" id="saveRow"><input type="checkbox" id="saveLocal" checked> 打開的 PDF 同時收進「這台平板的考卷」，下次直接點就能用</label>
     <div class="shelves">
       <section class="shelf">
         <h2>老師放在網站上的考卷 <span class="cnt" id="repoCnt"></span></h2>
         <p class="note" id="repoNote">讀取中…</p>
         <ul id="repoList"></ul>
       </section>
-      <section class="shelf">
+      <section class="shelf" id="localShelf">
         <h2>這台平板的考卷 <span class="cnt" id="localCnt"></span></h2>
         <p class="note" id="localNote"></p>
         <ul id="localList"></ul>
       </section>
     </div>
+    <section class="qrcard" aria-label="學生掃描 QR Code">
+      <div id="siteQr" class="qrimg"></div>
+      <div class="qrtxt">
+        <h2>📱 學生用平板掃這個 QR Code</h2>
+        <p class="note">掃描後會打開評量報讀小幫手。要讓學生掃了直接看到某一份考卷，請按那份考卷旁邊的「📱 QR」。</p>
+        <code id="siteQrLink"></code>
+        <div class="row"><button type="button" class="btn" id="bSiteQrBig">放大顯示</button><button type="button" class="btn" id="bSiteQrDl">下載 QR 圖片</button></div>
+      </div>
+    </section>
     <details class="howto" id="howto">
       <summary>使用說明</summary>
       <ol>
@@ -257,6 +312,7 @@ a{color:var(--accent)}
         <button class="btn icon" id="bZoomIn" type="button" aria-label="放大">＋</button>
       </span>
       <button class="btn" id="bRot" type="button" title="照片拍歪了可以轉向">⟳ 轉向</button>
+      <button class="btn" id="bRedo" type="button" title="重新辨識這一頁的題目">🔄 重新辨識</button>
       <button class="btn" id="bSel" type="button">✋ 框選朗讀</button>
     </div>
     <div class="stepbar" id="stepBar" hidden>
@@ -264,12 +320,29 @@ a{color:var(--accent)}
       <button class="btn primary" id="bStepNext" type="button">▶ 繼續下一大題</button>
       <button class="btn" id="bStepEnd" type="button">結束</button>
     </div>
+    <p class="taphint" id="tapHint">直接點考卷上的題目，就會唸那一題；也可以按下面的「下一題」。</p>
     <p class="hint" id="selHint" hidden>✋ 用手指拖曳，把要聽的文字框起來。再按一次「框選朗讀」可以關掉。</p>
-    <div class="paperWrap">
-    <div class="paper" id="paper">
-      <canvas id="cv"></canvas>
-      <div class="overlay" id="ov"></div>
-    </div>
+    <div class="workarea">
+      <div class="paperWrap">
+      <div class="paper" id="paper">
+        <canvas id="cv"></canvas>
+        <div class="overlay" id="ov"></div>
+      </div>
+      </div>
+      <aside class="qpanel" id="qpanel" aria-label="題目喇叭">
+        <h2>🔊 按喇叭聽題目</h2>
+        <div class="redo" id="redoBar">
+          <span>題目分錯了嗎？換一種方式重新辨識：</span>
+          <div class="redobtns">
+            <button type="button" class="mini" data-redo="v2">直式・上下兩半</button>
+            <button type="button" class="mini" data-redo="v">直式・整頁</button>
+            <button type="button" class="mini" data-redo="h">橫式</button>
+            <button type="button" class="mini" data-redo="same">🔄 同一種再試</button>
+            <button type="button" class="mini" data-redo="gemini" id="redoGem" hidden>🤖 用 Gemini AI</button>
+          </div>
+        </div>
+        <ol id="qlist"></ol>
+      </aside>
     </div>
     <section class="texts" id="editPanel" hidden>
       <div class="edhead">
@@ -305,6 +378,20 @@ a{color:var(--accent)}
 <input type="file" id="fOpen" accept="application/pdf,image/*" multiple hidden>
 <input type="file" id="fCam" accept="image/*" capture="environment" hidden>
 
+<dialog id="qrDlg">
+  <form method="dialog" class="dlg qrdlg">
+    <h2 id="qrTitle">掃描打開</h2>
+    <p class="note" id="qrNote"></p>
+    <div id="qrBig"></div>
+    <code id="qrLink"></code>
+    <div class="row" style="justify-content:center">
+      <button type="button" class="btn" id="bQrCopy">複製連結</button>
+      <button type="button" class="btn" id="bQrDl">下載 QR 圖片</button>
+      <button class="btn primary" value="ok">關閉</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="dlg">
   <form method="dialog" class="dlg">
     <h2>老師設定</h2>
@@ -322,7 +409,7 @@ a{color:var(--accent)}
       <h3>報讀方式</h3>
       <label><input type="checkbox" id="optZy"> <span>不唸國字旁邊的注音符號</span></label>
       <p class="note"><b>固定規則：</b>「寫注音」大題只唸大題名稱，小題完全不唸；「改錯字、圈出錯字、找出錯別字」每次只唸一小題，由學生自己按下一題。</p>
-      <label><input type="checkbox" id="optNoShape"> <span>「看注音寫國字」的小題不報讀</span></label>
+      <label><input type="checkbox" id="optNoShape"> <span>「寫國字／看注音寫國字」的小題不報讀（預設打開）</span></label>
       <label><input type="checkbox" id="optNoFill"> <span>「填空題」的小題不報讀</span></label>
       <label><input type="checkbox" id="optNoSound"> <span>問「讀音」的題目不報讀（例如選擇題「下列哪個字的讀音不同」）</span></label>
       <p class="note">不報讀的題目會用紅色虛線框起來，學生點了會聽到「這一題不報讀，請自己看題目」。</p>
@@ -379,10 +466,11 @@ const S = {
   skipZy: store.get('skipZy', true),
   mathWords: store.get('mathWords', true),
   noSound: store.get('noSound', true),
-  noShape: store.get('noShape', false),
+  noShape: store.get('noShape2', true),
   noFill: store.get('noFill', false),
   rate: [0.75, 0.85, 1].includes(store.get('rate2', 0.85)) ? store.get('rate2', 0.85) : 0.85,
   voiceURI: store.get('voice3', 'auto'),
+  ignoreSaved: new Set(), forceEngine: null,
   edit: false, dirty: new Set(), pageBlocks: new Map(), saved: null, remotePath: '', step: null,
   selecting: false,
   renderToken: 0,
@@ -394,13 +482,13 @@ const S = {
 // 網址參數：?dir=v&engine=gemini&key=...&pdf=xxx.pdf&zy=1&math=1&model=
 (function readParams(){
   const p = new URLSearchParams(location.search);
-  if (['h','v','auto'].includes(p.get('dir'))) S.dir = p.get('dir');
+  if (['h','v','v2','auto'].includes(p.get('dir'))) S.dir = p.get('dir');
   if (['tess','gemini'].includes(p.get('engine'))) { S.engine = p.get('engine'); store.set('engine', S.engine); }
   if (p.get('model')) { S.model = p.get('model'); store.set('model', S.model); }
   if (p.get('zy')) { S.skipZy = p.get('zy')==='1'; store.set('skipZy', S.skipZy); }
   if (p.get('math')) { S.mathWords = p.get('math')==='1'; store.set('mathWords', S.mathWords); }
   if (p.get('ns')) { S.noSound = p.get('ns')==='1'; store.set('noSound', S.noSound); }
-  if (p.get('nsh')) { S.noShape = p.get('nsh')==='1'; store.set('noShape', S.noShape); }
+  if (p.get('nsh')) { S.noShape = p.get('nsh')==='1'; store.set('noShape2', S.noShape); }
   if (p.get('nf')) { S.noFill = p.get('nf')==='1'; store.set('noFill', S.noFill); }
   S.edit = p.get('edit') === '1';
   if (p.get('key')) {
@@ -418,8 +506,9 @@ function toast(msg, ms=3500){ const t=$('toast'); t.textContent=msg; t.hidden=fa
 function busy(msg){ if(msg===false){ $('busy').hidden=true; return; } $('busyText').textContent=msg; $('busy').hidden=false; }
 const CJK = '\\u2E80-\\u2FFF\\u3000-\\u303F\\u3100-\\u312F\\u31A0-\\u31BF\\u3400-\\u9FFF\\uF900-\\uFAFF\\uFF00-\\uFFEF';
 const reCjkGap = new RegExp('(['+CJK+'])\\s+(?=['+CJK+'])','g');
+const RADICAL_FIX = {'⻑':'長','⻘':'青','⻝':'食','⻤':'鬼','⻩':'黃','⻆':'角','⻔':'門','⻣':'骨','⻤':'鬼','⻭':'齒','⻯':'竜','⻨':'麥','⻑':'長','⺠':'民','⻊':'足','⻏':'阝','⺟':'母','⻄':'西','⻅':'見','⻉':'貝','⻋':'車','⻓':'長','⻢':'馬'};
 function cleanText(t){
-  return (t||'').normalize('NFKC').replace(/\u3000/g,' ').replace(/[\r\n]+/g,' ').replace(reCjkGap,'$1').replace(reCjkGap,'$1').replace(/\s{2,}/g,' ').trim();
+  return (t||'').replace(/[\u2E80-\u2EFF]/g, c => RADICAL_FIX[c] || c).replace(/[^①-⑳]+/g, s => s.normalize('NFKC')).replace(/\u3000/g,' ').replace(/[\r\n]+/g,' ').replace(reCjkGap,'$1').replace(reCjkGap,'$1').replace(/\s{2,}/g,' ').trim();
 }
 function joinText(a, b){
   if(!a) return b; if(!b) return a;
@@ -429,11 +518,18 @@ function joinText(a, b){
 function meaningful(t){ return /[A-Za-z0-9ㄅ-ㄯ㐀-鿿]/.test(t); }
 
 /* ================= 版面分析：行 → 題目 ================= */
-const QNUM = /^\s*[（(【\[]?\s*[0-9０-９一二三四五六七八九十]{1,3}\s*[)）】\]、.．:：]/;
+const QNUM = /^[\s。，、,.;；:：]*([（(][\s　_＿]*[）)]\s*)?[（(【\[]?\s*[0-9０-９一二三四五六七八九十]{1,3}\s*[)）】\]、.．:：]/;
 
 /* ---------- 國語題型：大題／小題結構與報讀規則 ---------- */
 // 大題標題：「一、」「（二）」「第三大題」「甲、」
-const HEAD = /^\s*(第\s*[一二三四五六七八九十]+\s*大?題|[（(]?\s*[一二三四五六七八九十]{1,3}\s*[)）]?\s*[、.．:：]|[甲乙丙丁戊]\s*[、.．:：])/;
+const CN_NUM = '一二三四五六七八九十壹貳參肆伍陸柒捌玖拾';
+const HEAD = new RegExp('^\\s*(第\\s*[' + CN_NUM + ']+\\s*大?題|[（(]?\\s*[' + CN_NUM + ']{1,3}\\s*[)）]?\\s*[、.．:：]|[甲乙丙丁戊]\\s*[、.．:：])');
+// 大題名稱：有「一、」「第一大題」「壹、」，或沒有編號但很短、而且是題型名稱（例如只寫「寫出注音」）
+function looksHead(src){
+  if(HEAD.test(src || '')) return true;
+  const t = (src || '').normalize('NFKC').trim();
+  return t.length > 0 && t.length <= 24 && !QNO.test(t) && !/^\s*[（(]?\s*\d/.test(t) && !/[？?]/.test(t) && !!secOf(t);
+}
 const SEC_NAMES = {zhuyin:'寫注音', fix:'改錯字', shape:'看注音寫國字', fill:'填空題', choice:'選擇題', tf:'是非題', reading:'閱讀測驗', sentence:'造句題', other:'其他題型'};
 // 順序重要：「看注音寫國字」要比「寫注音」先判斷
 const SEC_RULES = [
@@ -443,13 +539,13 @@ const SEC_RULES = [
   ['fill',    /填空|填入|填填看|填一填/],
   ['choice',  /選擇/],
   ['tf',      /是非|對錯|判斷/],
-  ['reading', /閱讀/],
+  ['reading', /閱讀|文意|測驗|理解/],
   ['sentence',/造句|照樣|仿寫/],
 ];
 function secOf(t){ for(const [k, re] of SEC_RULES) if(re.test(t || '')) return k; return null; }
 // 小題本身在問讀音（例如選擇題「下列哪一個字的讀音不同」）
 const SOUND_ITEM = /(讀|念|唸|發)音|字音|念法|唸法|讀法|破音字|多音字|一字多音|同音字|音同|讀作|念作|唸作|注音.{0,4}(正確|錯誤|不同|相同)|(正確|錯誤|不同|相同)的?注音/;
-const QNO = /^\s*[（(]?\s*([0-9０-９]{1,2})\s*[)）]?\s*[.．、:：]/;
+const QNO = /^[\s。，、,.;；:：]*(?:[（(][\s　_＿]*[）)]\s*)?[（(]?\s*([0-9０-９]{1,2})\s*[)）]?\s*[.．、:：]/;
 function qnum(t){ const m = (t || '').normalize('NFKC').match(QNO); return m ? +m[1] : 0; }
 
 function analyzeStructure(blocks){
@@ -457,7 +553,8 @@ function analyzeStructure(blocks){
   for(const b of blocks){
     const src = b.orig != null ? b.orig : b.text;
     if(b.orig == null) b.orig = b.text;      // 保留 OCR 原文：題型判斷用原文，老師改語音文字也不影響
-    b.isHead = b.headOv != null ? b.headOv : (HEAD.test(src) || b.kindHint === 'header');
+    b.isHead = b.headOv != null ? b.headOv : (looksHead(src) || b.kindHint === 'header');
+    b.isTitle = !b.isHead && !head && !qnum(src) && /學年度|學期|評量|試題|考試|測驗卷|試卷|班級|座號|姓名/.test(src);
     if(b.isHead){
       b.autoSec = secOf(src) || (b.kindHint === 'sound' ? 'zhuyin' : b.kindHint === 'shape' ? 'shape' : null);
       b.sec = b.secOv || b.autoSec || 'other';
@@ -473,10 +570,13 @@ function analyzeStructure(blocks){
 }
 // 寫注音小題：任何播放方式都不讀（整頁、重播、框選、上一題／下一題）
 function absSilent(b){ return !!b && !b.isHead && b.sec === 'zhuyin'; }
+// 整個大題都不報讀的小題（寫注音，或老師設定不唸的寫國字／填空）：不給按鈕、上一題／下一題直接跳過
+function quietItem(b){ return absSilent(b) || (!!b && !b.isHead && b.force !== 'skip' && teacherOff(b)); }
 // 老師設定不報讀的題目
 function teacherOff(b){
+  if(b.isHead) return false;            // 大題名稱一律報讀
   if(b.force === 'skip') return true;
-  if(b.isHead || b.force === 'read') return false;
+  if(b.force === 'read') return false;
   return (b.sec === 'shape' && S.noShape) || (b.sec === 'fill' && S.noFill) || (b.kind === 'sound' && S.noSound);
 }
 function silent(b){ return absSilent(b) || teacherOff(b); }
@@ -487,13 +587,25 @@ function noReadMsg(b){
   if(b.kind === 'sound') return '這一題考讀音，不報讀，請自己看題目作答。';
   return '這一題不報讀，請自己看題目作答。';
 }
+// 「一、寫注音」「第一大題 寫出注音」「壹、改錯字」→「第一大題，寫注音。」
 function headerSpeech(t){
   t = cleanText(t);
-  const m = t.match(/^\s*[（(]?\s*([一二三四五六七八九十]{1,3})\s*[)）]?\s*[、.．:：]\s*(.*)$/);
-  const s = m ? '第' + m[1] + '大題，' + toSpeech(m[2]) : toSpeech(t);
+  const m = t.match(new RegExp('^\\s*第\\s*([' + CN_NUM + ']+)\\s*大?題\\s*[、.．:：,，]?\\s*(.*)$'))
+         || t.match(new RegExp('^\\s*[（(]?\\s*([' + CN_NUM + ']{1,3})\\s*[)）]?\\s*[、.．:：]\\s*(.*)$'));
+  const big = {壹:'一',貳:'二',參:'三',肆:'四',伍:'五',陸:'六',柒:'七',捌:'八',玖:'九',拾:'十'};
+  const s = m ? '第' + m[1].split('').map(c => big[c] || c).join('') + '大題' + (m[2] ? '，' + toSpeech(m[2]) : '') : toSpeech(t);
   return s.replace(/[。，,\s]+$/, '') + '。';
 }
-function speechOf(b){ return b.isHead ? headerSpeech(b.text) : toSpeech(b.text); }
+// 小題：「2.（　）弟弟在公園玩要。」→「第2題，弟弟在公園玩要。」（題號後面的作答括號不唸）
+function itemBody(t){ return cleanText(t).replace(QNO, '').replace(/^\s*([（(][\s　_＿]*[）)]\s*)+/, '').trim(); }
+function titleSpeech(t){
+  return toSpeech(cleanText(t).replace(/(國小|國民小學)?\s*年\s*班\s*座\s*號\s*姓\s*名.*$/, '').replace(/(座號|姓名|得分|分數)[:：\s]*/g, '')) || '考卷名稱';
+}
+function speechOf(b){
+  if(b.isHead) return headerSpeech(b.text);
+  if(b.isTitle) return titleSpeech(b.text);
+  return qnum(b.text) ? '第' + b.qn + '題，' + toSpeech(itemBody(b.text)) : toSpeech(b.text);
+}
 
 // 一行裡有好幾題（1.… 2.… 3.…）就分開，每一小題一個框
 function splitMulti(blocks){
@@ -528,38 +640,98 @@ function union(a, b){
 function overlap1d(a0,a1,b0,b1){ return Math.max(0, Math.min(a1,b1)-Math.max(a0,b0)); }
 
 // lines: [{x,y,w,h,text}]，回傳依閱讀順序排好、合併後的題目區塊
-function orderAndMerge(lines, dir){
+// 直式：找出把考卷分成上下兩半的那條線（跨過它的直排最少的位置）
+function findDivider(lines){
+  if(lines.length < 6) return null;
+  const y0 = Math.min(...lines.map(l => l.y)), y1 = Math.max(...lines.map(l => l.y + l.h)), H = y1 - y0;
+  if(H <= 0) return null;
+  const N = 200, cnt = new Array(N).fill(0);
+  lines.forEach(l => {
+    const a = Math.max(0, Math.floor((l.y - y0) / H * N)), b = Math.min(N, Math.ceil((l.y + l.h - y0) / H * N));
+    for(let i = a; i < b; i++) cnt[i] += l.h;   // 長的直排權重大
+  });
+  let best = -1, bestV = Infinity;
+  for(let i = Math.floor(N * 0.25); i < Math.ceil(N * 0.75); i++) if(cnt[i] < bestV){ bestV = cnt[i]; best = i; }
+  let s = best, e = best;
+  while(s > 0 && cnt[s-1] <= bestV) s--;
+  while(e < N - 1 && cnt[e+1] <= bestV) e++;
+  const maxV = Math.max(...cnt) || 1;
+  const y = y0 + (s + e + 1) / 2 / N * H;
+  const top = lines.filter(l => l.y + l.h <= y).length, bot = lines.filter(l => l.y >= y).length;
+  return { y, strength: 1 - bestV / maxV, top, bot };
+}
+// 一半裡面：每一直排由右而左；沒有題號的直排接在上一題後面
+function orderColumns(lines){
+  lines = mergeStacks(lines.filter(l => l.text && l.text.trim()).map(l => ({...l})))
+    .filter(l => l.text && meaningful(l.text));
+  if(!lines.length) return [];
+  const cols = [...lines].sort((a, b) => (b.x + b.w/2) - (a.x + a.w/2));
+  const avgW = cols.reduce((s, c) => s + c.w, 0) / cols.length;
+  const out = []; let cur = null;
+  for(const c of cols){
+    if(cur){
+      const gap = cur.last.x - (c.x + c.w);
+      const sameTop = Math.abs(c.y - cur.last.y) < Math.max(2*avgW, 0.25*cur.last.h);
+      if(gap < 1.6*avgW && sameTop && !QNUM.test(c.text) && !looksHead(c.text) && !looksHead(cur.text)){
+        Object.assign(cur, union(cur, c)); cur.text = joinText(cur.text, c.text); cur.last = c; continue;
+      }
+      out.push(cur);
+    }
+    cur = {x:c.x, y:c.y, w:c.w, h:c.h, text:c.text, dir:'v', last:c};
+  }
+  if(cur) out.push(cur);
+  return out;
+}
+// layout：'full' 整頁直式、'halves' 上下兩半、'auto' 自動判斷
+function verticalOrder(lines, layout){
+  lines = lines.filter(l => l.text && l.text.trim());
+  let div = null;
+  if(lines.some(l => l.half === 1)){
+    // 已經用一個一個字切好上下兩半（PDF 文字）
+    // 每一半可以是直式或橫式（例如上半直式、下半橫式）
+    const orderHalf = L => (L.length && L[0].hdir === 'h') ? orderAndMerge(L.map(({half, hdir, ...l}) => l), 'h') : orderColumns(L);
+    const top = orderHalf(lines.filter(l => l.half === 0)), bot = orderHalf(lines.filter(l => l.half === 1));
+    return joinHalves(top, bot, Math.min(...lines.filter(l => l.half === 1).map(l => l.y)));
+  }
+  if(layout !== 'full' && S.curRule){
+    const sp = splitByRule(lines, S.curRule);
+    if(sp.top.length && sp.bot.length) return joinHalves(orderColumns(sp.top), orderColumns(sp.bot), sp.y);
+  }
+  if(layout !== 'full'){
+    div = findDivider(lines);
+    const clear = div && div.strength > 0.7 && div.top >= 3 && div.bot >= 3;
+    if(layout === 'auto' && !clear) div = null;
+    if(layout === 'halves' && !div && lines.length){
+      const y0 = Math.min(...lines.map(l => l.y)), y1 = Math.max(...lines.map(l => l.y + l.h));
+      div = { y: (y0 + y1) / 2 };
+    }
+  }
+  if(!div) return orderColumns(lines);
+  // 跨過分隔線的長直排（考卷名稱、姓名欄）算在上半
+  const span = lines.filter(l => l.y < div.y - 4 && l.y + l.h > div.y + 4);
+  const inSpan = l => span.some(s => overlap1d(s.x, s.x + s.w, l.x, l.x + l.w) > 0.5 * Math.min(s.w, l.w));
+  const topL = lines.filter(l => (l.y < div.y - 4) || inSpan(l));
+  const botL = lines.filter(l => !topL.includes(l));
+  return joinHalves(orderColumns(topL), orderColumns(botL), div.y);
+}
+function joinHalves(top, bot, divY){
+  const div = {y: divY};
+  // 上半最後一排的句子，接到下半第一排（沒有新題號）＝同一題
+  const lastTop = top[top.length - 1], firstBot = bot[0];
+  if(lastTop && firstBot && !QNUM.test(firstBot.text) && !looksHead(firstBot.text) && !looksHead(lastTop.text)
+     && firstBot.y - div.y < 4 * Math.max(16, firstBot.w)){
+    const a = top[top.length - 1], b = bot.shift();
+    a.text = joinText(a.text, b.text);
+    a.parts = (a.parts || []).concat([{x:b.x, y:b.y, w:b.w, h:b.h}], b.parts || []);
+  }
+  return top.concat(bot);
+}
+function orderAndMerge(lines, dir, layout){
+  if(dir === 'v') return verticalOrder(lines, layout || 'auto');
   lines = lines.filter(l => l.text && meaningful(l.text));
   if(!lines.length) return [];
   const out = [];
-  if(dir === 'v'){
-    // 直式：先把上下分開的大題切成「橫向帶狀區」，帶狀區由上而下，帶內每一行由右而左
-    const cols = [...lines].sort((a,b)=>(b.x+b.w/2)-(a.x+a.w/2));
-    const bands = [];
-    for(const c of cols){
-      let band = bands.find(bd => overlap1d(c.y, c.y+c.h, bd.y0, bd.y1) > 0.3*Math.min(c.h, bd.y1-bd.y0));
-      if(!band){ band = {y0:c.y, y1:c.y+c.h, cols:[]}; bands.push(band); }
-      band.cols.push(c); band.y0=Math.min(band.y0,c.y); band.y1=Math.max(band.y1,c.y+c.h);
-    }
-    bands.sort((a,b)=>a.y0-b.y0);
-    for(const band of bands){
-      band.cols.sort((a,b)=>(b.x+b.w/2)-(a.x+a.w/2));
-      const avgW = band.cols.reduce((s,c)=>s+c.w,0)/band.cols.length;
-      let cur = null;
-      for(const c of band.cols){
-        if(cur){
-          const gap = cur.last.x - (c.x + c.w);
-          const sameTop = Math.abs(c.y - cur.last.y) < Math.max(2*avgW, 0.25*cur.last.h);
-          if(gap < 1.6*avgW && sameTop && !QNUM.test(c.text) && !HEAD.test(c.text)){
-            Object.assign(cur, union(cur, c)); cur.text = joinText(cur.text, c.text); cur.last = c; continue;
-          }
-          out.push(cur);
-        }
-        cur = {x:c.x,y:c.y,w:c.w,h:c.h,text:c.text,dir:'v',last:c};
-      }
-      if(cur) out.push(cur);
-    }
-  } else {
+  {
     const rows = [...lines].sort((a,b)=> (a.y - b.y) || (a.x - b.x));
     const avgH = rows.reduce((s,r)=>s+r.h,0)/rows.length;
     let cur = null;
@@ -568,7 +740,7 @@ function orderAndMerge(lines, dir){
         const gap = r.y - (cur.last.y + cur.last.h);
         const aligned = Math.abs(r.x - cur.last.x) < 3*avgH || overlap1d(r.x,r.x+r.w,cur.x,cur.x+cur.w) > 0.5*r.w;
         // 沒有題號的行＝上一題換行（考卷行距通常很大，所以放寬）；有題號或大題名稱才是新的一題
-        const isNew = QNUM.test(r.text) || HEAD.test(r.text);
+        const isNew = QNUM.test(r.text) || looksHead(r.text) || looksHead(cur.text);
         if(!isNew && gap < 1.5*avgH && gap > -0.5*avgH && aligned){
           Object.assign(cur, union(cur, r)); cur.text = joinText(cur.text, r.text); cur.last = r; continue;
         }
@@ -582,7 +754,175 @@ function orderAndMerge(lines, dir){
 }
 
 // 把零散的字（PDF 文字）依方向組成行
-function itemsToLines(items, dir){
+// 只有注音符號／聲調的小字（國字旁邊的注音）不參與分段，也不報讀
+const ZY_ONLY = /^[\u3105-\u312F\u31A0-\u31BF\u02C7\u02CA\u02CB\u02D9\u02C9\uE000-\uF8FF\s]+$/;
+// 直式考卷：題號、作答括號、題目常常上下分開，同一直排、沒有新題號的片段要合回上一段
+function mergeStacks(blocks){
+  if(blocks.length < 2) return blocks;
+  const sz = blocks.reduce((s, b) => s + Math.min(b.w, b.h), 0) / blocks.length;
+  const byTop = [...blocks].sort((a, b) => a.y - b.y);
+  for(const B of byTop){
+    if(B._dead) continue;
+    if(QNUM.test(B.text) || looksHead(B.text) || /^\s*[①-⑳]/.test(B.text)) continue;
+    let best = null, bestGap = Infinity;
+    for(const A of blocks){
+      if(A === B || A._dead) continue;
+      if(overlap1d(A.x, A.x + A.w, B.x, B.x + B.w) < 0.5 * Math.min(A.w, B.w)) continue;
+      const gap = B.y - (A.y + A.h);
+      if(gap < -0.3 * B.h || gap > 14 * sz) continue;
+      if(blocks.some(C => C !== A && C !== B && !C._dead && C.y >= A.y + A.h - 2 && C.y + C.h <= B.y + 2 && overlap1d(C.x, C.x + C.w, B.x, B.x + B.w) > 0.5 * Math.min(C.w, B.w))) continue;
+      if(gap < bestGap){ bestGap = gap; best = A; }
+    }
+    if(best){ Object.assign(best, union(best, B)); best.text = joinText(best.text, B.text); B._dead = true; }
+  }
+  return blocks.filter(b => !b._dead);
+}
+// 「每題2分」「共10分」「10分」這種分數小字，併回旁邊的大題名稱，讓大題一次唸完
+const SCORE = /^[\s（(：:，,、]*((每一?題|每格|每個|每空|共|全對)\s*)?[0-9０-９一二三四五六七八九十]+\s*分[\s)）。，,、]*$/;
+function attachScores(blocks){
+  const out = []; let head = null;
+  for(const b of blocks){
+    const t = (b.text || '').normalize('NFKC').trim();
+    if(looksHead(b.text)){ head = b; out.push(b); continue; }
+    if(head && SCORE.test(t)){
+      const s = Math.max(12, Math.min(head.w, head.h));
+      const dx = Math.max(0, Math.max(head.x, b.x) - Math.min(head.x + head.w, b.x + b.w));
+      const dy = Math.max(0, Math.max(head.y, b.y) - Math.min(head.y + head.h, b.y + b.h));
+      if(dx < 5*s && dy < 5*s){ head.text = joinText(head.text, (/[，,：:]$/.test(head.text) ? '' : '，') + t); continue; }
+    }
+    out.push(b);
+  }
+  return out;
+}
+function attachOptions(blocks){
+  const out = [];
+  for(const b of blocks){
+    const prev = out[out.length - 1];
+    if(prev && /^\s*[①-⑳]/.test(b.text) && !looksHead(prev.text)){ Object.assign(prev, union(prev, b)); prev.text = joinText(prev.text, b.text); continue; }
+    out.push(b);
+  }
+  return out;
+}
+function fixScoreNumbers(blocks){
+  const out = [];
+  for(const b of blocks){
+    const t = (b.text || '').normalize('NFKC').trim();
+    // 只剩一個「分」字（配分寫超過分隔線）：接回最近、結尾是數字的大題
+    if(/^分[\s)）]*$/.test(t)){
+      let hd = null, bd = Infinity;
+      out.forEach(x => { if(!looksHead(x.text) || !/[0-9０-９]\s*$/.test(x.text)) return;
+        const d = Math.hypot((x.x + x.w/2) - (b.x + b.w/2), (x.y + x.h) - b.y); if(d < bd){ bd = d; hd = x; } });
+      if(hd && bd < 6 * Math.max(16, Math.min(hd.w, hd.h))){ hd.text += '分'; continue; }
+    }
+    // 找最近、而且結尾是「共」或「共分」的大題
+    let head = null, best = Infinity;
+    if(/^[0-9]{1,3}\s*分?$/.test(t)) out.forEach(x => {
+      if(!looksHead(x.text) || !/共\s*分?\s*$/.test(x.text)) return;
+      const d = Math.hypot((x.x + x.w/2) - (b.x + b.w/2), (x.y + x.h) - b.y);
+      if(d < best){ best = d; head = x; }
+    });
+    if(head && best < 8 * Math.max(16, Math.min(head.w, head.h))){
+      head.text = head.text.replace(/共\s*分?\s*$/, '共' + t.replace(/分$/, '') + '分'); continue;
+    }
+    out.push(b);
+  }
+  return out;
+}
+function finishBlocks(blocks, d){ return splitMulti(attachOptions(fixScoreNumbers(attachScores(blocks)))); }
+// 用「字」找出上下兩半的分界：字最少的那一條橫帶（中間那條分隔線附近）
+function itemDivider(items){
+  if(items.length < 20) return null;
+  const y0 = Math.min(...items.map(i => i.y)), y1 = Math.max(...items.map(i => i.y + i.h)), H = y1 - y0;
+  if(H <= 0) return null;
+  const N = 300, cnt = new Array(N).fill(0);
+  items.forEach(it => {
+    const a = Math.max(0, Math.floor((it.y - y0)/H*N)), b = Math.min(N, Math.ceil((it.y + it.h - y0)/H*N));
+    for(let i = a; i < b; i++) cnt[i]++;
+  });
+  let best = -1, bestV = Infinity;
+  for(let i = Math.floor(N*0.25); i < Math.ceil(N*0.75); i++) if(cnt[i] < bestV){ bestV = cnt[i]; best = i; }
+  let s = best, e = best;
+  while(s > 0 && cnt[s-1] <= bestV) s--;
+  while(e < N-1 && cnt[e+1] <= bestV) e++;
+  const used = cnt.filter(v => v > 0), avg = used.reduce((a, v) => a + v, 0) / (used.length || 1);
+  const y = y0 + (s + e + 1)/2/N*H;
+  // 跨過分界線、沒有斷開的直排（考卷名稱、姓名欄）
+  const spanX = items.filter(it => it.y < y - 1 && it.y + it.h > y + 1).map(it => [it.x, it.x + it.w]);
+  return { y, strength: 1 - bestV/avg, spanX };
+}
+// 在考卷圖片上找中間那條橫的分隔線（一長條連續的深色橫線）；拍照的考卷也適用
+function detectRule(canvas){
+  try{
+    const W = canvas.width, H = canvas.height;
+    if(W < 200 || H < 200) return null;
+    const y0 = Math.floor(H*0.2), y1 = Math.floor(H*0.8);
+    const data = canvas.getContext('2d', {willReadFrequently:true}).getImageData(0, y0, W, y1 - y0).data;
+    let best = null;
+    for(let r = 0; r < y1 - y0; r++){
+      const off = r*W*4; let start = -1, last = -10, bestRun = 0, bs = 0, be = 0;
+      for(let x = 0; x < W; x++){
+        const i = off + x*4;
+        if(data[i] + data[i+1] + data[i+2] < 330){
+          if(x - last > 6) start = x;        // 中間斷開超過 6 點就重新算
+          last = x;
+          if(last - start > bestRun){ bestRun = last - start; bs = start; be = last; }
+        }
+      }
+      if(bestRun > W*0.4){
+        const y = y0 + r, mid = Math.abs(y - H/2);
+        if(!best || bestRun > best.len*1.15 || (bestRun > best.len*0.85 && mid < best.mid)) best = {y, x0:bs, x1:be, len:bestRun, mid};
+      }
+    }
+    return best ? {y: best.y, x0: best.x0, x1: best.x1} : null;
+  }catch(e){ return null; }
+}
+function splitByRule(arr, rule){
+  // 分隔線左右兩端外面的直排（考卷名稱、姓名欄）算整頁、放在最前面
+  const outside = o => { const cx = o.x + o.w/2; return cx < rule.x0 - 4 || cx > rule.x1 + 4; };
+  const top = arr.filter(o => outside(o) || o.y < rule.y - 1);   // 從分隔線上面開始的字／直排＝上半
+  return { top, bot: arr.filter(o => !top.includes(o)), y: rule.y };
+}
+function splitHalves(items, layout){
+  if(S.curRule) return splitByRule(items, S.curRule);
+  const div = itemDivider(items);
+  if(!div) return null;
+  if(layout === 'auto' && div.strength < 0.8) return null;
+  const isSpan = it => div.spanX.some(([a, b]) => overlap1d(a, b, it.x, it.x + it.w) > 0.5*it.w);
+  const top = items.filter(it => it.y + it.h/2 < div.y || isSpan(it));
+  const bot = items.filter(it => !top.includes(it));
+  if(top.length < 8 || bot.length < 8) return null;
+  return { top, bot, y: div.y };
+}
+// 注音版考卷：國字旁邊的注音字很小（不到國字的一半）；有些 PDF 會把「ㄧ」存成「一」、聲調存成符號，所以用大小判斷
+function dropRuby(items){
+  const sizes = items.filter(i => i.fs && /[\u3400-\u9FFF]/.test(i.str)).map(i => i.fs).sort((a, b) => a - b);
+  if(sizes.length < 10) return items;
+  const med = sizes[Math.floor(sizes.length / 2)];
+  return items.filter(i => !i.fs || i.fs >= med * 0.5);
+}
+function itemsToLines(items, dir, layout){
+  items = dropRuby(items.filter(it => !ZY_ONLY.test(it.str)));
+  if(dir === 'v' && layout && layout !== 'full'){
+    const sp = splitHalves(items, layout);
+    if(sp){
+      const dt = pickDirFromItems(sp.top), db = pickDirFromItems(sp.bot);
+      return buildLines(sp.top, dt).map(l => ({...l, half:0, hdir:dt})).concat(buildLines(sp.bot, db).map(l => ({...l, half:1, hdir:db})));
+    }
+  }
+  return buildLines(items, dir);
+}
+function buildLines(items, dir){
+  if(dir === 'v'){
+    const split = [];
+    for(const it of items){
+      const n = [...it.str].length;
+      if(n > 1 && it.w > it.h * 1.6){
+        const cw = it.w / n;
+        [...it.str].forEach((c, i) => { if(c.trim() && !ZY_ONLY.test(c)) split.push({str:c, x:it.x + i*cw, y:it.y, w:Math.min(cw, it.h), h:it.h}); });
+      } else split.push(it);
+    }
+    items = split;
+  }
   if(!items.length) return [];
   const lines = [];
   if(dir === 'v'){
@@ -610,6 +950,7 @@ function itemsToLines(items, dir){
   return lines.map(l => ({x:l.x,y:l.y,w:l.w,h:l.h,text:l.text}));
 }
 function pickDirFromItems(items){
+  if(!items.length) return 'h';
   const h = itemsToLines(items,'h'), v = itemsToLines(items,'v');
   return v.length < h.length*0.75 ? 'v' : 'h';
 }
@@ -634,10 +975,10 @@ function pdfScale(page){ const w = page.getViewport({scale:1}).width; return Mat
 async function pdfTextItems(num){
   const page = await S.pdf.getPage(num);
   const vp = page.getViewport({scale: pdfScale(page)});
-  const tc = await page.getTextContent();
+  const tc = await page.getTextContent({disableCombineTextItems: true});
   const items = [];
   for(const it of tc.items){
-    const str = (it.str||'').normalize('NFKC').trim();
+    const str = (it.str||'').replace(/[^①-⑳]+/g, s => s.normalize('NFKC')).trim();
     if(!str) continue;
     const tx = pdfjsLib.Util.transform(vp.transform, it.transform);
     const fs = Math.hypot(tx[2], tx[3]) || 10;
@@ -645,9 +986,9 @@ async function pdfTextItems(num){
     let x, y, w, h;
     if(vertical){ w = fs; h = Math.max(fs, (it.height||0)*vp.scale); x = tx[4]-fs/2; y = tx[5]; }
     else { w = Math.max(fs*0.5, (it.width||0)*vp.scale); h = fs; x = tx[4]; y = tx[5]-fs; }
-    items.push({str, x, y, w, h});
+    items.push({str, x, y, w, h, fs});
   }
-  const all = items.map(i=>i.str).join('');
+  const all = items.filter(i => !ZY_ONLY.test(i.str)).map(i=>i.str).join('').replace(/[\u3105-\u312F\u02C7\u02CA\u02CB\u02D9\s]/g,'');
   const good = (all.match(/[㐀-鿿ㄅ-ㄯA-Za-z0-9，。？！、：；「」（）()＋－×÷＝+\-=]/g)||[]).length;
   if(all.length < 8 || good/all.length < 0.6) return null;   // 掃描檔或文字是亂碼 → 用辨識
   return items;
@@ -676,6 +1017,9 @@ function rotateCanvas(src){
 
 /* ================= 顯示頁面 ================= */
 const cv = $('cv'), ov = $('ov');
+// S.dir：'h' 橫式、'v' 直式整頁、'v2' 直式上下兩半、'auto' 自動
+function tdir(d){ return d === 'v2' ? 'v' : d; }
+function layoutOf(d){ return d === 'v' ? 'full' : d === 'v2' ? 'halves' : 'auto'; }
 function cacheKey(i){ return i+'|'+S.dir+'|'+S.engine+(S.pages[i].kind==='img' ? '|'+S.pages[i].rot : ''); }
 
 async function showPage(i){
@@ -716,28 +1060,29 @@ async function analyze(i, token){
   if(S.cache.has(key)){ S.blocks = S.cache.get(key); S.pageBlocks.set(i, {blocks:S.blocks, W:cv.width, H:cv.height}); drawBlocks(); return; }
   const pg = S.pages[i];
   let blocks = null;
+  S.curRule = (S.dir === 'v2' || S.dir === 'auto') ? detectRule(cv) : null;
   if(pg.kind === 'pdf'){
     busy('讀取 PDF 文字…');
     const items = await pdfTextItems(pg.num);
     if(items) pg.items = items;
-    const sp = S.saved && S.saved.pages && S.saved.pages[pg.num];
+    const sp = !S.ignoreSaved.has(i) && S.saved && S.saved.pages && S.saved.pages[pg.num];
     if(sp && sp.blocks){
       // 老師儲存過的報讀設定
       const fx = cv.width / (sp.W || cv.width), fy = cv.height / (sp.H || cv.height);
-      blocks = sp.blocks.map(o => ({...o, x:o.x*fx, y:o.y*fy, w:o.w*fx, h:o.h*fy}));
-    } else if(items){
-      const d = S.dir === 'auto' ? pickDirFromItems(items) : S.dir;
-      blocks = splitMulti(orderAndMerge(itemsToLines(items, d), d));
+      blocks = sp.blocks.map(o => ({...o, x:o.x*fx, y:o.y*fy, w:o.w*fx, h:o.h*fy, parts: (o.parts || []).map(q => ({x:q.x*fx, y:q.y*fy, w:q.w*fx, h:q.h*fy}))}));
+    } else if(items && S.forceEngine !== 'gemini'){
+      const d = S.dir === 'auto' ? (S.curRule ? 'v' : pickDirFromItems(items)) : tdir(S.dir);
+      blocks = finishBlocks(orderAndMerge(itemsToLines(items, d, layoutOf(S.dir)), d, layoutOf(S.dir)), d);
     }
   }
   if(!blocks){
-    if(S.engine === 'gemini' && S.key){
+    if((S.forceEngine || S.engine) === 'gemini' && S.key){
       try{ blocks = await geminiRead(cv, false); }
       catch(e){ console.error(e); toast('Gemini 辨識失敗（'+e.message+'），改用免費辨識。', 5000); }
     } else if(S.engine === 'gemini'){
       toast('還沒有設定 Gemini API Key，先用免費辨識。');
     }
-    if(!blocks) blocks = splitMulti(await tessPage(cv, S.dir));
+    if(!blocks) blocks = finishBlocks(await tessPage(cv, S.dir), tdir(S.dir));
   }
   if(token !== S.renderToken) return;
   S.cache.set(key, blocks);
@@ -760,11 +1105,10 @@ function drawBlocks(){
     el.style.left = ((b.x - pad)/W*100) + '%'; el.style.top = ((b.y - pad)/H*100) + '%';
     el.style.width = ((b.w + 2*pad)/W*100) + '%'; el.style.height = ((b.h + 2*pad)/H*100) + '%';
     let badge;
-    if(b.isHead) badge = '🔊 大題';
+    if(b.isHead) badge = '🔊';
     else if(mute) badge = '🔇';
-    else if(off) badge = '🚫 ' + b.qn;
-    else if(b.sec === 'fix') badge = '🔊 第' + b.qn + '題';
-    else badge = '🔊 ' + b.qn;
+    else if(off) badge = '🚫' + b.qn;
+    else badge = '🔊' + b.qn;
     const short = b.isHead ? '大' : mute ? '' : off ? '🚫' : String(b.qn);
     el.innerHTML = '<span class="n"><span class="full">' + badge + '</span><span class="short">' + short + '</span></span>';
     if(mute){ el.setAttribute('aria-hidden', 'true'); }
@@ -772,14 +1116,66 @@ function drawBlocks(){
       el.setAttribute('aria-label', b.isHead ? '播放大題：' + b.text : '播放第' + b.qn + '題' + (off ? '（不報讀）' : ''));
       el.addEventListener('click', () => speakAt(k));
     }
-    b.el = el;
+    b.el = el; b.els = [el];
     ov.appendChild(el);
+    (b.parts || []).forEach(pt => {
+      const e2 = document.createElement(mute ? 'div' : 'button'); if(!mute) e2.type = 'button';
+      e2.className = el.className + ' part';
+      e2.style.left = ((pt.x - pad)/W*100) + '%'; e2.style.top = ((pt.y - pad)/H*100) + '%';
+      e2.style.width = ((pt.w + 2*pad)/W*100) + '%'; e2.style.height = ((pt.h + 2*pad)/H*100) + '%';
+      if(!mute){ e2.setAttribute('aria-label', el.getAttribute('aria-label') + '（接上半）'); e2.addEventListener('click', () => speakAt(k)); }
+      b.els.push(e2); ov.appendChild(e2);
+    });
   });
+  drawQPanel();
+  ov.classList.toggle('editing', !!S.edit);
   if(S.edit) drawEditor();
   applyCompact();
 }
+// 題目按鈕區：每一題一張大卡片，整張都可以按
+function drawQPanel(){
+  const ol = $('qlist'); ol.innerHTML = '';
+  const showPanel = !!S.edit && S.blocks.length > 0;
+  $('qpanel').hidden = !showPanel;
+  document.querySelector('.workarea').classList.toggle('nopanel', !showPanel);
+  if(!showPanel){ S.blocks.forEach(b => b.card = null); return; }
+  $('redoGem').hidden = !S.key;
+  let muteRun = null;
+  S.blocks.forEach((b, k) => {
+    b.card = null;
+    if(quietItem(b)){
+      // 不報讀的小題：不給按鈕，同一大題的全部併成一行說明
+      if(muteRun && muteRun.head === b.head){ muteRun.n++; return; }
+      if(!S.edit) return;   // 學生畫面：不報讀的小題直接不列出來
+      const li = document.createElement('li'); li.className = 'qmute qitem';
+      li.innerHTML = '<span aria-hidden="true">🔇</span><span></span>';
+      muteRun = {head: b.head, n: 1, el: li};
+      const name = SEC_NAMES[b.sec] || '這一大題';
+      const run0 = muteRun; muteRun.update = () => { li.lastChild.textContent = '這一大題的小題（' + run0.n + ' 題）：' + name + '，不報讀，請自己作答'; };
+      ol.appendChild(li);
+      const run = muteRun; queueMicrotask(() => run.update());
+      return;
+    }
+    muteRun = null;
+    const off = teacherOff(b);
+    const li = document.createElement('li'); if(!b.isHead) li.className = 'qitem';
+    const c = document.createElement('button'); c.type = 'button';
+    c.className = 'qcard' + (b.isHead ? ' head' : '') + (!b.isHead && b.sec === 'fix' ? ' fix' : '') + (off ? ' off' : '');
+    const title = b.isHead ? headerSpeech(b.text).replace(/。$/, '') : b.isTitle ? '考卷名稱' : '第' + b.qn + '題' + (off ? '（不報讀）' : '');
+    const sub = b.isHead ? '' : b.isTitle ? titleSpeech(b.text) : itemBody(b.text);
+    c.innerHTML = '<span class="spk" aria-hidden="true">' + (off ? '🚫' : '🔊') + '</span><span class="lbl"><b></b><span></span></span>';
+    const zh = s => s.replace(/:/g, '：').replace(/,/g, '，').replace(/\?/g, '？').replace(/!/g, '！').replace(/\(/g, '（').replace(/\)/g, '）');
+    c.querySelector('b').textContent = zh(title);
+    c.querySelector('.lbl span').textContent = zh(sub);
+    if(!sub) c.querySelector('.lbl span').remove();
+    c.setAttribute('aria-label', '播放' + title);
+    c.addEventListener('click', () => speakAt(k));
+    li.appendChild(c); ol.appendChild(li);
+    b.card = c;
+  });
+}
 // 考卷顯示得很小（手機）時，喇叭標籤縮小，避免互相擋住；放大後恢復
-function applyCompact(){ const w = cv.getBoundingClientRect().width; ov.classList.toggle('compact', w > 0 && w < 640); }
+function applyCompact(){ const w = cv.getBoundingClientRect().width; ov.classList.toggle('compact', w > 0 && w < 440); }
 window.addEventListener('resize', applyCompact);
 
 /* ================= 老師編輯：語音報讀內容 ================= */
@@ -821,7 +1217,8 @@ function drawEditor(){
     const acts = document.createElement('div'); acts.className = 'edacts';
     acts.appendChild(mkBtn(mute ? '🔊 預聽（學生聽不到）' : '🔊 預聽', '', () => startSpeech(chunks(speechOf(b)).map(c => ({b, c})))));
     if(mute) { const s = document.createElement('span'); s.className = 'lock'; s.textContent = '🔇 寫注音小題：固定不報讀'; acts.appendChild(s); }
-    else if(!b.isHead || true){
+    else if(b.isHead){ const s = document.createElement('span'); s.className = 'lock'; s.textContent = '🔊 大題名稱：固定報讀'; acts.appendChild(s); }
+    else {
       acts.appendChild(mkBtn(off ? '🚫 不報讀（按一下開啟）' : '✅ 會報讀（按一下關閉）', off ? 'del arm' : '', () => {
         b.force = off ? 'read' : 'skip'; editChanged();
       }));
@@ -875,7 +1272,7 @@ async function saveEdits(){
     const bl = S.pageBlocks.get(i); if(!bl) return;
     data.pages[i + 1] = { W: bl.W, H: bl.H, blocks: bl.blocks.map(b => ({
       x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.w), h: Math.round(b.h), dir: b.dir,
-      text: b.text, orig: b.orig, force: b.force || undefined, headOv: b.headOv == null ? undefined : b.headOv, secOv: b.secOv || undefined
+      text: b.text, orig: b.orig, parts: b.parts && b.parts.length ? b.parts.map(q => ({x:Math.round(q.x), y:Math.round(q.y), w:Math.round(q.w), h:Math.round(q.h)})) : undefined, force: b.force || undefined, headOv: b.headOv == null ? undefined : b.headOv, secOv: b.secOv || undefined
     })) };
   });
   data.updated = new Date().toISOString();
@@ -958,22 +1355,24 @@ async function tessRun(canvas, dir, psm){
   return tessLines(data);
 }
 function score(lines){ return lines.reduce((s,l)=>s + l.conf * l.text.length, 0); }
-async function tessPage(canvas, dir){
+async function tessPage(canvas, dsel){
+  const dir = tdir(dsel), layout = layoutOf(dsel);
   if(dir === 'auto'){
     const h = await tessRun(canvas, 'h', 3);
     const v = await tessRun(canvas, 'v', 3);
     const d = score(v) > score(h)*1.1 ? 'v' : 'h';
     toast(d==='v' ? '判斷這頁是直式排列。' : '判斷這頁是橫式排列。');
-    return orderAndMerge(d==='v' ? v : h, d);
+    return orderAndMerge(d==='v' ? v : h, d, 'auto');
   }
-  return orderAndMerge(await tessRun(canvas, dir, 3), dir);
+  return orderAndMerge(await tessRun(canvas, dir, 3), dir, layout);
 }
 
 /* ================= Gemini 辨識 ================= */
 async function geminiRead(canvas, isCrop){
   busy('Gemini 正在看考卷…');
   const b64 = canvas.toDataURL('image/jpeg', 0.88).split(',')[1];
-  const dirHint = S.dir==='v' ? '這份考卷主要是直式排列。' : S.dir==='h' ? '這份考卷主要是橫式排列。' : '';
+  const dirHint = S.dir==='v2' ? '這份考卷是直式排列，而且分成上下兩半：先讀上半（由右到左），上半讀完再讀下半（由右到左）。上半和下半同一個位置的直排是不同的題目。'
+    : S.dir==='v' ? '這份考卷是直式排列，每一排從頁面最上面寫到最下面，由右到左讀。' : S.dir==='h' ? '這份考卷主要是橫式排列。' : '';
   const prompt = `這是台灣國小考卷${isCrop?'中被框選起來的一小塊區域':'的一頁'}，要用來報讀給有學習障礙的學生聽。${dirHint}
 請找出圖中要唸的文字，依照正確的閱讀順序輸出：
 1. 橫式文字：由左到右、由上到下。直式文字（國語直排）：每一行由上到下，行與行由右到左；若頁面上下分成好幾個區塊，先讀上面的區塊再讀下面的。
@@ -1019,6 +1418,8 @@ function toCanvasXY(e){
 function setSelecting(on){
   S.selecting = on;
   ov.classList.toggle('selecting', on);
+  $('tapHint').hidden = on;
+  if(on){ stopSpeak(); endStep(); }
   $('bSel').classList.toggle('on', on);
   $('selHint').hidden = !on;
 }
@@ -1061,7 +1462,7 @@ async function readRegion(r){
     if(hit.some(absSilent)){ selEl.hidden = true; toast('框到的是寫注音的小題，不報讀，請自己看題目作答。', 5000); return; }
     if(hit.filter(b => !b.isHead && b.sec === 'fix').length > 1){ selEl.hidden = true; toast('改錯題要一題一題聽，請按題目旁邊的 🔊 喇叭。', 5000); return; }
   }
-  const dir = S.dir==='auto' ? (r.h > r.w*1.3 ? 'v' : 'h') : S.dir;
+  const dir = S.dir==='auto' ? (r.h > r.w*1.3 ? 'v' : 'h') : tdir(S.dir);
   let text = '';
   busy('辨識框選的文字…');
   try{
@@ -1140,6 +1541,7 @@ document.addEventListener('pointerdown', unlockSpeech, {once:true, capture:true}
 function toSpeech(t){
   t = cleanText(t);
   if(S.skipZy) t = t.replace(/[ㄅ-ㄯㆠ-ㆿˊˇˋ˙]+/g, '');
+  t = t.replace(/[①-⑳]/g, c => '，選項' + (c.charCodeAt(0) - 0x245F) + '，');
   if(S.mathWords){
     t = t.replace(/[（(][\s　_＿]*[）)]/g, '，括號，')
          .replace(/[_＿﹍]{2,}/g, '，空格，')
@@ -1219,12 +1621,15 @@ function mark(b){
   document.querySelectorAll('.reading').forEach(n => n.classList.remove('reading'));
   if(!b) return;
   const k = S.blocks.indexOf(b); if(k >= 0) S.ptr = k;
+  (b.els || []).slice(1).forEach(e => e.classList.add('reading'));
   if(b.el){ b.el.classList.add('reading'); b.el.scrollIntoView({block:'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); }
   if(b.li) b.li.classList.add('reading');
+  if(b.card){ b.card.classList.add('reading'); b.card.scrollIntoView({block:'nearest'}); }
 }
 
 /* ---------- 依題型決定要唸什麼 ---------- */
 function queueFor(b, single){
+  if(b.isHead) return [{b, c: headerSpeech(b.text)}];   // 大題名稱（含配分）一次唸完
   if(absSilent(b)) return [];
   if(teacherOff(b)) return single ? [{b, c: noReadMsg(b)}] : [];
   return chunks(speechOf(b)).map(c => ({b, c}));
@@ -1245,7 +1650,7 @@ function speakPage(start){
   for(let k = start; k < S.blocks.length; k++){
     const b = S.blocks[k];
     if(b.isHead && b.sec === 'fix'){
-      const items = S.blocks.filter((x, j) => j > k && !x.isHead && x.head === b && !absSilent(x));
+      const items = S.blocks.filter((x, j) => j > k && !x.isHead && x.head === b && !quietItem(x));
       const nextH = S.blocks.findIndex((x, j) => j > k && x.isHead);
       q.push(...queueFor(b, false));
       if(items.length){
@@ -1266,9 +1671,9 @@ function speakPage(start){
 function speakAt(k, dirn){
   dirn = dirn || 1;
   if(!S.blocks.length){ toast('這一頁還沒有可以唸的文字。'); return; }
-  while(k >= 0 && k < S.blocks.length && absSilent(S.blocks[k])) k += dirn;   // 寫注音小題直接跳過
+  while(k >= 0 && k < S.blocks.length && quietItem(S.blocks[k])) k += dirn;   // 不報讀的小題直接跳過
   if(k >= S.blocks.length){ toast('這是這一頁的最後一題了。' + (S.cur < S.pages.length - 1 ? '按 ▶ 看下一頁。' : '')); return; }
-  if(k < 0){ k = S.blocks.findIndex(b => !absSilent(b)); if(k < 0) return; }
+  if(k < 0){ k = S.blocks.findIndex(b => !quietItem(b)); if(k < 0) return; }
   if(S.step){ const b = S.blocks[k]; if(b.isHead || b.head !== S.step.head) endStep(); }
   S.ptr = k;
   speakOne(S.blocks[k]);
@@ -1291,14 +1696,16 @@ function cueAfter(b){
                                  : '✏️ 這一大題的每一題都有喇叭，可以再聽一次。' + (S.step && S.step.nextH >= 0 ? '做完了就按「繼續下一大題」。' : '');
 }
 function setCue(b){
-  document.querySelectorAll('.blk.cue').forEach(n => n.classList.remove('cue'));
-  if(b && b.el){ b.el.classList.add('cue'); b.el.scrollIntoView({block:'nearest'}); }
+  document.querySelectorAll('.blk.cue, .qcard.cue').forEach(n => n.classList.remove('cue'));
+  if(b && b.el){ (b.els || [b.el]).forEach(e => e.classList.add('cue')); b.el.scrollIntoView({block:'nearest'}); }
+  if(b && b.card){ b.card.classList.add('cue'); b.card.scrollIntoView({block:'nearest'}); }
 }
 function endStep(){ S.step = null; setCue(null); const sb = $('stepBar'); if(sb) sb.hidden = true; }
 
 /* ================= 介面事件 ================= */
 function setDir(d){
   S.dir = d; store.set('dir', d);
+  document.querySelectorAll('[data-redo]').forEach(b => { if(b.dataset.redo.length <= 2) b.setAttribute('aria-pressed', String(b.dataset.redo === d)); });
   document.querySelectorAll('#dirSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir===d)));
 }
 setDir(S.dir);
@@ -1323,7 +1730,7 @@ $('voice').addEventListener('change', e => {
 
 $('bCam').addEventListener('click', () => {
   // 學生拍照的同時，在背景先準備辨識資料
-  if(!(S.engine==='gemini' && S.key) && window.Tesseract){ try{ getWorker(S.dir==='v' ? 'chi_tra_vert' : 'chi_tra').catch(()=>{}); }catch(e){} }
+  if(!(S.engine==='gemini' && S.key) && window.Tesseract){ try{ getWorker(tdir(S.dir)==='v' ? 'chi_tra_vert' : 'chi_tra').catch(()=>{}); }catch(e){} }
   $('fCam').click();
 });
 
@@ -1397,6 +1804,26 @@ $('bReplay').addEventListener('click', replaySpeak);
 $('bStepNext').addEventListener('click', () => { const n = S.step ? S.step.nextH : -1; endStep(); if(n >= 0) speakPage(n); });
 $('bStepEnd').addEventListener('click', () => { stopSpeak(); endStep(); });
 $('bEdSave').addEventListener('click', saveEdits);
+// 重新辨識這一頁（不用老師存過的版本、清掉暫存，可換排列方式或改用 Gemini）
+async function reRecognize(dir, engine){
+  if(!S.pages.length) return;
+  stopSpeak(); endStep();
+  S.ignoreSaved.add(S.cur);
+  [...S.cache.keys()].forEach(k => { if(k.startsWith(S.cur + '|')) S.cache.delete(k); });
+  S.pageBlocks.delete(S.cur); S.dirty.delete(S.cur);
+  if(dir && dir !== S.dir) setDir(dir);
+  S.forceEngine = engine || null;
+  try{ await showPage(S.cur); } finally { S.forceEngine = null; }
+  const n = S.blocks.filter(b => !b.isHead && !b.isTitle).length, hn = S.blocks.filter(b => b.isHead).length;
+  toast('已重新辨識：' + hn + ' 個大題、' + n + ' 題。' + (S.edit && S.remotePath ? '確認沒問題可以按「儲存並同步給學生」。' : ''), 5000);
+  if(S.edit && S.remotePath){ S.dirty.add(S.cur); setSaveState(); }
+}
+$('bRedo').addEventListener('click', () => reRecognize());
+document.querySelectorAll('[data-redo]').forEach(b => b.addEventListener('click', () => {
+  const v = b.dataset.redo;
+  if(v === 'gemini') reRecognize(null, 'gemini');
+  else reRecognize(v === 'same' ? null : v);
+}));
 $('bSel').addEventListener('click', () => setSelecting(!S.selecting));
 $('bQNext').addEventListener('click', () => speakAt(S.ptr + 1, 1));
 $('bQPrev').addEventListener('click', () => speakAt(S.ptr <= 0 ? 0 : S.ptr - 1, -1));
@@ -1511,7 +1938,7 @@ async function loadSaved(path){
   }catch(e){}
 }
 async function openRemote(path, name, dir){
-  if(['h','v','auto'].includes(dir)) setDir(dir);
+  if(['h','v','v2','auto'].includes(dir)) setDir(dir);
   busy('正在載入「'+name+'」…');
   try{
     const [r] = await Promise.all([fetch(encodePath(path)), loadSaved(path)]);
@@ -1557,8 +1984,8 @@ async function renderRepo(force){
     }
     const li = document.createElement('li');
     const n = document.createElement('span'); n.className = 'fname'; n.textContent = '📄 '+f.name;
-    if(f.dir){ const m = document.createElement('span'); m.className = 'fmeta'; m.textContent = {h:'橫式',v:'直式',auto:'自動判斷'}[f.dir] || ''; n.appendChild(m); }
-    li.append(n, mkBtn('打開', 'go', () => openRemote(f.path, f.name, f.dir)), mkBtn('QR', '', () => qrFor(f.path, f.dir)));
+    if(f.dir){ const m = document.createElement('span'); m.className = 'fmeta'; m.textContent = {h:'橫式',v:'直式・整頁',v2:'直式・上下兩半',auto:'自動判斷'}[f.dir] || ''; n.appendChild(m); }
+    li.append(n, mkBtn('打開', 'go', () => openRemote(f.path, f.name, f.dir)), mkBtn('📱 QR', '', () => showQrFor(testQr(f.path, f.dir, f.name))));
     ul.appendChild(li);
   });
   const li = document.createElement('li'); li.className = 'grp';
@@ -1630,7 +2057,7 @@ $('dlg').addEventListener('close', () => {
   store.set('skipZy', S.skipZy); store.set('mathWords', S.mathWords);
   const nrChanged = S.noSound !== $('optNoSound').checked || S.noShape !== $('optNoShape').checked || S.noFill !== $('optNoFill').checked;
   S.noSound = $('optNoSound').checked; S.noShape = $('optNoShape').checked; S.noFill = $('optNoFill').checked;
-  store.set('noSound', S.noSound); store.set('noShape', S.noShape); store.set('noFill', S.noFill);
+  store.set('noSound', S.noSound); store.set('noShape2', S.noShape); store.set('noFill', S.noFill);
   if(nrChanged && S.blocks.length) drawBlocks();
   if(oldEngine !== S.engine && S.pages.length) showPage(S.cur);
 });
@@ -1663,8 +2090,75 @@ $('bEditMode').addEventListener('click', () => {
   S.edit = !S.edit;
   $('bEditMode').textContent = S.edit ? '關閉老師編輯模式' : '✏️ 開啟老師編輯模式';
   $('editPanel').hidden = !S.edit || $('viewer').hidden;
-  if(S.edit && S.blocks.length) drawEditor();
+  if(S.blocks.length) drawBlocks();
   toast(S.edit ? '已開啟老師編輯模式，編輯區在考卷下方。' : '已關閉老師編輯模式。');
+});
+/* ---------- 📱 QR Code：目前這份考卷（網站上的考卷）或網站首頁 ---------- */
+function siteBase(){ return location.origin + location.pathname.replace(/index\.html$/, ''); }
+function currentQr(){
+  const onTest = !$('viewer').hidden && S.pages.length;
+  if(onTest && S.remotePath){
+    const p = new URLSearchParams();
+    p.set('pdf', S.remotePath); p.set('dir', S.dir);
+    if(S.engine === 'gemini') p.set('engine', 'gemini');
+    p.set('zy', S.skipZy ? '1' : '0'); p.set('math', S.mathWords ? '1' : '0');
+    p.set('ns', S.noSound ? '1' : '0'); p.set('nsh', S.noShape ? '1' : '0'); p.set('nf', S.noFill ? '1' : '0');
+    return { url: siteBase() + '?' + p.toString(), title: S.fileName || '這份考卷', note: '學生用平板掃描，就會直接打開這份考卷（排列方式也一起帶入）。' };
+  }
+  return { url: siteBase(), title: '評量報讀小幫手',
+    note: onTest ? '這份考卷是從這台裝置打開的，不在網站上，所以 QR Code 只會打開網站。要讓學生掃了直接看到這份考卷，請從老師端上傳。'
+                 : '學生用平板掃描，就會打開評量報讀小幫手，再從考卷櫃選考卷或拍照。' };
+}
+function testQr(path, dir, name){
+  const p = new URLSearchParams();
+  p.set('pdf', path); p.set('dir', dir || S.dir);
+  if(S.engine === 'gemini') p.set('engine', 'gemini');
+  p.set('zy', S.skipZy ? '1' : '0'); p.set('math', S.mathWords ? '1' : '0');
+  p.set('ns', S.noSound ? '1' : '0'); p.set('nsh', S.noShape ? '1' : '0'); p.set('nf', S.noFill ? '1' : '0');
+  return { url: siteBase() + '?' + p.toString(), title: name || '考卷', note: '學生用平板掃描，就會直接打開這份考卷。' };
+}
+let qrNow = null;
+function showQrFor(q){
+  qrNow = q;
+  $('qrTitle').textContent = q.title; $('qrNote').textContent = q.note; $('qrLink').textContent = q.url;
+  const box = $('qrBig'); box.innerHTML = '';
+  try{ new QRCode(box, {text: q.url, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.M}); }
+  catch(e){ box.textContent = 'QR Code 產生失敗，請複製下面的連結。'; }
+  $('qrDlg').showModal();
+}
+// 考卷櫃上的網站 QR Code
+(function drawSiteQr(){
+  const url = siteBase();
+  $('siteQrLink').textContent = url;
+  try{ new QRCode($('siteQr'), {text: url, width: 150, height: 150, correctLevel: QRCode.CorrectLevel.M}); }
+  catch(e){ $('siteQr').textContent = 'QR Code 產生失敗'; }
+  const siteQ = () => ({ url, title: '評量報讀小幫手', note: '學生用平板掃描，就會打開評量報讀小幫手，再從考卷櫃選考卷或拍照。' });
+  $('bSiteQrBig').addEventListener('click', () => showQrFor(siteQ()));
+  $('bSiteQrDl').addEventListener('click', () => { showQrFor(siteQ()); $('bQrDl').click(); });
+})();
+$('bQR').addEventListener('click', () => {
+  const q = currentQr(); showQrFor(q); return;
+  qrNow = currentQr();
+  $('qrTitle').textContent = qrNow.title; $('qrNote').textContent = qrNow.note; $('qrLink').textContent = qrNow.url;
+  const box = $('qrBig'); box.innerHTML = '';
+  try{ new QRCode(box, {text: qrNow.url, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.M}); }
+  catch(e){ box.textContent = 'QR Code 產生失敗，請複製下面的連結。'; }
+  $('qrDlg').showModal();
+});
+$('bQrCopy').addEventListener('click', async () => {
+  try{ await navigator.clipboard.writeText($('qrLink').textContent); toast('已複製連結。'); }
+  catch(e){ const r = document.createRange(); r.selectNodeContents($('qrLink')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('請長按或按 Ctrl+C 複製選取的連結。'); }
+});
+$('bQrDl').addEventListener('click', () => {
+  const src = $('qrBig').querySelector('canvas'); if(!src) return;
+  const pad = 28, title = qrNow ? qrNow.title : '';
+  const c = document.createElement('canvas'); c.width = src.width + pad*2; c.height = src.height + pad*2 + 56;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(src, pad, pad);
+  g.fillStyle = '#1c2a33'; g.font = '26px "Noto Sans TC", "Microsoft JhengHei", sans-serif'; g.textAlign = 'center';
+  g.fillText(title, c.width/2, src.height + pad + 40, c.width - 20);
+  const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'QR-' + (title || '評量報讀') + '.png';
+  document.body.appendChild(a); a.click(); a.remove();
 });
 $('bClear').addEventListener('click', () => { S.cache.clear(); toast('已清除，切換頁面時會重新辨識。'); });
 
