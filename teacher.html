@@ -187,7 +187,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 "use strict";
 const $ = id => document.getElementById(id);
 const SUBJECTS = ['國語','數學','社會','自然','英語','其他'];
-const DIRS = {h:'橫式', v:'直式・整頁', v2:'直式・上下兩半', auto:'自動判斷'};
+const DIRS = {h:'橫式・整頁', h2:'橫式・左右兩欄', 'h-tb':'橫式・上下兩半', v:'直式・整頁', v2:'直式・上下兩半', 'v-lr':'直式・左右兩半', auto:'自動判斷'};
 const ls = {
   get(k, d, s){ try{ const v = (s ? sessionStorage : localStorage).getItem(k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v, s){ try{ (s ? sessionStorage : localStorage).setItem(k, JSON.stringify(v)); }catch(e){} },
@@ -469,7 +469,7 @@ function addFiles(files){
   if(!pdfs.length){ toast('只能上傳 PDF 檔。照片考卷可以先用手機掃描 App 存成 PDF。', 5000); return; }
   pdfs.forEach(file => {
     const subject = guessSubject(file.name);
-    const it = { file, name: cleanName(file.name), subject, dir: subject==='國語' ? 'auto' : 'h', status:'' };
+    const it = { file, name: cleanName(file.name), subject, dir: 'auto', status:'' };
     Q.push(it); drawItem(it);
   });
   $('queueBar').hidden = !Q.length;
@@ -488,7 +488,7 @@ function drawItem(it){
   const d = document.createElement('select');
   Object.entries(DIRS).forEach(([k,v]) => { const o=document.createElement('option'); o.value=k; o.textContent=v; d.appendChild(o); });
   d.value = it.dir;
-  s.addEventListener('change', () => { it.subject = s.value; ls.set('erh_t_lastSubj', s.value); if(s.value==='國語'){ it.dir='auto'; d.value='auto'; } else if(it.dir!=='h'){ it.dir='h'; d.value='h'; } });
+  s.addEventListener('change', () => { it.subject = s.value; ls.set('erh_t_lastSubj', s.value);  });
   d.addEventListener('change', () => it.dir = d.value);
   l2.appendChild(s); l3.appendChild(d);
   const rm = mk('移除', '', () => { const i = Q.indexOf(it); if(i>=0) Q.splice(i,1); li.remove(); $('queueBar').hidden = !Q.length; });

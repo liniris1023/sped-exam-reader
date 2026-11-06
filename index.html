@@ -57,6 +57,7 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding-block
 .opts label{display:inline-flex;align-items:center;gap:8px}
 .opts select{min-height:42px;border-radius:10px;border:2px solid var(--line);background:var(--paper);padding:0 8px;max-width:220px}
 .opts input[type=range]{width:120px;accent-color:var(--accent)}
+.optlbl{font-family:var(--font-display);color:var(--ink);margin-right:-8px}
 .rate-val{font-variant-numeric:tabular-nums;min-width:3.2em;color:var(--ink)}
 
 main{max-width:1100px;margin:0 auto}
@@ -245,11 +246,18 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 </header>
 
 <div class="opts">
-  <span class="seg" id="dirSeg" role="group" aria-label="文字排列">
-    <button type="button" data-dir="h" aria-pressed="true">橫式</button>
-    <button type="button" data-dir="v" aria-pressed="false">直式・整頁</button>
-    <button type="button" data-dir="v2" aria-pressed="false">直式・上下兩半</button>
-    <button type="button" data-dir="auto" aria-pressed="false">自動</button>
+  <span class="optlbl">文字</span>
+  <span class="seg" id="tdSeg" role="group" aria-label="文字方向">
+    <button type="button" data-td="h" aria-pressed="true">橫式</button>
+    <button type="button" data-td="v" aria-pressed="false">直式</button>
+    <button type="button" data-td="auto" aria-pressed="false">自動</button>
+  </span>
+  <span class="optlbl">版面</span>
+  <span class="seg" id="laySeg" role="group" aria-label="考卷版面">
+    <button type="button" data-lay="full" aria-pressed="true">整頁</button>
+    <button type="button" data-lay="tb" aria-pressed="false">上下兩半</button>
+    <button type="button" data-lay="lr" aria-pressed="false">左右兩欄</button>
+    <button type="button" data-lay="auto" aria-pressed="false">自動</button>
   </span>
   <label>聲音 <select id="voice"></select></label>
   <span class="seg" id="rateSeg" role="group" aria-label="語速">
@@ -334,9 +342,12 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         <div class="redo" id="redoBar">
           <span>題目分錯了嗎？換一種方式重新辨識：</span>
           <div class="redobtns">
-            <button type="button" class="mini" data-redo="v2">直式・上下兩半</button>
+            <button type="button" class="mini" data-redo="h">橫式・整頁</button>
+            <button type="button" class="mini" data-redo="h2">橫式・左右兩欄</button>
+            <button type="button" class="mini" data-redo="h-tb">橫式・上下兩半</button>
             <button type="button" class="mini" data-redo="v">直式・整頁</button>
-            <button type="button" class="mini" data-redo="h">橫式</button>
+            <button type="button" class="mini" data-redo="v2">直式・上下兩半</button>
+            <button type="button" class="mini" data-redo="v-lr">直式・左右兩半</button>
             <button type="button" class="mini" data-redo="same">🔄 同一種再試</button>
             <button type="button" class="mini" data-redo="gemini" id="redoGem" hidden>🤖 用 Gemini AI</button>
           </div>
@@ -459,7 +470,7 @@ const S = {
   pdf: null, cur: 0,
   cache: new Map(),   // key -> blocks
   blocks: [],
-  dir: store.get('dir','h'),
+  dir: store.get('dir','auto'),
   engine: store.get('engine','tess'),
   key: store.get('key',''),
   model: store.get('model','gemini-flash-latest'),
@@ -482,7 +493,7 @@ const S = {
 // 網址參數：?dir=v&engine=gemini&key=...&pdf=xxx.pdf&zy=1&math=1&model=
 (function readParams(){
   const p = new URLSearchParams(location.search);
-  if (['h','v','v2','auto'].includes(p.get('dir'))) S.dir = p.get('dir');
+  if (parseDir(p.get('dir'))) S.dir = p.get('dir');
   if (['tess','gemini'].includes(p.get('engine'))) { S.engine = p.get('engine'); store.set('engine', S.engine); }
   if (p.get('model')) { S.model = p.get('model'); store.set('model', S.model); }
   if (p.get('zy')) { S.skipZy = p.get('zy')==='1'; store.set('skipZy', S.skipZy); }
@@ -538,7 +549,7 @@ const SEC_RULES = [
   ['fix',     /改錯|錯別字|錯字|圈出.{0,4}錯|找出.{0,4}錯/],
   ['fill',    /填空|填入|填填看|填一填/],
   ['choice',  /選擇/],
-  ['tf',      /是非|對錯|判斷/],
+  ['tf',      /是非|對錯|判斷|打\s*[VvＶ✓○◯OＯ].{0,8}打\s*[XxＸ×✗]/],
   ['reading', /閱讀|文意|測驗|理解/],
   ['sentence',/造句|照樣|仿寫/],
 ];
@@ -557,6 +568,8 @@ function analyzeStructure(blocks){
     b.isTitle = !b.isHead && !head && !qnum(src) && /學年度|學期|評量|試題|考試|測驗卷|試卷|班級|座號|姓名/.test(src);
     if(b.isHead){
       b.autoSec = secOf(src) || (b.kindHint === 'sound' ? 'zhuyin' : b.kindHint === 'shape' ? 'shape' : null);
+      // 「甲、」「乙、」這種小標題沒有題型時，沿用上一個大題的題型
+      if(!b.secOv && !b.autoSec && head && /^\s*[甲乙丙丁戊]\s*[、.．:：]/.test(src)) b.autoSec = head.autoSec || (head.sec !== 'other' ? head.sec : null);
       b.sec = b.secOv || b.autoSec || 'other';
       b.head = null; b.qn = 0; head = b; n = 0;
     } else {
@@ -738,10 +751,13 @@ function orderAndMerge(lines, dir, layout){
     for(const r of rows){
       if(cur){
         const gap = r.y - (cur.last.y + cur.last.h);
-        const aligned = Math.abs(r.x - cur.last.x) < 3*avgH || overlap1d(r.x,r.x+r.w,cur.x,cur.x+cur.w) > 0.5*r.w;
+        // 換行常常會縮排（對齊題目文字、選項），所以左右放寬
+        const aligned = Math.abs(r.x - cur.last.x) < 6*avgH || overlap1d(r.x,r.x+r.w,cur.x,cur.x+cur.w) > 0.5*r.w;
         // 沒有題號的行＝上一題換行（考卷行距通常很大，所以放寬）；有題號或大題名稱才是新的一題
-        const isNew = QNUM.test(r.text) || looksHead(r.text) || looksHead(cur.text);
-        if(!isNew && gap < 1.5*avgH && gap > -0.5*avgH && aligned){
+        // 大題名稱後面沒有題號的說明行（例如「正確的打V，錯誤的打X」「每題2分」）接在大題裡一起唸
+        // 有「一、」編號的大題下面，像「正確的打V，錯誤的打X」這種說明行也併進大題
+        const isNew = QNUM.test(r.text) || HEAD.test(r.text) || (looksHead(r.text) && !HEAD.test(cur.text));
+        if(!isNew && gap < 2*avgH && gap > -0.5*avgH && aligned){
           Object.assign(cur, union(cur, r)); cur.text = joinText(cur.text, r.text); cur.last = r; continue;
         }
         out.push(cur);
@@ -875,6 +891,66 @@ function detectRule(canvas){
     }
     return best ? {y: best.y, x0: best.x0, x1: best.x1} : null;
   }catch(e){ return null; }
+}
+// 找中間那條直的分隔線（左右兩欄的考卷）
+function detectVRule(canvas){
+  try{
+    const W = canvas.width, H = canvas.height;
+    if(W < 200 || H < 200) return null;
+    const x0 = Math.floor(W*0.3), x1 = Math.floor(W*0.7), y0 = Math.floor(H*0.03), y1 = Math.floor(H*0.97);
+    const w = x1 - x0, hh = y1 - y0;
+    const d = canvas.getContext('2d', {willReadFrequently:true}).getImageData(x0, y0, w, hh).data;
+    let best = null;
+    for(let c = 0; c < w; c++){
+      let start = -1, last = -10, bestRun = 0, bs = 0, be = 0;
+      for(let r = 0; r < hh; r++){
+        const i = (r*w + c)*4;
+        if(d[i] + d[i+1] + d[i+2] < 330){
+          if(r - last > 6) start = r;
+          last = r;
+          if(last - start > bestRun){ bestRun = last - start; bs = start; be = last; }
+        }
+      }
+      if(bestRun > H*0.4){
+        const x = x0 + c, mid = Math.abs(x - W/2);
+        if(!best || bestRun > best.len*1.15 || (bestRun > best.len*0.85 && mid < best.mid)) best = {x, y0: y0 + bs, y1: y0 + be, len: bestRun, mid};
+      }
+    }
+    return best ? {x: best.x, y0: best.y0, y1: best.y1} : null;
+  }catch(e){ return null; }
+}
+// 分成：直線上面（考卷名稱等，最先讀）、左欄、右欄、直線下面
+function splitByVRule(arr, rule){
+  const above = arr.filter(o => o.y + o.h <= rule.y0 + 4);
+  const below = arr.filter(o => !above.includes(o) && o.y >= rule.y1 - 4);
+  const mid = arr.filter(o => !above.includes(o) && !below.includes(o));
+  return { above, left: mid.filter(o => o.x + o.w/2 < rule.x), right: mid.filter(o => o.x + o.w/2 >= rule.x), below };
+}
+// 依版面把考卷切開，每一塊用 build 排成題目
+//   上下兩半：先上後下；左右兩欄：橫式先左後右、直式先右後左
+function arrange(units, build, dirOf, lay){
+  let mode = lay;
+  if(mode === 'auto') mode = S.curRule ? 'tb' : S.curVRule ? 'lr' : 'full';
+  if(mode === 'tb'){
+    let sp = S.curRule ? splitByRule(units, S.curRule) : null;
+    if(!sp && units.length && units[0].str != null) sp = splitHalves(units, 'halves');
+    // 上下兩半：每一半自己判斷直式或橫式（例如上半直式、下半橫式）
+    const own = part => (part.length && part[0].str != null) ? build(part, pickDirFromItems(part)) : build(part);
+    if(sp && sp.top.length && sp.bot.length) return joinHalves(own(sp.top), own(sp.bot), sp.y);
+  }
+  if(mode === 'lr'){
+    let r = S.curVRule;
+    if(!r && units.length){
+      const xs = units.map(o => o.x + o.w/2).sort((a, b) => a - b);
+      r = {x: (xs[0] + xs[xs.length-1]) / 2, y0: -1e9, y1: 1e9};
+    }
+    const sp = splitByVRule(units, r);
+    const d = dirOf(sp.left.concat(sp.right));
+    const sides = d === 'v' ? [sp.right, sp.left] : [sp.left, sp.right];
+    const parts = [sp.above, ...sides, sp.below].filter(p => p.length);
+    if(parts.length > 1) return parts.flatMap(p => build(p));
+  }
+  return build(units);
 }
 function splitByRule(arr, rule){
   // 分隔線左右兩端外面的直排（考卷名稱、姓名欄）算整頁、放在最前面
@@ -1017,9 +1093,22 @@ function rotateCanvas(src){
 
 /* ================= 顯示頁面 ================= */
 const cv = $('cv'), ov = $('ov');
-// S.dir：'h' 橫式、'v' 直式整頁、'v2' 直式上下兩半、'auto' 自動
-function tdir(d){ return d === 'v2' ? 'v' : d; }
-function layoutOf(d){ return d === 'v' ? 'full' : d === 'v2' ? 'halves' : 'auto'; }
+// S.dir 代碼：文字方向（h 橫式 / v 直式 / auto）＋ 版面（full 整頁 / tb 上下兩半 / lr 左右兩欄 / auto）
+// 舊代碼相容：h、v、v2（直式上下兩半）、h2（橫式左右兩欄）、auto
+function DIR_LEGACY_MAP(){ return {h:['h','full'], v:['v','full'], v2:['v','tb'], h2:['h','lr'], auto:['auto','auto']}; }
+function parseDir(code){
+  const L = DIR_LEGACY_MAP(); if(L[code]) return L[code];
+  const m = /^(h|v|auto)-(full|tb|lr|auto)$/.exec(code || '');
+  return m ? [m[1], m[2]] : null;
+}
+function dirCode(td, lay){
+  for(const [k, [a, b]] of Object.entries(DIR_LEGACY_MAP())) if(a === td && b === lay) return k;
+  return td + '-' + lay;
+}
+var DIR_NAMES = {h:'橫式・整頁', h2:'橫式・左右兩欄', 'h-tb':'橫式・上下兩半', v:'直式・整頁', v2:'直式・上下兩半', 'v-lr':'直式・左右兩半', auto:'自動判斷'};
+function dirName(code){ if(DIR_NAMES[code]) return DIR_NAMES[code]; const p = parseDir(code); return p ? ({h:'橫式',v:'直式',auto:'自動'}[p[0]] + '・' + {full:'整頁',tb:'上下兩半',lr:'左右兩欄',auto:'自動版面'}[p[1]]) : ''; }
+function tdir(d){ const p = parseDir(d); return p ? p[0] : 'auto'; }
+function layoutOf(d){ const p = parseDir(d); return p ? p[1] : 'auto'; }
 function cacheKey(i){ return i+'|'+S.dir+'|'+S.engine+(S.pages[i].kind==='img' ? '|'+S.pages[i].rot : ''); }
 
 async function showPage(i){
@@ -1060,7 +1149,10 @@ async function analyze(i, token){
   if(S.cache.has(key)){ S.blocks = S.cache.get(key); S.pageBlocks.set(i, {blocks:S.blocks, W:cv.width, H:cv.height}); drawBlocks(); return; }
   const pg = S.pages[i];
   let blocks = null;
-  S.curRule = (S.dir === 'v2' || S.dir === 'auto') ? detectRule(cv) : null;
+  const LAY = layoutOf(S.dir), TD = tdir(S.dir);
+  S.curRule = (LAY === 'tb' || LAY === 'auto') ? detectRule(cv) : null;
+  S.curVRule = (LAY === 'lr' || LAY === 'auto') ? detectVRule(cv) : null;
+  if(LAY === 'auto' && S.curRule && S.curVRule) S.curVRule = null;
   if(pg.kind === 'pdf'){
     busy('讀取 PDF 文字…');
     const items = await pdfTextItems(pg.num);
@@ -1071,8 +1163,9 @@ async function analyze(i, token){
       const fx = cv.width / (sp.W || cv.width), fy = cv.height / (sp.H || cv.height);
       blocks = sp.blocks.map(o => ({...o, x:o.x*fx, y:o.y*fy, w:o.w*fx, h:o.h*fy, parts: (o.parts || []).map(q => ({x:q.x*fx, y:q.y*fy, w:q.w*fx, h:q.h*fy}))}));
     } else if(items && S.forceEngine !== 'gemini'){
-      const d = S.dir === 'auto' ? (S.curRule ? 'v' : pickDirFromItems(items)) : tdir(S.dir);
-      blocks = finishBlocks(orderAndMerge(itemsToLines(items, d, layoutOf(S.dir)), d, layoutOf(S.dir)), d);
+      const clean = dropRuby(items.filter(it => !ZY_ONLY.test(it.str)));
+      const dirOf = part => TD === 'auto' ? pickDirFromItems(part) : TD;
+      blocks = finishBlocks(arrange(clean, (part, dov) => { const d = dov || dirOf(part); return orderAndMerge(itemsToLines(part, d), d, 'full'); }, dirOf, LAY), TD);
     }
   }
   if(!blocks){
@@ -1357,22 +1450,27 @@ async function tessRun(canvas, dir, psm){
 function score(lines){ return lines.reduce((s,l)=>s + l.conf * l.text.length, 0); }
 async function tessPage(canvas, dsel){
   const dir = tdir(dsel), layout = layoutOf(dsel);
+  let d = dir, lines;
   if(dir === 'auto'){
     const h = await tessRun(canvas, 'h', 3);
     const v = await tessRun(canvas, 'v', 3);
-    const d = score(v) > score(h)*1.1 ? 'v' : 'h';
+    d = score(v) > score(h)*1.1 ? 'v' : 'h';
     toast(d==='v' ? '判斷這頁是直式排列。' : '判斷這頁是橫式排列。');
-    return orderAndMerge(d==='v' ? v : h, d, 'auto');
-  }
-  return orderAndMerge(await tessRun(canvas, dir, 3), dir, layout);
+    lines = d === 'v' ? v : h;
+  } else lines = await tessRun(canvas, dir, 3);
+  return arrange(lines, part => orderAndMerge(part, d, 'full'), () => d, layout);
 }
 
 /* ================= Gemini 辨識 ================= */
 async function geminiRead(canvas, isCrop){
   busy('Gemini 正在看考卷…');
   const b64 = canvas.toDataURL('image/jpeg', 0.88).split(',')[1];
-  const dirHint = S.dir==='v2' ? '這份考卷是直式排列，而且分成上下兩半：先讀上半（由右到左），上半讀完再讀下半（由右到左）。上半和下半同一個位置的直排是不同的題目。'
-    : S.dir==='v' ? '這份考卷是直式排列，每一排從頁面最上面寫到最下面，由右到左讀。' : S.dir==='h' ? '這份考卷主要是橫式排列。' : '';
+  const [gTd, gLay] = parseDir(S.dir) || ['auto','auto'];
+  const dirHint = gLay === 'lr' && gTd === 'h' ? '這份考卷是橫式排列，分成左右兩欄：先讀完左欄（由上到下），再讀右欄（由上到下）。左右兩欄同一行的字是不同的題目。'
+    : gLay === 'lr' && gTd === 'v' ? '這份考卷是直式排列，分成左右兩半：先讀右半（由右到左），再讀左半（由右到左）。'
+    : gLay === 'tb' && gTd === 'h' ? '這份考卷是橫式排列，分成上下兩半：先讀上半，再讀下半。'
+    : S.dir==='v2' ? '這份考卷是直式排列，而且分成上下兩半：先讀上半（由右到左），上半讀完再讀下半（由右到左）。上半和下半同一個位置的直排是不同的題目。'
+    : S.dir==='v' ? '這份考卷是直式排列，每一排從頁面最上面寫到最下面，由右到左讀。' : S.dir==='h' ? '這份考卷是橫式排列，整頁由上到下讀。' : '';
   const prompt = `這是台灣國小考卷${isCrop?'中被框選起來的一小塊區域':'的一頁'}，要用來報讀給有學習障礙的學生聽。${dirHint}
 請找出圖中要唸的文字，依照正確的閱讀順序輸出：
 1. 橫式文字：由左到右、由上到下。直式文字（國語直排）：每一行由上到下，行與行由右到左；若頁面上下分成好幾個區塊，先讀上面的區塊再讀下面的。
@@ -1704,14 +1802,19 @@ function endStep(){ S.step = null; setCue(null); const sb = $('stepBar'); if(sb)
 
 /* ================= 介面事件 ================= */
 function setDir(d){
+  if(!parseDir(d)) d = 'auto';
   S.dir = d; store.set('dir', d);
-  document.querySelectorAll('[data-redo]').forEach(b => { if(b.dataset.redo.length <= 2) b.setAttribute('aria-pressed', String(b.dataset.redo === d)); });
-  document.querySelectorAll('#dirSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir===d)));
+  const [td, lay] = parseDir(d);
+  document.querySelectorAll('[data-redo]').forEach(b => { if(parseDir(b.dataset.redo)) b.setAttribute('aria-pressed', String(b.dataset.redo === d)); });
+  document.querySelectorAll('#tdSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.td === td)));
+  document.querySelectorAll('#laySeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lay === lay)));
 }
 setDir(S.dir);
-document.querySelectorAll('#dirSeg button').forEach(b => b.addEventListener('click', () => {
-  if(S.dir === b.dataset.dir) return;
-  setDir(b.dataset.dir);
+document.querySelectorAll('#tdSeg button, #laySeg button').forEach(b => b.addEventListener('click', () => {
+  const [td, lay] = parseDir(S.dir);
+  const code = dirCode(b.dataset.td || td, b.dataset.lay || lay);
+  if(code === S.dir) return;
+  setDir(code);
   if(S.pages.length) showPage(S.cur);
 }));
 function setRate(r){
@@ -1938,7 +2041,7 @@ async function loadSaved(path){
   }catch(e){}
 }
 async function openRemote(path, name, dir){
-  if(['h','v','v2','auto'].includes(dir)) setDir(dir);
+  if(parseDir(dir)) setDir(dir);
   busy('正在載入「'+name+'」…');
   try{
     const [r] = await Promise.all([fetch(encodePath(path)), loadSaved(path)]);
@@ -1984,7 +2087,7 @@ async function renderRepo(force){
     }
     const li = document.createElement('li');
     const n = document.createElement('span'); n.className = 'fname'; n.textContent = '📄 '+f.name;
-    if(f.dir){ const m = document.createElement('span'); m.className = 'fmeta'; m.textContent = {h:'橫式',v:'直式・整頁',v2:'直式・上下兩半',auto:'自動判斷'}[f.dir] || ''; n.appendChild(m); }
+    if(f.dir){ const m = document.createElement('span'); m.className = 'fmeta'; m.textContent = dirName(f.dir); n.appendChild(m); }
     li.append(n, mkBtn('打開', 'go', () => openRemote(f.path, f.name, f.dir)), mkBtn('📱 QR', '', () => showQrFor(testQr(f.path, f.dir, f.name))));
     ul.appendChild(li);
   });
