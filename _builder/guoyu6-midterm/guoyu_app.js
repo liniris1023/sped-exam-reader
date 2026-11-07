@@ -115,7 +115,7 @@ function renderHome(){
       <li>照樣照句：聽完題目，寫在 <b>答案紙</b> 上，寫好再按大按鈕。</li>
       <li>句型造句：按 <b>紅色大按鈕</b> 開始錄音，說完再按一次停止；可以錄很多次，也可以按「聽第幾次錄音」聽自己說的。</li>
       <li>感官摹寫：聽完短文，點代號大按鈕選感官。</li>
-      <li>每一題都要作答，才能到下一題；按 <b>考卷目錄</b> 可以回到寫過的題目。</li>
+      <li>每一題都要作答，才能到下一題；按「上一題」可以回去看寫過的題目。</li>
       <li>全部寫完按「交卷」，再按「下載作答 PDF」交給老師。</li>
     </ol>
     <div id="resetBox"></div>
@@ -301,7 +301,6 @@ function reach(){ /*FREE*/const n=ITEMS.findIndex(x=>!isDone(x)); return n<0?ITE
 function go(n){ stopRec(); stopTake(); stopSpeak(); bindNext(); st.i=Math.max(0,Math.min(reach(),ITEMS.length-1,n)); save(); show("q"); }
 $("prevBtn").onclick=()=>go(st.i-1);
 bindNext();
-$("tocBtn").onclick=()=>{ stopRec(); stopTake(); stopSpeak(); show("toc"); };
 document.addEventListener("keydown",e=>{ if(view!=="q"||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
   if(e.key==="ArrowRight")$("nextBtn").click(); if(e.key==="ArrowLeft"&&st.i>0)go(st.i-1); });
 
@@ -332,11 +331,11 @@ function renderCheck(){
       :`<p style="margin:0;font-weight:900;font-size:1.3rem;color:var(--ok)">全部 ${ITEMS.length} 題都寫完了！</p>`}
     <div class="row">
       <button class="big" id="submitBtn" type="button" style="background:var(--stu);color:var(--stu-fg)"/*SUB*/${miss.length?" disabled":""}>${miss.length?"寫完才能交卷":"交卷"}</button>
-      <button class="ghost" id="backBtn" type="button">回去檢查題目</button><button class="ghost" id="tocBtn2" type="button">考卷目錄</button>
+      <button class="ghost" id="backBtn" type="button">回去檢查題目</button>
     </div></section>`;
   say1(miss.length?"還有題目沒寫，要回去檢查嗎？":"全部寫完了，可以交卷。");
   document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(+b.dataset.go));
-  $("backBtn").onclick=()=>go(st.i); $("tocBtn2").onclick=()=>show("toc");
+  $("backBtn").onclick=()=>go(st.i);
   $("submitBtn").onclick=()=>{ /*SUB2*/if(ITEMS.some(it=>!isDone(it)))return; st.t1=Date.now(); save(); show("done"); };
 }
 let pdfBlob=null, pages=[];
