@@ -82,6 +82,8 @@ rep('/*SUB*/${miss.length?" disabled":""}>${miss.length?"寫完才能交卷":"�
 rep('/*SUB2*/if(ITEMS.some(it=>!isDone(it)))return; ', '')
 rep('每一題都要作答，才能到下一題；按「上一題」可以回去看寫過的題目。', '測試版可以自由跳題，不用每題都寫；按下面中間的 <b>考卷目錄</b> 可以直接跳到任何一題。')
 # 測試版才有考卷目錄
+rep('padding-inline:2.4rem">${started?"繼續作答":"開始作答"}</button>', 'padding-inline:2.4rem">${started?"繼續作答":"開始作答"}</button>\n      <button class="big" id="homeToc" type="button" style="font-size:1.8rem;min-height:5.5rem;padding-inline:2.4rem;background:#FFD84D;color:#000;border:4px solid #000">📋 考卷目錄</button>')
+rep('  $("startBtn").onclick=()=>{', '  $("homeToc").onclick=()=>{ if(!st.t0){st.t0=Date.now();save();} stopSpeak(); show("toc"); };\n  $("startBtn").onclick=()=>{')
 rep('<button class="prev" id="prevBtn" type="button">← 上一題</button>', '<button class="prev" id="prevBtn" type="button">← 上一題</button>\n  <button class="tocbtn" id="tocBtn" type="button">📋 考卷目錄</button>')
 rep("</style>\n<div class=\"wrap\">", ".bar .wrap{grid-template-columns:1fr 1.15fr 1fr}\n</style>\n<div class=\"wrap\">")
 rep('點題號就能回到寫過的題目。', '點題號就能跳到那一題（測試版）。')

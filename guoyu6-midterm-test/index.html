@@ -499,6 +499,7 @@ function renderHome(){
     <p style="margin:0;font-size:1.6rem;font-weight:900">六年丙班　國語科</p>
     <div class="row">
       <button class="big" id="startBtn" type="button" style="font-size:1.8rem;min-height:5.5rem;padding-inline:2.4rem">${started?"繼續作答":"開始作答"}</button>
+      <button class="big" id="homeToc" type="button" style="font-size:1.8rem;min-height:5.5rem;padding-inline:2.4rem;background:#FFD84D;color:#000;border:4px solid #000">📋 考卷目錄</button>
       ${started?'<button class="ghost" id="resetBtn" type="button">清除答案，重新作答</button>':""}
     </div>
     <ol class="help">
@@ -515,6 +516,7 @@ function renderHome(){
     <div class="qrbox"><div id="homeQR"></div><p>掃描 QR Code 打開這個報讀網站</p></div>
   </section>`;
   drawQR($("homeQR"),SITE_URL,220);
+  $("homeToc").onclick=()=>{ if(!st.t0){st.t0=Date.now();save();} stopSpeak(); show("toc"); };
   $("startBtn").onclick=()=>{ if(!st.t0){st.t0=Date.now();save();} show(st.t1?"done":"q"); window.scrollTo(0,0);};
   if($("resetBtn")) $("resetBtn").onclick=()=>{ $("resetBox").innerHTML=`<div class="warnbox"><p>確定要清除全部答案嗎？清除後不能復原。</p>
       <div class="row"><button class="big" id="yesReset" type="button" style="background:var(--bad);color:#fff">確定清除</button><button class="ghost" id="noReset" type="button">不要清除</button></div></div>`;
