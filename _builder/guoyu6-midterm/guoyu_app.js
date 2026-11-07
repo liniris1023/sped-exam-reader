@@ -102,7 +102,7 @@ function renderHome(){
   $("main").innerHTML=`<section class="screen">
     <p class="eyebrow">115 學年度第一學期　期中學業評量</p>
     <h1>六年級 國語科<br>報讀作答</h1>
-    <div class="facts"><span class="fact">6 大題</span><span class="fact">${ITEMS.length} 題</span><span class="fact">滿分 100 分</span><span class="fact">國字、改錯、照樣照句寫在紙上</span><span class="fact">句型造句用說的</span></div>
+    <div class="facts"><span class="fact">6 大題</span><span class="fact">${ITEMS.length} 題</span><span class="fact">滿分 100 分</span><span class="fact">國字、改錯寫在紙上</span><span class="fact">照樣照句、句型造句用說的</span></div>
     <p style="margin:0;font-size:1.6rem;font-weight:900">六年丙班　國語科</p>
     <div class="row">
       <button class="big" id="startBtn" type="button" style="font-size:1.8rem;min-height:5.5rem;padding-inline:2.4rem">${started?"繼續作答":"開始作答"}</button>
@@ -112,8 +112,7 @@ function renderHome(){
       <li>換到新題目會自動唸題目；按 <b>藍色喇叭</b> 可以一直重聽。</li>
       <li>看注音寫國字、改錯字：把字寫在 <b>大字版考卷</b> 的方格裡，寫好再按大按鈕。</li>
       <li>閱讀測驗、選擇題：點 1、2、3、4 大按鈕選答案。</li>
-      <li>照樣照句：聽完題目，寫在 <b>答案紙</b> 上，寫好再按大按鈕。</li>
-      <li>句型造句：按 <b>紅色大按鈕</b> 開始錄音，說完再按一次停止；可以錄很多次，也可以按「聽第幾次錄音」聽自己說的。</li>
+      <li>照樣照句、句型造句：按 <b>紅色大按鈕</b> 開始錄音，說完再按一次停止；可以錄很多次，也可以按「聽第幾次錄音」聽自己說的。</li>
       <li>感官摹寫：聽完短文，點代號大按鈕選感官。</li>
       <li>每一題都要作答，才能到下一題；按「上一題」可以回去看寫過的題目。</li>
       <li>全部寫完按「交卷」，再按「下載作答 PDF」交給老師。</li>
@@ -388,7 +387,7 @@ function fmt(t){ if(!t)return "—"; const d=new Date(t), p=x=>String(x).padStar
 function sheetBlocks(){
   const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):null;
   const B=[];
-  B.push(`<div><div><h2>115 學年度第一學期 期中學業評量　六年級國語科</h2><p class="sub">作答紀錄（報讀版・學生平板作答；看注音寫國字、改錯字、照樣照句寫在紙上；句型造句用口說錄音）</p></div>
+  B.push(`<div><div><h2>115 學年度第一學期 期中學業評量　六年級國語科</h2><p class="sub">作答紀錄（報讀版・學生平板作答；看注音寫國字、改錯字寫在紙上；照樣照句、句型造句用口說錄音）</p></div>
     <div class="who"><span>六年 <b>丙</b> 班</span><span>姓名 <b>　　　　　</b></span></div>
     <div class="who" style="font-size:12.5px;font-weight:500"><span>交卷時間：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span><span>已作答：${answered()} / ${ITEMS.length} 題</span></div></div>`);
   let auto=0, autoMax=0;
