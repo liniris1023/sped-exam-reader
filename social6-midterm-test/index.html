@@ -294,6 +294,10 @@ u.em{text-decoration-thickness:.12em;text-underline-offset:.2em}
 .padshow .val{font-size:2.4rem}
 .stem{white-space:normal}
 @media (max-width:520px){ .tfs .sym{font-size:5rem} .codes{grid-template-columns:repeat(2,1fr)} .codes .code{font-size:2.8rem} .ckbtn{font-size:1.25rem} }
+.ctxtop{justify-content:flex-start;gap:1rem}
+.ctxtop b{font-size:1.4rem}
+.ctxspk{min-height:4.6rem;font-size:1.4rem;padding:.4rem 1.6rem .4rem 1.1rem;border-width:5px}
+.ctxspk svg{width:2.8rem;height:2.8rem}
 
 .testbar{margin-top:.6rem;border:3px dashed var(--bad);color:var(--bad);border-radius:.7rem;padding:.4rem .8rem;font-weight:900;font-size:.85rem;display:flex;flex-wrap:wrap;gap:.4rem .8rem;align-items:center}
 .testbar .tool{color:var(--fg)}
@@ -445,7 +449,7 @@ function renderQ(keepScroll){
   let h=`<section class="screen" style="gap:.8rem">`+secHead(s);
   if(it.t==="match"){
     const g=s.groups[it.g];
-    h+=`<div class="passage"><div class="ptop"><b>${esc(g.title)}</b><button class="speaker pill" id="ctxSpk" type="button">${SPK}聽說明</button></div><p class="ctxp" id="ctx">${M(g.ctx)}</p></div>`;
+    h+=`<div class="passage"><div class="ptop ctxtop"><b>${esc(g.title)}</b><button class="speaker pill ctxspk" id="ctxSpk" type="button" aria-label="聽說明">${SPK}聽說明</button></div><p class="ctxp" id="ctx">${M(g.ctx)}</p></div>`;
   }
   h+=`<div class="card"><div class="qhead"><span class="qnum">${esc(it.lab)}</span><button class="speaker pill" id="stemSpk" type="button" aria-label="唸題目">${SPK}唸題目</button></div>`;
   if(it.t==="tf"){
