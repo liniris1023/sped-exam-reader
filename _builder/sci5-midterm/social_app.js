@@ -8,10 +8,10 @@ const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const SPK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
 const TICK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>';
 const FS=[20,24,28,32], RATES=[["慢",0.8],["正常",1],["快",1.2]];
-const KEY="sci6-midterm-1151-pub";
+const KEY="sci5-midterm-1151-pub";
 let st={ans:{},i:0,fs:1,hc:false,rate:1,t0:null,t1:null};
 try{const x=JSON.parse(localStorage.getItem(KEY)||"null"); if(x&&typeof x==="object")st=Object.assign(st,x);}catch(e){}
-const SITE_URL="https://liniris1023.github.io/sped-exam-reader/sci6-midterm/";
+const SITE_URL="https://liniris1023.github.io/sped-exam-reader/sci5-midterm/";
 let TEACHER=false;
 function save(){ if(TEACHER)return; try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){} }
 
@@ -88,9 +88,9 @@ function renderHome(){
   const started=answered()>0||st.t0;
   $("main").innerHTML=`<section class="screen">
     <p class="eyebrow">115 學年度第一學期　期中學業評量</p>
-    <h1>自然科<br>報讀作答</h1>
+    <h1>五年級 自然科<br>報讀作答</h1>
     <div class="facts"><span class="fact">8 大題</span><span class="fact">${ITEMS.length} 小題</span><span class="fact">滿分 100 分</span><span class="fact">全部在平板上作答</span></div>
-    <p style="margin:0;font-size:1.6rem;font-weight:900">六年丙班</p>
+    <p style="margin:0;font-size:1.6rem;font-weight:900">五年級　自然科</p>
     <div class="row">
       <button class="big" id="startBtn" type="button" style="font-size:1.8rem;min-height:5.5rem;padding-inline:2.4rem">${started?"繼續作答":"開始作答"}</button>
       ${started?'<button class="ghost" id="resetBtn" type="button">清除答案，重新作答</button>':""}
@@ -222,7 +222,7 @@ function renderDone(){
   $("main").innerHTML=`<section class="screen">
     <div class="done-mark" aria-hidden="true">✓</div>
     <h1>${TEACHER?"老師批改：作答紀錄":"交卷完成"}</h1>
-    <p style="margin:0;font-weight:700">六年丙班　已答 ${answered()} / ${ITEMS.length} 題　交卷 ${fmt(st.t1)}</p>
+    <p style="margin:0;font-weight:700">五年級　已答 ${answered()} / ${ITEMS.length} 題　交卷 ${fmt(st.t1)}</p>
     <div class="row"><button class="big" id="pdfBtn" type="button" disabled>正在製作作答 PDF…</button>
       ${TEACHER?'<button class="ghost" id="leaveBtn" type="button">離開批改畫面</button>':'<button class="ghost" id="reviewBtn" type="button">回去修改答案</button>'}</div>
     <p class="status" id="pdfStatus" role="status"></p>
@@ -255,8 +255,8 @@ function fmt(t){ if(!t)return "—"; const d=new Date(t), p=x=>String(x).padStar
 function sheetBlocks(){
   const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):null;
   const B=[];
-  B.push(`<div><div><h2>115 學年度第一學期 期中學業評量　自然科</h2><p class="sub">作答紀錄（報讀版・學生平板作答）</p></div>
-    <div class="who"><span>六年 <b>丙</b> 班</span><span>姓名 <b>　　　　　</b></span></div>
+  B.push(`<div><div><h2>115 學年度第一學期 期中學業評量　五年級自然科</h2><p class="sub">作答紀錄（報讀版・學生平板作答）</p></div>
+    <div class="who"><span>五年 <b>　</b> 班</span><span>姓名 <b>　　　　　</b></span></div>
     <div class="who" style="font-size:12.5px;font-weight:500"><span>交卷時間：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span><span>已作答：${answered()} / ${ITEMS.length} 題</span></div></div>`);
   let auto=0;
   const rows=SECS.map(s=>{ const p=s.items.reduce((t,it)=>t+score(it),0); auto+=p;
@@ -315,7 +315,7 @@ async function buildPDF(){
 function renderSheetFallback(){ const prev=$("sheetPrev"); if(!prev)return; prev.innerHTML=""; layoutPages().forEach(p=>{ const c=p.cloneNode(true); c.style.height="auto"; const w=document.createElement("div"); w.style.overflowX="auto"; w.appendChild(c); prev.appendChild(w); }); }
 async function downloadPDF(){
   const s=$("pdfStatus"); s.className="status"; s.textContent="";
-  const fname="自然期中評量_六丙.pdf";
+  const fname="五上自然期中評量.pdf";
   try{
     const file=new File([pdfBlob],fname,{type:"application/pdf"});
     if(navigator.canShare&&navigator.canShare({files:[file]})&&/iPad|iPhone|Android/i.test(navigator.userAgent)){

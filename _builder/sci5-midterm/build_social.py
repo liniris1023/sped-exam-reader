@@ -5,7 +5,7 @@ import edge_tts
 from data_social import build, UI, ui_extra
 
 REPO = "/home/claude/sped-exam-reader"
-OUT = f"{REPO}/sci6-midterm"
+OUT = f"{REPO}/sci5-midterm"
 os.makedirs(f"{OUT}/a", exist_ok=True)
 import shutil
 shutil.copytree(os.path.join(os.path.dirname(os.path.abspath(__file__)),"img"), f"{OUT}/img", dirs_exist_ok=True)
@@ -48,7 +48,7 @@ aud = {k: v for k, v in aud.items() if os.path.exists(f"{OUT}/{v}") and os.path.
 
 src = open(f"{REPO}/math6-exam1/index.html", encoding="utf-8").read()
 head = src[:src.index("<script>\nconst DATA=")]
-head = head.replace("<title>六上數學第一次評量報讀</title>", "<title>自然期中評量報讀</title>")
+head = head.replace("<title>六上數學第一次評量報讀</title>", "<title>五上自然期中評量報讀</title>")
 head = head.replace('<meta charset="utf-8">', '<meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0">',1)
 for a_, b_ in [("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js","lib/html2canvas.min.js"),
                ("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js","lib/jspdf.umd.min.js"),
@@ -61,26 +61,26 @@ js = js.replace("/*DATA*/", json.dumps({"secs": secs, "aud": aud}, ensure_ascii=
 open(f"{OUT}/index.html", "w", encoding="utf-8").write(head + "<script>\n" + js + "</script>\n\n</body></html>\n")
 print("clips", len(aud), "of", len(texts))
 
-# ---------- 測試版（sci6-midterm-test）：可自由跳題、一鍵填答、直接交卷；音檔共用正式版 ----------
+# ---------- 測試版（sci5-midterm-test）：可自由跳題、一鍵填答、直接交卷；音檔共用正式版 ----------
 html = open(f"{OUT}/index.html", encoding="utf-8").read()
 def rep(a, b):
     global html
     assert a in html, a[:60]
     html = html.replace(a, b)
-rep("<title>自然期中評量報讀</title>", "<title>自然期中評量報讀測試版</title>")
-rep('"a/', '"../sci6-midterm/a/')
-rep('src="img/${G.img}', 'src="../sci6-midterm/img/${G.img}')
-rep('src="lib/', 'src="../sci6-midterm/lib/')
+rep("<title>五上自然期中評量報讀</title>", "<title>五上自然期中評量報讀測試版</title>")
+rep('"a/', '"../sci5-midterm/a/')
+rep('src="img/${G.img}', 'src="../sci5-midterm/img/${G.img}')
+rep('src="lib/', 'src="../sci5-midterm/lib/')
 rep("</style>\n<div class=\"wrap\">", ".testbar{margin-top:.6rem;border:3px dashed var(--bad);color:var(--bad);border-radius:.7rem;padding:.4rem .8rem;font-weight:900;font-size:.85rem;display:flex;flex-wrap:wrap;gap:.4rem .8rem;align-items:center}\n.testbar .tool{color:var(--fg)}\n</style>\n<div class=\"wrap\">")
 rep('  <main id="main"></main>', '<div class="testbar" role="note"><b>測試版</b>　可以自由跳題，不用每題都寫；作答不會影響學生的正式版。\n  <span class="row" style="gap:.4rem"><button type="button" class="tool" id="tFill">一鍵隨機填答</button><button type="button" class="tool" id="tSubmit">直接交卷看 PDF</button><button type="button" class="tool" id="tClear">清除全部答案</button></span></div>\n  <main id="main"></main>')
-rep('const KEY="sci6-midterm-1151-pub";', 'const KEY="sci6-midterm-1151-pub-test";')
-rep('sped-exam-reader/sci6-midterm/";', 'sped-exam-reader/sci6-midterm-test/";')
+rep('const KEY="sci5-midterm-1151-pub";', 'const KEY="sci5-midterm-1151-pub-test";')
+rep('sped-exam-reader/sci5-midterm/";', 'sped-exam-reader/sci5-midterm-test/";')
 rep('$("nextBtn").classList.toggle("locked",!isDone(it));', '$("nextBtn").classList.toggle("locked",false);')
 rep("function reach(){ const n", "function reach(){ return ITEMS.length-1; const n")
 rep("  if(!isDone(it)){ say1(", "  if(false){ say1(")
 rep('${miss.length?" disabled":""}>${miss.length?"寫完才能交卷":"交卷"}', '>${miss.length?"還是要交卷（測試）":"交卷"}')
 rep('$("submitBtn").onclick=()=>{ if(ITEMS.some(it=>!isDone(it)))return; st.t1', '$("submitBtn").onclick=()=>{ st.t1')
-rep('const fname="自然期中評量_六丙.pdf";', 'const fname="自然期中評量_測試版.pdf";')
+rep('const fname="五上自然期中評量.pdf";', 'const fname="五上自然期中評量_測試版.pdf";')
 rep("applySettings();\nif(!checkHash())", """$("tFill").onclick=()=>{ ITEMS.forEach(it=>{ const r=n=>Math.floor(Math.random()*n);
   if(it.t==="tf")st.ans[it.id]=r(2); else if(it.t==="choice")st.ans[it.id]=r(it.o.length);
   else if(it.t==="text")st.ans[it.id]=["細胞","器官","組織","個體"][r(4)];
@@ -92,6 +92,6 @@ $("tSubmit").onclick=()=>{ stopSpeak(); if(!st.t0)st.t0=Date.now(); st.t1=Date.n
 $("tClear").onclick=()=>{ stopSpeak(); st.ans={}; st.i=0; st.t0=null; st.t1=null; save(); show("home"); };
 applySettings();
 if(!checkHash())""")
-os.makedirs(f"{REPO}/sci6-midterm-test", exist_ok=True)
-open(f"{REPO}/sci6-midterm-test/index.html", "w", encoding="utf-8").write(html)
+os.makedirs(f"{REPO}/sci5-midterm-test", exist_ok=True)
+open(f"{REPO}/sci5-midterm-test/index.html", "w", encoding="utf-8").write(html)
 print("test version written")
