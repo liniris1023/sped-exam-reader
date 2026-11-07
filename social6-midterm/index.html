@@ -473,6 +473,8 @@ function renderQ(keepScroll){
   // wire
   $("secSpk").onclick=()=>speak([{segs:s.introSay}]);
   $("stemSpk").onclick=()=>{ const parts=[{segs:it.stemSay,el:$("stem")}];
+    if(it.t==="match"){ const g=s.groups[it.g], bs=[...document.querySelectorAll("[data-m]")];
+      parts.unshift({segs:g.ctxSay,el:$("ctx")}); g.bankSay.forEach((seg,k)=>parts.push({segs:[seg],el:bs[k]})); }
     if(it.optSay){ const bs=[...document.querySelectorAll("[data-k],[data-ck]")]; it.optSay.forEach((seg,k)=>parts.push({segs:seg,el:bs[k]})); }
     speak(parts); };
   if($("ctxSpk")) $("ctxSpk").onclick=()=>speak([{segs:s.groups[it.g].ctxSay,el:$("ctx")}]);
