@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head><body>
 <title>六上社會期中評量報讀</title>
@@ -495,7 +495,7 @@ function renderQ(keepScroll){
   const last=st.i===ITEMS.length-1; $("nextBtn").textContent=last?"檢查並交卷 →":"下一題 →"; $("nextBtn").classList.toggle("finish",last);
   prefetch([...it.stemSay,...(it.optSay||[]).flat(),...s.introSay,...(it.t==="match"?[...s.groups[it.g].ctxSay,...s.groups[it.g].bankSay]:[])]);
   setProgress();
-  if(keepScroll) window.scrollTo(0,y); else window.scrollTo(0,0);
+  if(keepScroll) window.scrollTo(0,y); else { window.scrollTo(0,0); $("stemSpk").onclick(); } /* 換到新題目就自動唸 */
 }
 function setAns(v){ const it=ITEMS[st.i]; if(v===""||v==null) delete st.ans[it.id]; else st.ans[it.id]=v; if(st.t1)st.t1=null; save(); renderQ(true); }
 function pick(k,msg){ const it=ITEMS[st.i]; st.ans[it.id]=k; if(st.t1)st.t1=null; save(); renderQ(true); say1(msg); }
