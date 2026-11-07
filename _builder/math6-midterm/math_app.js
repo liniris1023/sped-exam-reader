@@ -82,7 +82,7 @@ $("homeBtn").onclick=()=>{stopSpeak(); if(TEACHER){ try{history.replaceState(nul
 const isDone=it=>{const v=st.ans[it.id]; return v!=null&&String(v).trim()!=="";};
 const answered=()=>ITEMS.filter(isDone).length;
 function setProgress(){ $("prog").textContent = view==="q" ? `第 ${st.i+1} / ${ITEMS.length} 題　已答 ${answered()}` : `已答 ${answered()} / ${ITEMS.length}`; }
-function show(v){ view=v; $("bar").hidden = v!=="q"; ({home:renderHome,q:renderQ,check:renderCheck,done:renderDone})[v](); setProgress(); if(v!=="q")window.scrollTo(0,0); }
+function show(v){ view=v; $("bar").hidden = v!=="q"&&v!=="toc"; ({home:renderHome,q:renderQ,check:renderCheck,done:renderDone,toc:renderToc})[v](); setProgress(); if(v!=="q")window.scrollTo(0,0); }
 const symOf=it=>SECS[it.si].sym||TF;
 const mTxt=(it,v)=>ansStr(v).split("").map(d=>SECS[it.si].groups[it.g].bank[+d][0]).join("、");
 function showVal(it,v){ if(v==null||v==="")return ""; if(it.kind==="multi")return ansStr(v).split("").map(d=>it.mk[+d]).join("、"); return String(v); }
@@ -109,6 +109,7 @@ function renderHome(){
       <li>選擇題：點 1、2、3、4 大按鈕選答案。</li>
       <li>填填看：用下面的數字按鈕填格子；點題目裡的格子可以換格子。</li>
       <li>算算看、做做看：聽完題目，在 <b>答案紙</b> 上寫算式和答案，寫好再按大按鈕。</li>
+      <li>可以自由按「上一題」「下一題」；按下面中間的 <b>考卷目錄</b> 可以直接跳到任何一題。</li>
       <li>有圖片的題目，點圖片可以放大。</li>
       <li>寫完按「交卷」，再按「下載作答 PDF」交給老師。</li>
     </ol>
@@ -178,10 +179,8 @@ function renderQ(keepScroll){
     h+=`<div class="padshow"><span class="val${on?"":" empty"}" id="val">${on?"勾了 "+ckTxt(on):"點一下打勾，再點一次取消"}</span><button class="speaker pill" id="mySpk" type="button">${SPK}唸我勾的</button></div>`;
   }
   h+=`</div>`;
-  h+=`<details class="nav" id="navd"><summary>全部題目（點題號可跳題）</summary>`+SECS.map(sx=>`<div class="navsec"><b>${sx.no}、${M(sx.zh)}</b><div class="grid">${sx.items.map(x=>{const n=ITEMS.indexOf(x);return `<button type="button" data-go="${n}" class="${isDone(x)?"done":""}" aria-current="${n===st.i}"${n>reach()?" disabled":""}>${esc(x.lab)}</button>`;}).join("")}</div></div>`).join("")+`</details>`;
   h+=`</section>`;
-  const navOpen=$("navd")&&$("navd").open;
-  $("main").innerHTML=h; if(navOpen)$("navd").open=true;
+  $("main").innerHTML=h;
   // wire
   $("secSpk").onclick=()=>speak([{segs:s.introSay}]);
   const readStem=(auto)=>{ const parts=[{segs:it.stemSay,el:$("stem")}];
@@ -206,7 +205,7 @@ function renderQ(keepScroll){
     v=had?v.replace(d,""):v+d; v=v.split("").sort().join(""); setAns(v); say1((had?it.offSay:it.onSay)[k]); });
   document.querySelectorAll("[data-bk]").forEach(b=>b.onclick=()=>jumpBlank(s,+b.dataset.bk));
   if($("paperDone")) $("paperDone").onclick=()=>{ st.ans[it.id]=1; if(st.t1)st.t1=null; save(); if(st.i===ITEMS.length-1){stopSpeak(); show("check");} else go(st.i+1); };
-  if($("txtin")){ const ti=$("txtin"); ti.oninput=()=>{ const v=ti.value; if(v.trim()==="") delete st.ans[it.id]; else st.ans[it.id]=v.trim(); if(st.t1)st.t1=null; save(); $("nextBtn").classList.toggle("locked",!isDone(it)); setProgress(); }; }
+  if($("txtin")){ const ti=$("txtin"); ti.oninput=()=>{ const v=ti.value; if(v.trim()==="") delete st.ans[it.id]; else st.ans[it.id]=v.trim(); if(st.t1)st.t1=null; save(); $("nextBtn").classList.remove("locked"); setProgress(); }; }
   document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const k=+b.dataset.s; speak([{segs:it.optSay[k],el:b.previousElementSibling}]);});
   document.querySelectorAll("[data-ck]").forEach(b=>b.onclick=()=>{ const d=b.dataset.ck; let v=ansStr(st.ans[it.id]); const had=v.includes(d);
     v=had?v.replace(d,""):v+d; v=v.split("").sort().join(""); setAns(v); say1((had?"取消":"勾了")+(+d+1)+"號"); });
@@ -220,7 +219,7 @@ function renderQ(keepScroll){
   document.querySelectorAll(".zoomable").forEach(im=>im.onclick=()=>zoom(im.src,im.alt));
   // bottom bar
   $("prevBtn").disabled=st.i===0;
-  $("nextBtn").classList.toggle("locked",!isDone(it));
+  $("nextBtn").classList.remove("locked");
   const last=st.i===ITEMS.length-1; $("nextBtn").textContent=last?"檢查並交卷 →":"下一題 →"; $("nextBtn").classList.toggle("finish",last);
   prefetch([...it.stemSay,...(it.optSay||[]).flat(),...s.introSay,...(G?G.ctxSay:[]),...(it.t==="match"?G.bankSay:[]),...(it.mkSegs||[])]);
   setProgress();
@@ -234,14 +233,29 @@ function jumpBlank(s,k){ const it=s.items.find(x=>x.k===k); if(!it)return; const
   if(n>reach()){ say1("請先寫好答案，才能到下一題。"); return; }
   if(n!==st.i){ stopSpeak(); st.i=n; save(); renderQ(true); }
   speak([{segs:it.stemSay,el:$("stem")}]); }
-function reach(){ const n=ITEMS.findIndex(x=>!isDone(x)); return n<0?ITEMS.length-1:n; }
-function go(n){ stopSpeak(); st.i=Math.max(0,Math.min(ITEMS.length-1,n)); save(); show("q"); }
+function reach(){ return ITEMS.length-1; } /* 數學要寫在答案紙，學生可以自由換題 */
+function go(n){ stopSpeak(); bindNext(); st.i=Math.max(0,Math.min(ITEMS.length-1,n)); save(); show("q"); }
 $("prevBtn").onclick=()=>go(st.i-1);
-$("nextBtn").onclick=()=>{ const it=ITEMS[st.i];
-  if(!isDone(it)){ say1(it.t==="paper"?"請先在答案紙寫好，再按這個大按鈕。":it.t==="fill"&&it.kind!=="multi"?"請先寫好答案，才能到下一題。":"請先選一個答案，才能到下一題。"); const b=$("nextBtn"); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); return; }
-  if(st.i===ITEMS.length-1){stopSpeak(); show("check");} else go(st.i+1); };
+bindNext();
+$("tocBtn").onclick=()=>{ stopSpeak(); show("toc"); };
 document.addEventListener("keydown",e=>{ if(view!=="q"||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
   if(e.key==="ArrowRight")$("nextBtn").click(); if(e.key==="ArrowLeft"&&st.i>0)go(st.i-1); });
+
+/* ---------- 考卷目錄 ---------- */
+function renderToc(){
+  $("main").innerHTML=`<section class="screen toc">
+    <h1>考卷目錄</h1>
+    <p class="tochelp">點題號就能跳到那一題。<span class="tdone">✓ 綠色</span>＝已經寫好，<span class="tcur">黃框</span>＝現在這一題。</p>
+    ${SECS.map(sx=>`<div class="tocsec"><h2>${sx.no}、${M(sx.zh)}<small>（${sx.pct} 分）</small></h2><div class="tocgrid">${sx.items.map(x=>{const n=ITEMS.indexOf(x);
+      return `<button type="button" data-go="${n}" class="${isDone(x)?"done":""}${n===st.i?" cur":""}" aria-label="${esc(sx.no+"之"+x.lab)}${isDone(x)?"，已寫好":"，還沒寫"}">${isDone(x)?'<i aria-hidden="true">✓</i>':""}${esc(x.lab)}</button>`;}).join("")}</div></div>`).join("")}
+    <div class="row"><button class="big" id="tocBack" type="button">回到第 ${st.i+1} 題</button><button class="ghost" id="tocCheck" type="button">檢查並交卷</button></div>
+  </section>`;
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(+b.dataset.go));
+  $("tocBack").onclick=()=>go(st.i); $("tocCheck").onclick=()=>{ stopSpeak(); show("check"); };
+  $("prevBtn").disabled=true; $("nextBtn").textContent="回到題目 →"; $("nextBtn").classList.remove("finish"); $("nextBtn").onclick=()=>go(st.i);
+  say1("考卷目錄。點題號，就能跳到那一題。");
+}
+function bindNext(){ $("nextBtn").onclick=()=>{ if(st.i===ITEMS.length-1){stopSpeak(); show("check");} else go(st.i+1); }; }
 
 /* ---------- check & submit ---------- */
 function renderCheck(){
@@ -251,13 +265,13 @@ function renderCheck(){
     ${miss.length?`<div class="warnbox"><p>還有 ${miss.length} 題沒有寫：</p><div class="miss">${miss.map(it=>`<button type="button" data-go="${ITEMS.indexOf(it)}">${SECS[it.si].no}-${esc(it.lab)}</button>`).join("")}</div></div>`
       :`<p style="margin:0;font-weight:900;font-size:1.3rem;color:var(--ok)">全部 ${ITEMS.length} 題都寫完了！</p>`}
     <div class="row">
-      <button class="big" id="submitBtn" type="button" style="background:var(--stu);color:var(--stu-fg)"${miss.length?" disabled":""}>${miss.length?"寫完才能交卷":"交卷"}</button>
-      <button class="ghost" id="backBtn" type="button">回去檢查題目</button>
+      <button class="big" id="submitBtn" type="button" style="background:var(--stu);color:var(--stu-fg)">${miss.length?"還是要交卷":"交卷"}</button>
+      <button class="ghost" id="backBtn" type="button">回去檢查題目</button><button class="ghost" id="tocBtn2" type="button">考卷目錄</button>
     </div></section>`;
-  say1(miss.length?"還有題目沒寫，要回去檢查嗎？":"全部寫完了，可以交卷。");
+  say1(miss.length?"還有題目沒寫，要回去檢查嗎？可以按考卷目錄找題目。":"全部寫完了，可以交卷。");
   document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(+b.dataset.go));
-  $("backBtn").onclick=()=>go(st.i);
-  $("submitBtn").onclick=()=>{ if(ITEMS.some(it=>!isDone(it)))return; st.t1=Date.now(); save(); show("done"); };
+  $("backBtn").onclick=()=>go(st.i); $("tocBtn2").onclick=()=>show("toc");
+  $("submitBtn").onclick=()=>{ st.t1=Date.now(); save(); show("done"); };
 }
 let pdfBlob=null, pages=[];
 function renderDone(){

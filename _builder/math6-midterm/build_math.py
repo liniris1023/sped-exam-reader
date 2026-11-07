@@ -55,6 +55,8 @@ for a_, b_ in [("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2c
                ("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js","lib/qrcode.min.js")]:
     assert a_ in head; head = head.replace(a_, b_)
 extra = open(os.path.join(os.path.dirname(__file__), "math_extra.css"), encoding="utf-8").read()
+head = head.replace('<button class="prev" id="prevBtn" type="button">← 上一題</button>', '<button class="prev" id="prevBtn" type="button">← 上一題</button>\n  <button class="tocbtn" id="tocBtn" type="button">📋 考卷目錄</button>', 1)
+assert 'id="tocBtn"' in head
 head = head.replace('<div class="wrap">\n  <div class="tools"', "<style>\n" + extra + "\n</style>\n" + '<div class="wrap">\n  <div class="tools"', 1)
 js = open(os.path.join(os.path.dirname(__file__), "math_app.js"), encoding="utf-8").read()
 js = js.replace("/*DATA*/", json.dumps({"secs": secs, "aud": aud}, ensure_ascii=False))
@@ -75,11 +77,6 @@ rep("</style>\n<div class=\"wrap\">", ".testbar{margin-top:.6rem;border:3px dash
 rep('  <main id="main"></main>', '<div class="testbar" role="note"><b>測試版</b>　可以自由跳題，不用每題都寫；作答不會影響學生的正式版。\n  <span class="row" style="gap:.4rem"><button type="button" class="tool" id="tFill">一鍵隨機填答</button><button type="button" class="tool" id="tSubmit">直接交卷看 PDF</button><button type="button" class="tool" id="tClear">清除全部答案</button></span></div>\n  <main id="main"></main>')
 rep('const KEY="math6-midterm-1151-pub";', 'const KEY="math6-midterm-1151-pub-test";')
 rep('sped-exam-reader/math6-midterm/";', 'sped-exam-reader/math6-midterm-test/";')
-rep('$("nextBtn").classList.toggle("locked",!isDone(it));', '$("nextBtn").classList.toggle("locked",false);')
-rep("function reach(){ const n", "function reach(){ return ITEMS.length-1; const n")
-rep("  if(!isDone(it)){ say1(", "  if(false){ say1(")
-rep('${miss.length?" disabled":""}>${miss.length?"寫完才能交卷":"交卷"}', '>${miss.length?"還是要交卷（測試）":"交卷"}')
-rep('$("submitBtn").onclick=()=>{ if(ITEMS.some(it=>!isDone(it)))return; st.t1', '$("submitBtn").onclick=()=>{ st.t1')
 rep('const fname="六上數學期中評量.pdf";', 'const fname="六上數學期中評量_測試版.pdf";')
 rep("applySettings();\nif(!checkHash())", """$("tFill").onclick=()=>{ ITEMS.forEach(it=>{ const r=n=>Math.floor(Math.random()*n);
   if(it.t==="choice")st.ans[it.id]=r(it.o.length);
