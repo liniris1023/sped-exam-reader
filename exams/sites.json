@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-07T15:57:06.164Z",
+ "updated": "2026-11-07T15:57:45.636Z",
  "sites": [
   {
    "id": "guoyu6-midterm",
@@ -65,23 +65,11 @@
    "test": "sci5-midterm-test/",
    "note": "",
    "added": 1793900000004
-  },
-  {
-   "id": "math6-exam1",
-   "title": "六上數學第一次評量報讀（第一～四單元）",
-   "year": 115,
-   "grade": 6,
-   "term": "上",
-   "subject": "數學",
-   "type": "其他評量",
-   "url": "math6-exam1/",
-   "test": "",
-   "note": "",
-   "added": 1793900000005
   }
  ],
  "ignore": [
   "guoyu-l1l3",
-  "guoyu-l4l6"
+  "guoyu-l4l6",
+  "math6-exam1"
  ]
 }
