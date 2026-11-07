@@ -1,0 +1,70 @@
+/* social additions: 是非 ○✕, 配合代號, 勾選 */
+.tfs button{min-height:11rem}
+.tfs .sym{font-size:7rem;line-height:1}
+.tfs .w{font-size:1.6rem}
+.codes{display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:.8rem}
+.codes button{border:5px solid var(--line);background:var(--surface);border-radius:1.2rem;min-height:8rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;padding:.4rem}
+.codes .code{font-family:var(--en);font-size:3.6rem;font-weight:700;line-height:1}
+.codes .cw{font-size:1.25rem;font-weight:900;line-height:1.3;text-align:center}
+.codes button[aria-checked="true"]{border-color:var(--accent);background:var(--sel);outline:5px solid var(--accent)}
+.codes button[aria-checked="true"] .cw{color:var(--accent)}
+.mstem{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;font-size:1.7rem}
+.mbx{min-width:2.4em;min-height:1.6em;font-family:var(--en);font-size:1.5em;cursor:default}
+.ctxp{margin:0;font-size:1.25rem;font-weight:700;line-height:1.7;border-radius:.4rem;padding:0 .2rem}
+.ckbtn .ckbox{border:5px solid currentColor;border-radius:.5rem}
+.ckbtn .cno{font-size:1.1em;margin-right:.2rem}
+.ckbtn{font-size:1.45rem}
+.padshow .val{font-size:2.4rem}
+.stem{white-space:normal}
+@media (max-width:520px){ .tfs .sym{font-size:5rem} .codes{grid-template-columns:repeat(2,1fr)} .codes .code{font-size:2.8rem} .ckbtn{font-size:1.25rem} }
+.ctxtop{justify-content:flex-start;gap:1rem}
+.ctxtop b{font-size:1.4rem}
+.ctxspk{min-height:4.6rem;font-size:1.4rem;padding:.4rem 1.6rem .4rem 1.1rem;border-width:5px}
+.ctxspk svg{width:2.8rem;height:2.8rem}
+.gfig{max-width:40rem;align-self:center}
+.longp{font-size:1.35rem;line-height:1.9;white-space:normal}
+.txtwrap{display:flex;flex-wrap:wrap;gap:.8rem;align-items:center}
+.txtin{flex:1 1 16rem;min-width:0;font-size:2.6rem;font-weight:900;padding:.5rem .9rem;min-height:5rem;border:5px solid var(--accent);border-radius:1rem;background:var(--surface);color:var(--fg);font-family:inherit}
+.txtin:focus{outline:5px solid var(--accent);outline-offset:3px}
+.codes button[role="checkbox"][aria-checked="true"]{border-color:var(--accent);background:var(--sel);outline:5px solid var(--accent)}
+/* math6-midterm additions */
+.frkeys{grid-template-columns:repeat(4,1fr)}
+.frkeys button{min-height:7rem;font-size:2.4rem}
+.frkeys .mx{font-size:1em}
+.padshow .val .mx{font-size:.8em}
+.mline .txtin{font-size:2rem}
+.mline .bx b .mx{font-size:.75em}
+.mfig{max-width:22rem}
+@media (max-width:520px){ .frkeys{grid-template-columns:repeat(4,1fr)} .frkeys button{min-height:5.4rem;font-size:1.8rem} }
+
+/* 考卷目錄 */
+.bar .wrap{grid-template-columns:1fr 1.15fr 1fr}
+.bar .tocbtn{background:#FFD84D;color:#000;border:4px solid #000;font-size:1.5rem;min-height:4.8rem;display:flex;align-items:center;justify-content:center;gap:.4rem}
+[data-contrast="hc"] .bar .tocbtn{background:#FFFF00;color:#000}
+.toc h1{margin:0}
+.tochelp{margin:0;font-size:1.2rem;font-weight:700;line-height:1.7}
+.tochelp .tdone{color:var(--ok);font-weight:900}
+.tochelp .tcur{outline:4px solid #E0A800;padding:0 .2rem;border-radius:.3rem}
+.tocsec h2{font-size:1.5rem;margin:.4rem 0 .6rem}
+.tocsec h2 small{font-size:1rem;margin-left:.4rem;color:var(--muted)}
+.tocgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(7.2rem,1fr));gap:.7rem}
+.tocgrid button{position:relative;min-height:5.6rem;border:4px solid var(--line);border-radius:1rem;background:var(--surface);color:var(--fg);font-size:1.9rem;font-weight:900;font-variant-numeric:tabular-nums}
+.tocgrid button.done{background:var(--ok);border-color:var(--ok);color:#000}
+.tocgrid button.cur{outline:6px solid #E0A800;outline-offset:2px}
+.tocgrid button i{position:absolute;top:.15rem;right:.45rem;font-style:normal;font-size:1.1rem}
+@media (max-width:520px){ .bar .tocbtn{font-size:1.2rem} .tocgrid{grid-template-columns:repeat(3,1fr)} .tocgrid button{font-size:1.5rem;min-height:4.8rem} }
+
+/* guoyu6-midterm：直式注音、改錯字 */
+.zyv{display:inline-flex;align-items:center;vertical-align:middle;border:4px dashed var(--accent);border-radius:.6rem;padding:.1em .15em .1em .25em;margin:0 .15em;line-height:1;background:var(--surface)}
+.zys{display:inline-flex;flex-direction:column;align-items:center;font-style:normal}
+.zys i{font-style:normal;font-size:.62em;line-height:1.02;font-weight:700}
+.zys i.zl{font-size:.5em}
+.zt{font-size:.5em;font-weight:900;align-self:flex-start;margin-left:.05em;min-width:.35em}
+.zybig{font-size:4.6rem;line-height:1.4;font-family:"Kaiti TC","BiauKai","DFKai-SB","標楷體","TW-Kai","Noto Serif TC",serif;letter-spacing:.08em;display:flex;align-items:center;flex-wrap:wrap}
+.zybig .zyv{font-size:1em}
+.subline{margin:0;font-size:1.35rem;line-height:1.8;font-weight:700;color:var(--muted)}
+.subline u.em{color:var(--fg)}
+.tocgrid button.lockd{opacity:.45;border-style:dashed}
+.pg .zyv{border-width:2px;font-size:1.3em}
+.pg .zybig{font-size:1.6em}
+@media (max-width:520px){ .zybig{font-size:3.4rem} }
