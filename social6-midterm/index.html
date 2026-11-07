@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>
+<title>六上社會期中評量報讀</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Noto+Sans+TC:wght@500;700;900&display=swap">
+<style>
+/* Layout: one question per screen; sticky tool bar on top; big prev/next bar fixed at bottom (same frame as 自然/社會作業簿報讀, scaled up) */
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --fg:#101317; --muted:#424A57; --line:#B8C0CC;
+  --accent:#0A4DA3; --accent-fg:#FFFFFF; --sel:#DCE8FA; --listen:#6A1B9A; --listen-bg:#F1E6F8;
+  --ok:#1C7A33; --bad:#B3261E; --focus:#FF9F00; --reading:#FFF1B8; --stu:#C2410C; --stu-fg:#FFFFFF;
+  --zh:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Heiti TC",sans-serif;
+  --en:"Andika","Noto Sans TC","Arial Rounded MT Bold",Arial,sans-serif;
+  font-size:24px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0E1013; --surface:#1A1D22; --fg:#F5F7FA; --muted:#BCC3CD; --line:#4A525E;
+  --accent:#FFD54A; --accent-fg:#111111; --sel:#3B3414; --listen:#D7A6F2; --listen-bg:#2B1D33;
+  --ok:#7EDB91; --bad:#FF8F86; --focus:#FFD54A; --reading:#4A3F12; --stu:#FFA94D; --stu-fg:#111111; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E1013; --surface:#1A1D22; --fg:#F5F7FA; --muted:#BCC3CD; --line:#4A525E;
+  --accent:#FFD54A; --accent-fg:#111111; --sel:#3B3414; --listen:#D7A6F2; --listen-bg:#2B1D33;
+  --ok:#7EDB91; --bad:#FF8F86; --focus:#FFD54A; --reading:#4A3F12; --stu:#FFA94D; --stu-fg:#111111; color-scheme:dark }
+:root[data-contrast="hc"]{
+  --bg:#000000; --surface:#000000; --fg:#FFEB3B; --muted:#FFEB3B; --line:#FFEB3B;
+  --accent:#FFEB3B; --accent-fg:#000000; --sel:#3D3800; --listen:#FFFFFF; --listen-bg:#1A1A1A;
+  --ok:#5CFF8A; --bad:#FF7070; --focus:#FFFFFF; --reading:#3D3800; --stu:#FFEB3B; --stu-fg:#000000; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--zh);font-size:1rem;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-bottom:calc(7.5rem + env(safe-area-inset-bottom,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
+.wrap{max-width:52rem;margin:0 auto}
+.en{font-family:var(--en)}
+svg{flex:none}
+
+/* tool bar */
+.tools{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:2px solid var(--line);padding-block:.45rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.tool{border:2px solid var(--line);background:var(--surface);border-radius:.5rem;padding:.2rem .6rem;font-size:.75rem;font-weight:700;min-height:2.3rem}
+.tool[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.tools .grow{flex:1}
+.home{display:inline-flex;align-items:center;gap:.3rem;background:var(--fg);color:var(--bg);border:0;border-radius:.6rem;padding:.25rem .8rem .25rem .5rem;font-size:.95rem;font-weight:900;min-height:2.8rem}
+.home svg{width:1.6rem;height:1.6rem}
+.progress{font-size:.75rem;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* screens */
+.screen{padding-block:1.2rem;display:flex;flex-direction:column;gap:1rem}
+.eyebrow{font-size:.8rem;font-weight:700;color:var(--muted);letter-spacing:.05em;margin:0}
+h1{font-size:2rem;line-height:1.3;margin:0;font-weight:900;text-wrap:balance}
+.facts{display:flex;flex-wrap:wrap;gap:.5rem}
+.fact{border:2px solid var(--line);border-radius:.5rem;padding:.2rem .7rem;font-weight:700;background:var(--surface);font-size:.85rem}
+.help{margin:0;padding-left:1.3rem;color:var(--muted);font-size:.85rem;display:flex;flex-direction:column;gap:.2rem}
+.big{background:var(--accent);color:var(--accent-fg);border:0;border-radius:.8rem;font-size:1.3rem;font-weight:900;padding:.7rem 1.4rem;min-height:4rem}
+.big:disabled{opacity:.45;cursor:default}
+.ghost{background:var(--surface);border:3px solid var(--fg);border-radius:.8rem;font-size:1rem;font-weight:700;padding:.5rem 1.1rem;min-height:3.2rem}
+.row{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.8rem}
+.field{display:flex;flex-direction:column;gap:.3rem;min-width:0}
+.field label{font-weight:900;font-size:1rem}
+.input{font:inherit;font-size:1.4rem;font-weight:700;padding:.4rem .7rem;border:3px solid var(--fg);border-radius:.7rem;background:var(--surface);color:var(--fg);min-height:3.6rem;width:100%}
+.warnbox{border:3px solid var(--bad);border-radius:1rem;padding:1rem;background:var(--surface);display:flex;flex-direction:column;gap:.7rem}
+.warnbox p{margin:0;font-weight:900;color:var(--bad)}
+
+/* section head */
+.sec{padding-top:.9rem;display:flex;flex-direction:column;gap:.4rem}
+.sech{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .8rem}
+.sech b{font-size:1.25rem;font-weight:900;line-height:1.35}
+.sech .en{font-weight:700}
+.sech small{color:var(--muted);font-weight:700;font-size:.85rem}
+.tag{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.15rem .8rem .15rem .55rem;font-weight:900;font-size:.85rem;border:2px solid currentColor}
+.tag svg{width:1.3rem;height:1.3rem}
+.tag.listen{color:var(--listen);background:var(--listen-bg)}
+.tag.over{color:var(--ok)}
+
+/* speakers */
+.speaker{flex:none;width:4.6rem;height:4.6rem;border-radius:50%;border:4px solid var(--accent);background:var(--surface);color:var(--accent);display:grid;place-items:center}
+.speaker svg{width:2.6rem;height:2.6rem}
+.pill{width:auto;height:auto;min-height:3.6rem;border-radius:999px;display:inline-flex;align-items:center;gap:.4rem;padding:.3rem 1.2rem .3rem .8rem;font-size:1.05rem;font-weight:900}
+.pill svg{width:2rem;height:2rem}
+.reading{background:var(--reading)!important;outline:4px solid var(--accent);outline-offset:3px;border-radius:.6rem}
+
+/* passage / dialogue */
+.passage{border:3px solid var(--line);background:var(--surface);border-radius:1rem;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.5rem}
+.ptop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem}
+.ptop b{font-size:1.05rem;font-weight:900}
+.fig{margin:0;align-self:center;width:100%;max-width:30rem;background:#FFFFFF;border:3px solid var(--line);border-radius:.8rem;padding:.5rem}
+.fig img{display:block;width:100%;height:auto}
+.zoomable{cursor:zoom-in}
+.lnrow{display:flex;align-items:center;gap:.5rem}
+.lnspk{width:3.8rem;height:3.8rem;border-width:3px}
+.lnspk svg{width:2.2rem;height:2.2rem}
+.ln{display:block;flex:1;min-width:0;width:100%;text-align:left;background:transparent;border:0;border-radius:.5rem;padding:.25rem .35rem;font-family:var(--en);font-size:1.45rem;font-weight:700;line-height:2.1}
+.ln.cur{background:var(--sel)}
+.blank{cursor:pointer;display:inline-flex;align-items:baseline;gap:.25rem;min-width:4.2em;border-bottom:4px solid var(--fg);padding:0 .3rem;margin:0 .15rem;line-height:1.5;justify-content:center}
+.blank i{font-style:normal;font-family:var(--zh);font-size:.75em;font-weight:900;color:var(--muted)}
+.blank.filled{color:var(--accent)}
+.blank.cur{background:var(--reading);border-bottom-color:var(--accent);border-bottom-width:6px;outline:3px dashed var(--accent);outline-offset:2px;border-radius:.3rem .3rem 0 0}
+.vocab{display:flex;flex-wrap:wrap;gap:.4rem;border-top:2px dashed var(--line);padding-top:.6rem}
+.vocab button{border:2px solid var(--line);background:var(--bg);border-radius:.5rem;padding:.2rem .6rem;font-size:.95rem;font-weight:700;min-height:2.8rem}
+.vocab button .en{font-size:1.05rem}
+.vocab button{display:inline-flex;align-items:center;gap:.2rem}
+.vspk{display:inline-grid;place-items:center;width:2.2rem;height:2.2rem;margin-left:.3rem;border-radius:50%;border:3px solid var(--accent);color:var(--accent);background:var(--surface)}
+.vspk svg{width:1.3rem;height:1.3rem}
+.note{color:var(--muted);font-weight:700;font-size:.95rem;margin:0}
+
+/* question card */
+.card{background:var(--surface);border:3px solid var(--line);border-radius:1rem;padding:1rem;display:flex;flex-direction:column;gap:1rem}
+.qhead{display:flex;gap:.8rem;align-items:flex-start}
+.qnum{flex:none;font-weight:900;font-size:1.7rem;line-height:1.5;background:var(--fg);color:var(--bg);border-radius:.6rem;padding:.1rem .7rem;font-variant-numeric:tabular-nums;min-width:3rem;text-align:center}
+.stem{font-size:1.4rem;font-weight:700;line-height:1.7;margin:0;min-width:0;flex:1;border-radius:.4rem;padding:0 .2rem}
+.stem.en{font-size:1.6rem}
+.stem .ln{padding:0;font-size:1.6rem}
+.qhead{align-items:center;flex-wrap:wrap}
+.stemrow{display:flex}
+.opts.bigw .optbtn{font-size:3.4rem;min-height:7.5rem;letter-spacing:.03em}
+.wpop{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wcard{background:var(--surface);color:var(--fg);border:6px solid var(--accent);border-radius:1.4rem;padding:1.5rem 2rem;display:flex;flex-direction:column;align-items:center;gap:1rem;max-width:100%;min-width:min(30rem,100%)}
+.wno{width:6rem;height:6rem;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-family:var(--en);font-size:4rem;font-weight:700;line-height:1}
+.wword{font-family:var(--en);font-weight:700;font-size:clamp(4.5rem,20vw,10rem);line-height:1.1;letter-spacing:.04em;overflow-wrap:anywhere;text-align:center}
+.wsel{font-weight:900;font-size:1.3rem;color:var(--accent)}
+.pcard{width:min(44rem,100%);max-height:100%;overflow:auto;padding:1rem 1.2rem;gap:.7rem}
+.pcard .wno{width:4.6rem;height:4.6rem;font-size:3rem;flex:none}
+.pcard img{display:block;width:100%;max-height:52vh;object-fit:contain;background:#FFFFFF;border-radius:.6rem;border:3px solid var(--line)}
+.pcap{margin:0;font-weight:900;font-size:1.9rem;line-height:1.35;text-align:center;border-radius:.5rem;padding:0 .4rem}
+.pcap .en{font-size:2.3rem}
+.listenbox{display:flex;align-items:center;gap:.7rem;border:3px dashed var(--listen);color:var(--listen);background:var(--listen-bg);border-radius:.8rem;padding:.6rem .9rem;font-weight:900;font-size:1.1rem}
+.listenbox svg{width:2.6rem;height:2.6rem}
+
+.opts{display:flex;flex-direction:column;gap:.8rem}
+.opt{display:flex;gap:.6rem;align-items:stretch}
+.optbtn{flex:1;min-width:0;display:flex;gap:1rem;align-items:center;text-align:left;border:4px solid var(--line);background:var(--surface);border-radius:1rem;padding:.7rem 1rem;font-family:var(--en);font-size:1.7rem;font-weight:700;min-height:6rem;line-height:1.35}
+.optbtn .no{flex:none;width:5.2rem;height:5.2rem;border-radius:50%;border:6px solid currentColor;display:grid;place-items:center;font-family:var(--en);font-size:3.2rem;font-weight:700;line-height:1}
+.optbtn .box{flex:none;width:4.6rem;height:4.6rem;border-radius:.5rem;display:grid;place-items:center}
+.optbtn .box svg{width:3.4rem;height:3.4rem;visibility:hidden}
+.optbtn[aria-checked="true"]{border-color:var(--accent);background:var(--sel);outline:4px solid var(--accent)}
+.optbtn[aria-checked="true"] .no{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.optbtn[aria-checked="true"] .box{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.optbtn[aria-checked="true"] .box svg{visibility:visible}
+.opt .speaker{width:6rem;height:auto;min-height:6rem;border-radius:1rem}
+.opt .speaker svg{width:3.4rem;height:3.4rem}
+.words{display:grid;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));gap:.8rem}
+.words .opt{min-width:0}
+.words .optbtn{justify-content:center;text-align:center;font-size:2.2rem;min-height:6.4rem;padding:.5rem}
+.words .speaker{width:4.6rem;min-height:auto}
+.words .speaker svg{width:2.6rem;height:2.6rem}
+.pics{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
+.picbtn{position:relative;border:5px solid var(--line);background:#FFFFFF;color:#101317;border-radius:1rem;padding:.6rem .6rem .6rem 6.2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;min-height:13rem}
+.picbtn .cap{font-weight:900;font-size:1.15rem;line-height:1.3;text-align:center}
+.picbtn .cap .en{font-size:1.3rem}
+.picbtn img{display:block;width:100%;max-height:15rem;object-fit:contain}
+.picbtn .no{position:absolute;left:.6rem;top:.6rem;width:5.2rem;height:5.2rem;border-radius:50%;border:6px solid #101317;color:#101317;background:#FFFFFF;display:grid;place-items:center;font-family:var(--en);font-size:3.2rem;font-weight:700;line-height:1}
+.picbtn[aria-checked="true"]{border-color:var(--accent);outline:5px solid var(--accent);background:#EAF1FC}
+.picbtn[aria-checked="true"] .no{background:#0A4DA3;color:#FFFFFF;border-color:#0A4DA3}
+.bank{border:3px solid var(--fg);border-radius:.7rem;padding:.5rem .8rem;display:flex;flex-direction:column;gap:.3rem}
+.bank b{font-size:1.1rem}
+.bank div{display:flex;flex-wrap:wrap;gap:.4rem 1.6rem;font-size:1.6rem;font-weight:700}
+.psgfold{margin-top:0}
+.psgfold .passage{margin-bottom:.6rem}
+.paperdone{width:100%;min-height:5.2rem;font-size:1.5rem;background:var(--ok);color:#FFFFFF}
+:root[data-contrast="hc"] .paperdone{color:#000000}
+.paperbox{display:flex;align-items:center;gap:.9rem;border:4px dashed var(--accent);border-radius:1rem;padding:1rem 1.1rem;font-size:1.4rem;font-weight:900;line-height:1.5}
+.paperbox svg{width:3.4rem;height:3.4rem;color:var(--accent)}
+.chosen{font-weight:900;font-size:1.05rem;color:var(--accent);margin:0}
+
+/* navigator */
+details.nav{margin-top:1rem;border:2px solid var(--line);border-radius:.8rem;background:var(--surface);padding:.3rem .8rem}
+details.nav summary{font-weight:900;font-size:.95rem;cursor:pointer;padding:.4rem 0;min-height:2.6rem}
+.navsec{display:flex;flex-direction:column;gap:.3rem;padding-block:.4rem;border-top:1px solid var(--line)}
+.navsec b{font-size:.8rem}
+.grid{display:flex;flex-wrap:wrap;gap:.35rem}
+.grid button{border:2px solid var(--line);background:var(--bg);border-radius:.5rem;min-height:2.8rem;min-width:3.2rem;padding:0 .4rem;font-weight:900;font-size:.85rem;font-variant-numeric:tabular-nums}
+.grid button.done{background:var(--sel);border-color:var(--accent)}
+.grid button[aria-current="true"]{outline:4px solid var(--fg)}
+
+/* bottom bar */
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:3px solid var(--line);z-index:6;
+  padding:.6rem max(16px,env(safe-area-inset-right,0px)) calc(.6rem + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar .wrap{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.bar button{min-height:4.4rem;border-radius:.9rem;font-size:1.3rem;font-weight:900}
+.prev{background:var(--surface);border:3px solid var(--fg)}
+.next{background:var(--accent);color:var(--accent-fg);border:0}
+.next.finish{background:var(--stu);color:var(--stu-fg)}
+.bar button:disabled{opacity:.35;cursor:default}
+.next.locked{opacity:.4}
+@media (prefers-reduced-motion:no-preference){ .shake{animation:shake .35s} @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}} }
+
+/* check & done */
+.miss{display:flex;flex-wrap:wrap;gap:.5rem}
+.miss button{border:3px solid var(--bad);color:var(--bad);background:var(--surface);border-radius:.6rem;min-height:3rem;padding:0 .8rem;font-weight:900}
+.done-mark{font-size:4.5rem;line-height:1;color:var(--ok);font-weight:900}
+.status{font-weight:900;min-height:1.6em;margin:0}
+.status.bad{color:var(--bad)} .status.ok{color:var(--ok)}
+.qrbox{align-self:flex-start;background:#FFFFFF;color:#111111;border:4px solid var(--fg);border-radius:1rem;padding:1rem;display:flex;flex-direction:column;align-items:center;gap:.5rem;max-width:100%}
+.qrbox img,.qrbox canvas{display:block;max-width:100%;height:auto}
+.qrbox p{margin:0;font-weight:900;font-size:1rem;color:#111111;text-align:center}
+.sheetprev{display:flex;flex-direction:column;gap:.8rem;overflow-x:auto}
+.sheetprev img{width:100%;max-width:40rem;border:2px solid var(--line);background:#FFFFFF}
+
+/* zoom overlay */
+.zoom{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.zoom img{max-width:100%;max-height:100%;background:#FFFFFF;border-radius:.6rem}
+.zoom button{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));background:#FFFFFF;color:#101317;border:0;border-radius:999px;font-weight:900;font-size:1.1rem;min-height:3.4rem;padding:0 1.2rem}
+
+/* answer sheet for PDF (always printed light) */
+#report{position:absolute;left:-20000px;top:0}
+.pg{width:794px;height:1123px;padding:44px 48px;background:#FFFFFF;color:#111111;font-family:"Noto Sans TC",sans-serif;font-size:14px;line-height:1.45;overflow:hidden;display:flex;flex-direction:column;gap:14px}
+.pg h2{margin:0;font-size:19px;font-weight:900;text-align:center}
+.pg .sub{text-align:center;font-weight:700;font-size:14px;margin:0}
+.pg .who{display:flex;gap:22px;justify-content:center;font-size:15px;font-weight:700;flex-wrap:wrap}
+.pg .who span b{border-bottom:1.5px solid #111;padding:0 8px;font-weight:900}
+.pg table{border-collapse:collapse;width:100%}
+.pg th,.pg td{border:1.2px solid #444;padding:4px 7px;text-align:left;vertical-align:middle}
+.pg th{background:#ECEFF3;font-size:12.5px}
+.pg td.c{text-align:center}
+.pg .enr{font-family:"Andika","Noto Sans TC",sans-serif;font-size:15px}
+.pg .ok{color:#1C7A33;font-weight:900}
+.pg .no{color:#B3261E;font-weight:900}
+.pg .blankcell{color:#999}
+.pg h3{margin:0 0 5px;font-size:15px;font-weight:900}
+.pg .thumb{height:38px;vertical-align:middle;margin-left:8px;border:1px solid #999}
+.pg .foot{margin-top:auto;font-size:11px;color:#666;text-align:right}
+.pg .tot td{font-weight:900;font-size:15px}
+@media (max-width:520px){ :root{font-size:20px} .optbtn{font-size:1.45rem} .words .optbtn{font-size:1.8rem} .ln{font-size:1.25rem} .stem.en,.stem .ln{font-size:1.4rem} .pics{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:no-preference){ .optbtn,.picbtn{transition:background .15s} }
+</style>
+
+<style>
+/* math additions: fractions, answer boxes, number pad, compare buttons */
+.mx{display:inline-flex;align-items:center;gap:.08em;vertical-align:middle;margin:0 .1em}
+.fr{display:inline-flex;flex-direction:column;align-items:center;line-height:1.15;font-size:.8em;vertical-align:middle}
+.fr>span{display:block;padding:0 .18em;text-align:center}
+.fr>span:first-child{border-bottom:.1em solid currentColor}
+.mline{font-size:2rem;font-weight:700;line-height:2.4;margin:0;border-radius:.5rem;padding:.2rem .3rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.mline.mbig{font-size:2.6rem;text-align:center}
+.stem .mx{font-size:1.15em}
+u.em{text-decoration-thickness:.12em;text-underline-offset:.2em}
+.sq{display:inline-block;width:1em;height:1em;border:.1em solid currentColor;vertical-align:-.12em;margin:0 .1em}
+.bx{display:inline-flex;align-items:center;justify-content:center;gap:.2rem;min-width:2.6em;min-height:1.5em;border:.12em solid var(--fg);border-radius:.3rem;padding:0 .25em;margin:0 .12em;vertical-align:middle;line-height:1.3;background:var(--surface);cursor:pointer;font:inherit;color:inherit}
+.fr .bx{min-width:2em;min-height:1.3em}
+.bx i{font-style:normal;font-size:.55em;font-weight:900;color:var(--muted)}
+.bx.filled b{color:var(--accent)}
+.bx.cur{background:var(--reading);border-color:var(--accent);outline:.12em dashed var(--accent);outline-offset:.08em}
+.bx.cmpbx{min-width:1.6em;outline:none}
+.pad{display:flex;flex-direction:column;gap:.8rem}
+.padshow{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.padshow .val{flex:1;min-width:8rem;min-height:5.4rem;border:5px solid var(--accent);border-radius:1rem;background:var(--surface);font-size:3.4rem;font-weight:900;display:flex;align-items:center;padding:0 1rem;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+.padshow .val.empty{color:var(--muted);font-size:1.4rem;letter-spacing:0}
+.keys{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem}
+.keys button{min-height:5.4rem;border:4px solid var(--line);background:var(--surface);border-radius:1rem;font-size:2.8rem;font-weight:900;font-variant-numeric:tabular-nums}
+.keys button:active{background:var(--sel)}
+.keys button.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.keys2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.keys2 button{min-height:4.2rem;border:3px solid var(--fg);background:var(--surface);border-radius:1rem;font-size:1.3rem;font-weight:900}
+.cmps{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem}
+.cmps button,.picks button{border:5px solid var(--line);background:var(--surface);border-radius:1.2rem;min-height:9rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;padding:.4rem}
+.cmps .sym{font-size:5rem;font-weight:900;line-height:1}
+.cmps .w,.picks .w{font-size:1.3rem;font-weight:900;color:var(--muted)}
+.picks{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.picks .sym{font-size:4.4rem;font-weight:900;line-height:1.1}
+.cmps button[aria-checked="true"],.picks button[aria-checked="true"]{border-color:var(--accent);background:var(--sel);outline:5px solid var(--accent)}
+.cmps button[aria-checked="true"] .w,.picks button[aria-checked="true"] .w{color:var(--accent)}
+.optbtn{font-family:var(--zh)}
+.mfig{margin:0;align-self:center;width:100%;max-width:17rem;background:#FFFFFF;border:3px solid var(--line);border-radius:.8rem;padding:.5rem}
+.mfig img{display:block;width:100%;height:auto}
+.mfig figcaption{color:#424A57;font-size:.85rem;font-weight:700;text-align:center}
+.pg .mx{font-size:14px} .pg .bx{min-width:26px;font-size:13px;border-width:1.2px}
+.pg .keyl{font-size:13.5px;line-height:1.9}
+.pg .ctx{font-size:12.5px;color:#555;line-height:1.9}
+@media (max-width:520px){ .mline{font-size:1.6rem} .mline.mbig{font-size:2rem} .keys button{font-size:2.2rem;min-height:4.6rem} .cmps .sym{font-size:4rem} }
+</style>
+<style>
+/* social additions: 是非 ○✕, 配合代號, 勾選 */
+.tfs button{min-height:11rem}
+.tfs .sym{font-size:7rem;line-height:1}
+.tfs .w{font-size:1.6rem}
+.codes{display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:.8rem}
+.codes button{border:5px solid var(--line);background:var(--surface);border-radius:1.2rem;min-height:8rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;padding:.4rem}
+.codes .code{font-family:var(--en);font-size:3.6rem;font-weight:700;line-height:1}
+.codes .cw{font-size:1.25rem;font-weight:900;line-height:1.3;text-align:center}
+.codes button[aria-checked="true"]{border-color:var(--accent);background:var(--sel);outline:5px solid var(--accent)}
+.codes button[aria-checked="true"] .cw{color:var(--accent)}
+.mstem{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;font-size:1.7rem}
+.mbx{min-width:2.4em;min-height:1.6em;font-family:var(--en);font-size:1.5em;cursor:default}
+.ctxp{margin:0;font-size:1.25rem;font-weight:700;line-height:1.7;border-radius:.4rem;padding:0 .2rem}
+.ckbtn .ckbox{border:5px solid currentColor;border-radius:.5rem}
+.ckbtn .cno{font-size:1.1em;margin-right:.2rem}
+.ckbtn{font-size:1.45rem}
+.padshow .val{font-size:2.4rem}
+.stem{white-space:normal}
+@media (max-width:520px){ .tfs .sym{font-size:5rem} .codes{grid-template-columns:repeat(2,1fr)} .codes .code{font-size:2.8rem} .ckbtn{font-size:1.25rem} }
+
+</style>
+<div class="wrap">
+  <div class="tools" id="tools">
+    <button class="home" id="homeBtn" type="button" aria-label="回首頁"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>首頁</button>
+    <button class="tool" id="fsDown" type="button" aria-label="字變小">字−</button>
+    <button class="tool" id="fsUp" type="button" aria-label="字變大">字＋</button>
+    <button class="tool" id="hc" type="button" aria-pressed="false">黑底黃字</button>
+    <button class="tool" id="rate" type="button">語速：正常</button>
+    <span class="grow"></span>
+    <span class="progress" id="prog"></span>
+  </div>
+  <main id="main"></main>
+</div>
+<div class="bar" id="bar" hidden><div class="wrap">
+  <button class="prev" id="prevBtn" type="button">← 上一題</button>
+  <button class="next" id="nextBtn" type="button">下一題 →</button>
+</div></div>
+<div id="report" aria-hidden="true"></div>
+<div id="live" class="sr" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const DATA={"secs": [{"id": "s1", "no": "一", "zh": "是非題", "type": "tf", "pct": 30, "per": 2, "introSay": [["zh", "第一大題，是非題。每題2分，共30分。說得對，請按圓圈；說得不對，請按叉叉。"]], "items": [{"lab": "1", "stem": "二二八事件發生後，臺灣人民向政府提出改革要求，當時的政府接受人民的全部要求，並且開始大量任用臺灣人擔任公職。", "stemSay": [["zh", "第1題。二二八事件發生後，臺灣人民向政府提出改革要求，當時的政府接受人民的全部要求，並且開始大量任用臺灣人擔任公職。"]], "a": 1}, {"lab": "2", "stem": "針對二二八事件，政府除了訂定紀念日，也與民間團體藉由出版書籍，探討事件過程與真相。", "stemSay": [["zh", "第2題。針對二二八事件，政府除了訂定紀念日，也與民間團體藉由出版書籍，探討事件過程與真相。"]], "a": 0}, {"lab": "3", "stem": "戒嚴時期，嚴禁以文字標語，或其他方法散布謠言，這是限制人民的集會自由。", "stemSay": [["zh", "第3題。戒嚴時期，嚴禁以文字標語，或其他方法散布謠言，這是限制人民的集會自由。"]], "a": 1}, {"lab": "4", "stem": "人民可以運用選票來罷免不適任的民選公職人員，屬於憲法保障的參政權。", "stemSay": [["zh", "第4題。人民可以運用選票來罷免不適任的民選公職人員，屬於憲法保障的參政權。"]], "a": 0}, {"lab": "5", "stem": "憲法規定的平等權是以不侵犯他人、不違背社會公益為原則，並不是毫無限制。", "stemSay": [["zh", "第5題。憲法規定的平等權是以不侵犯他人、不違背社會公益為原則，並不是毫無限制。"]], "a": 1}, {"lab": "6", "stem": "公民投票權和選舉權的年齡規定是相同的，都是年滿 20 歲。", "stemSay": [["zh", "第6題。公民投票權和選舉權的年齡規定是相同的，都是年滿20歲。"]], "a": 1}, {"lab": "7", "stem": "政府為了保障弱勢族群，可以依據法律，合理進行不同的對待。", "stemSay": [["zh", "第7題。政府為了保障弱勢族群，可以依據法律，合理進行不同的對待。"]], "a": 0}, {"lab": "8", "stem": "政府在施政前辦理公聽會，或提供人民反映意見的平臺，能讓人民表達意見，政府也可以適時回應。", "stemSay": [["zh", "第8題。政府在施政前辦理公聽會，或提供人民反映意見的平臺，能讓人民表達意見，政府也可以適時回應。"]], "a": 0}, {"lab": "9", "stem": "不同時期的族群互動與交流常常會導致誤解和衝突，所以我們應該要避免與不同族群互動。", "stemSay": [["zh", "第9題。不同時期的族群互動與交流常常會導致誤解和衝突，所以我們應該要避免與不同族群互動。"]], "a": 1}, {"lab": "10", "stem": "我國政府透過制定法律、改善設施與進行宣導等方式，確保不同性別的人在權益與機會上，能獲得平等的對待。", "stemSay": [["zh", "第10題。我國政府透過制定法律、改善設施與進行宣導等方式，確保不同性別的人在權益與機會上，能獲得平等的對待。"]], "a": 0}, {"lab": "11", "stem": "中央政府設立專線，即時回應民眾意見，為人民提供更完善的服務。", "stemSay": [["zh", "第11題。中央政府設立專線，即時回應民眾意見，為人民提供更完善的服務。"]], "a": 1}, {"lab": "12", "stem": "臺灣早期傳統社會，一般人大多有「男主外、女主內」的性別刻板印象，所以多由女性負責外出工作，由男性承擔家務。", "stemSay": [["zh", "第12題。臺灣早期傳統社會，一般人大多有「男主外、女主內」的性別刻板印象，所以多由女性負責外出工作，由男性承擔家務。"]], "a": 1}, {"lab": "13", "stem": "在臺灣，只要有熱忱、具備專業的技術知識並通過檢定，不論男性或女性，都可以擔任托育人員。", "stemSay": [["zh", "第13題。在臺灣，只要有熱忱、具備專業的技術知識並通過檢定，不論男性或女性，都可以擔任托育人員。"]], "a": 0}, {"lab": "14", "stem": "不同的宗教信仰可能會帶來文化的交流、影響，並不會造成衝突。", "stemSay": [["zh", "第14題。不同的宗教信仰可能會帶來文化的交流、影響，並不會造成衝突。"]], "a": 1}, {"lab": "15", "stem": "臺灣的多元文化讓社會更加彼此尊重，也包容不同族群的生活方式。", "stemSay": [["zh", "第15題。臺灣的多元文化讓社會更加彼此尊重，也包容不同族群的生活方式。"]], "a": 0}]}, {"id": "s2", "no": "二", "zh": "選擇題", "type": "choice", "pct": 30, "per": 2, "introSay": [["zh", "第二大題，選擇題。每題2分，共30分。請選出正確的答案。"]], "items": [{"lab": "1", "stem": "下列哪一位民眾的行為是~不屬於~憲法規定的義務？", "stemSay": [["zh", "第1題。下列哪一位民眾的行為，不屬於，憲法規定的義務？"]], "o": ["阿德和朋友已經大學畢業了，他們同時去當兵", "小艾是餐廳老闆，她會開立統一發票給消費者", "香香參與選舉，選出她認同的候選人", "小霖今年 12 歲，正在就讀伸東國小六年級"], "optSay": [[["zh", "1號，阿德和朋友已經大學畢業了，他們同時去當兵"]], [["zh", "2號，小艾是餐廳老闆，她會開立統一發票給消費者"]], [["zh", "3號，香香參與選舉，選出她認同的候選人"]], [["zh", "4號，小霖今年12歲，正在就讀伸東國小六年級"]]], "a": 2}, {"lab": "2", "stem": "關於我國服兵役的敘述，何者~錯誤~？", "stemSay": [["zh", "第2題。關於我國服兵役的敘述，哪一個是，錯誤的？"]], "o": ["時間長短與當前戰備需求有關", "服兵役的時間會改變", "現在年滿 18 歲的男性需要服兵役兩年", "是為了保護國家安全，保障人民生命和財產安全"], "optSay": [[["zh", "1號，時間長短與當前戰備需求有關"]], [["zh", "2號，服兵役的時間會改變"]], [["zh", "3號，現在年滿18歲的男性需要服兵役兩年"]], [["zh", "4號，是為了保護國家安全，保障人民生命和財產安全"]]], "a": 2}, {"lab": "3", "stem": "在工商業社會下，近年來臺灣哪些家庭型態的比率逐漸增加？\n（甲）單親家庭　（乙）小家庭\n（丙）單人家庭　（丁）夫妻家庭", "stemSay": [["zh", "第3題。在工商業社會下，近年來臺灣哪些家庭型態的比率逐漸增加？甲，單親家庭。乙，小家庭。丙，單人家庭。丁，夫妻家庭。"]], "o": ["甲乙丙", "乙丙丁", "甲乙丁", "甲丙丁"], "optSay": [[["zh", "1號，甲、乙、丙"]], [["zh", "2號，乙、丙、丁"]], [["zh", "3號，甲、乙、丁"]], [["zh", "4號，甲、丙、丁"]]], "a": 3}, {"lab": "4", "stem": "二二八事件後，許多臺灣人民選擇遠離政治，可能的原因為何？", "stemSay": [["zh", "第4題。二二八事件後，許多臺灣人民選擇遠離政治，可能的原因是什麼？"]], "o": ["事件發生時，政府以武力鎮壓，導致人民恐懼", "當時擔任政治人物的薪資並不高", "語言不通，無法參與政治", "人民對政治原本就不感興趣"], "optSay": [[["zh", "1號，事件發生時，政府以武力鎮壓，導致人民恐懼"]], [["zh", "2號，當時擔任政治人物的薪資並不高"]], [["zh", "3號，語言不通，無法參與政治"]], [["zh", "4號，人民對政治原本就不感興趣"]]], "a": 0}, {"lab": "5", "stem": "阿芳列了一張表，她想要比較臺灣早期跟現代的教育有什麼不同，請問下列何者屬於「現代」的教育特色？", "stemSay": [["zh", "第5題。阿芳列了一張表，她想要比較臺灣早期跟現代的教育有什麼不同。請問下列哪一個，屬於現代的教育特色？"]], "o": ["嚴格要求服裝儀容", "個人發展較受限制", "實施髮禁，學生必須遵守", "鼓勵學生多元學習、探索個人興趣"], "optSay": [[["zh", "1號，嚴格要求服裝儀容"]], [["zh", "2號，個人發展較受限制"]], [["zh", "3號，實施髮禁，學生必須遵守"]], [["zh", "4號，鼓勵學生多元學習、探索個人興趣"]]], "a": 3}, {"lab": "6", "stem": "臺灣解嚴後，政府做了什麼事情，希望能撫平歷史留下的傷痕？", "stemSay": [["zh", "第6題。臺灣解嚴後，政府做了什麼事情，希望能撫平歷史留下的傷痕？"]], "o": ["制定法律賠償受難者及其家屬", "投資成立新的電視臺", "關押與審判抗議的民眾", "護送受難者家屬離開臺灣"], "optSay": [[["zh", "1號，制定法律賠償受難者及其家屬"]], [["zh", "2號，投資成立新的電視臺"]], [["zh", "3號，關押與審判抗議的民眾"]], [["zh", "4號，護送受難者家屬離開臺灣"]]], "a": 0}, {"lab": "7", "stem": "文文放學後，在學校參加了很多社團，包含：弦樂社、圍棋社和直排輪，這樣的狀況跟現在的哪一種教育觀念有關？", "stemSay": [["zh", "第7題。文文放學後，在學校參加了很多社團，包含弦樂社、圍棋社和直排輪。這樣的狀況，跟現在的哪一種教育觀念有關？"]], "o": ["減少班級學生人數", "進行多元的學習活動", "提高教師的薪水", "要求父母為孩子申請自學計畫"], "optSay": [[["zh", "1號，減少班級學生人數"]], [["zh", "2號，進行多元的學習活動"]], [["zh", "3號，提高教師的薪水"]], [["zh", "4號，要求父母為孩子申請自學計畫"]]], "a": 1}, {"lab": "8", "stem": "有關人民受國民教育的敘述，何者~錯誤~？", "stemSay": [["zh", "第8題。有關人民受國民教育的敘述，哪一個是，錯誤的？"]], "o": ["國民教育的目的在培養學生終身學習的能力", "如果沒有依法接受國民教育，會依規定予以處分", "高中、高職的教育屬於自願入學，不具強迫性", "人民可以自由選擇是否要接受國民教育"], "optSay": [[["zh", "1號，國民教育的目的在培養學生終身學習的能力"]], [["zh", "2號，如果沒有依法接受國民教育，會依規定予以處分"]], [["zh", "3號，高中、高職的教育屬於自願入學，不具強迫性"]], [["zh", "4號，人民可以自由選擇是否要接受國民教育"]]], "a": 3}, {"lab": "9", "stem": "請將下列事件依發生的時間先後順序排列。\n甲. 二二八事件　乙. 臺灣首次總統直選\n丙. 臺灣實施戒嚴　丁. 臺灣解除戒嚴", "stemSay": [["zh", "第9題。請將下列事件，依發生的時間先後順序排列。甲，二二八事件。乙，臺灣首次總統直選。丙，臺灣實施戒嚴。丁，臺灣解除戒嚴。"]], "o": ["甲丁丙乙", "丙丁甲乙", "甲丙丁乙", "丙甲丁乙"], "optSay": [[["zh", "1號，甲、丁、丙、乙"]], [["zh", "2號，丙、丁、甲、乙"]], [["zh", "3號，甲、丙、丁、乙"]], [["zh", "4號，丙、甲、丁、乙"]]], "a": 2}, {"lab": "10", "stem": "近年來，許多地方政府開始修復歷史聚落，有些聚落雖然不再作為住宅使用，但仍被改建成展覽空間或社區活動中心等。例如：四四南村的拆除或保留曾引發不小的爭議，讓大家重新思考保存歷史建築的意義。下列何者最能說明保存聚落建築的重要性？", "stemSay": [["zh", "第10題。近年來，許多地方政府開始修復歷史聚落。有些聚落雖然不再作為住宅使用，但仍被改建成展覽空間或社區活動中心等。例如，四四南村的拆除或保留，曾引發不小的爭議，讓大家重新思考保存歷史建築的意義。下列哪一個，最能說明保存聚落建築的重要性？"]], "o": ["了解不同族群的歷史文化與生活特色", "讓所有的居民居住在同一種聚落型態", "可以完全取代歷史課本中的學習內容", "能使各地所有建築風格變為一致"], "optSay": [[["zh", "1號，了解不同族群的歷史文化與生活特色"]], [["zh", "2號，讓所有的居民居住在同一種聚落型態"]], [["zh", "3號，可以完全取代歷史課本中的學習內容"]], [["zh", "4號，能使各地所有建築風格變為一致"]]], "a": 0}, {"lab": "11", "stem": "隨著社會變遷，許多觀念都可能改變，下列何者已經成為現代工商業社會中大多數人的想法？", "stemSay": [["zh", "第11題。隨著社會變遷，許多觀念都可能改變。下列哪一個，已經成為現代工商業社會中，大多數人的想法？"]], "o": ["尊重子女的意見與選擇", "要求兒女長大後儘早結婚", "強調子承父業的重要性", "鼓勵夫妻多生育子女"], "optSay": [[["zh", "1號，尊重子女的意見與選擇"]], [["zh", "2號，要求兒女長大後儘早結婚"]], [["zh", "3號，強調子承父業的重要性"]], [["zh", "4號，鼓勵夫妻多生育子女"]]], "a": 0}, {"lab": "12", "stem": "不同族群各有不同的宗教信仰，例如：\n甲 從家鄉帶來媽祖、王爺等神明的傳統信仰；\n乙 使伊斯蘭教的人口增加；\n丙 多為崇拜祖靈與自然界的神靈；\n丁 帶來基督教、天主教的信仰。\n這些不同的宗教信仰，為臺灣帶來不一樣的文化內涵。請問甲乙丙丁各代表什麼族群，下列哪個正確？", "stemSay": [["zh", "第12題。不同族群各有不同的宗教信仰。例如：甲，從家鄉帶來媽祖、王爺等神明的傳統信仰。乙，使伊斯蘭教的人口增加。丙，多為崇拜祖靈與自然界的神靈。丁，帶來基督教、天主教的信仰。這些不同的宗教信仰，為臺灣帶來不一樣的文化內涵。請問甲、乙、丙、丁，各代表什麼族群？下列哪個正確？"]], "o": ["原住民族、新住民、漢人、西方人", "漢人、原住民族、西方人、新住民", "原住民族、漢人、西方人、新住民", "漢人、新住民、原住民族、西方人"], "optSay": [[["zh", "1號，原住民族、新住民、漢人、西方人"]], [["zh", "2號，漢人、原住民族、西方人、新住民"]], [["zh", "3號，原住民族、漢人、西方人、新住民"]], [["zh", "4號，漢人、新住民、原住民族、西方人"]]], "a": 3}, {"lab": "13", "stem": "豪豪：「我最近買了新的唱片，要來聽聽嗎？」\n小敏：「不了不了，晚上有宵禁，而且很多歌不能聽，怕被帶走！」\n豪豪：「有這麼誇張嗎？」\n小敏：「你不知道？巷口的老李上個月底，只是在廠裡唱望春風就被帶走，一直到現在都沒消息……」\n這段日常生活對話，最可能發生在戰後臺灣的哪一個時期？", "stemSay": [["zh", "第13題。豪豪說：我最近買了新的唱片，要來聽聽嗎？小敏說：不了不了，晚上有宵禁，而且很多歌不能聽，怕被帶走！豪豪說：有這麼誇張嗎？小敏說：你不知道？巷口的老李上個月底，只是在廠裡唱望春風，就被帶走，一直到現在都沒消息。這段日常生活對話，最可能發生在戰後臺灣的哪一個時期？"]], "o": ["解除戒嚴後", "二二八事件前", "戒嚴時期", "總統直選後"], "optSay": [[["zh", "1號，解除戒嚴後"]], [["zh", "2號，二二八事件前"]], [["zh", "3號，戒嚴時期"]], [["zh", "4號，總統直選後"]]], "a": 2}, {"lab": "14", "stem": "戒嚴令限制人們言論、出版、集會、結社等權利，這是指人民的哪一項權利受到侵害？", "stemSay": [["zh", "第14題。戒嚴令限制人們言論、出版、集會、結社等權利。這是指人民的哪一項權利受到侵害？"]], "o": ["平等權", "參政權", "自由權", "受益權"], "optSay": [[["zh", "1號，平等權"]], [["zh", "2號，參政權"]], [["zh", "3號，自由權"]], [["zh", "4號，受益權"]]], "a": 2}, {"lab": "15", "stem": "「疫情擴散時，政府要求人民避免群聚，卻也影響了部分餐廳和旅遊業者的生活，業者可以向政府申請補助。」這段文字最能說明下列哪一個觀念？", "stemSay": [["zh", "第15題。疫情擴散時，政府要求人民避免群聚，卻也影響了部分餐廳和旅遊業者的生活，業者可以向政府申請補助。這段文字，最能說明下列哪一個觀念？"]], "o": ["政府施政時，必須完全避免影響任何人民的權益", "政府施政時可能會影響部分人民的權益，政府應提供救助與申訴管道", "部分餐廳和旅遊業者因為違法群聚，所以需要接受政府的輔導", "政府施政時，完全不需要考慮人民的生活與權益"], "optSay": [[["zh", "1號，政府施政時，必須完全避免影響任何人民的權益"]], [["zh", "2號，政府施政時可能會影響部分人民的權益，政府應提供救助與申訴管道"]], [["zh", "3號，部分餐廳和旅遊業者因為違法群聚，所以需要接受政府的輔導"]], [["zh", "4號，政府施政時，完全不需要考慮人民的生活與權益"]]], "a": 1}]}, {"id": "s3", "no": "三", "zh": "配合題", "type": "match", "pct": 24, "per": 2, "introSay": [["zh", "第三大題，配合題。每題2分，共24分。請從大按鈕中，選出正確的代號。"]], "groups": [{"title": "第1小題　政府機關", "ctx": "我國政府可分為中央政府與地方政府，彼此各司其職。請將政府機關代號填入相對應工作事務的（　）中。", "ctxSay": [["zh", "第1小題。我國政府可分為中央政府與地方政府，彼此各司其職。請把政府機關的代號，填入相對應的工作事務。"]], "bank": [["A", "總統"], ["B", "行政院"], ["C", "立法院"], ["D", "司法院"], ["E", "考試院"], ["F", "監察院"], ["G", "地方行政機關"], ["H", "地方立法機關"]], "bankSay": [["zh", "A，總統。"], ["zh", "B，行政院。"], ["zh", "C，立法院。"], ["zh", "D，司法院。"], ["zh", "E，考試院。"], ["zh", "F，監察院。"], ["zh", "G，地方行政機關。"], ["zh", "H，地方立法機關。"]]}, {"title": "第2小題　不同時期的文物", "ctx": "華華參觀博物館時，發現原來蓮霧、土芒果是荷蘭人引進臺灣的，展廳中還介紹許多不同時期的文物，請將時期代號填入相對應文物的（　）中。", "ctxSay": [["zh", "第2小題。華華參觀博物館時，發現原來蓮霧、土芒果，是荷蘭人引進臺灣的。展廳中還介紹許多不同時期的文物。請把時期的代號，填入相對應的文物。"]], "bank": [["A", "史前時代"], ["B", "大航海時代"], ["C", "清帝國時期"], ["D", "日治時期"], ["E", "中華民國時期"]], "bankSay": [["zh", "A，史前時代。"], ["zh", "B，大航海時代。"], ["zh", "C，清帝國時期。"], ["zh", "D，日治時期。"], ["zh", "E，中華民國時期。"]]}], "items": [{"lab": "1-(1)", "g": 0, "stem": "制定或修改法律", "stemSay": [["zh", "第1小題，第1格。制定或修改法律。"]], "a": 2}, {"lab": "1-(2)", "g": 0, "stem": "負責推動政策、辦理地方事務", "stemSay": [["zh", "第1小題，第2格。負責推動政策、辦理地方事務。"]], "a": 6}, {"lab": "1-(3)", "g": 0, "stem": "規畫國家發展方向與相關政策", "stemSay": [["zh", "第1小題，第3格。規畫國家發展方向與相關政策。"]], "a": 1}, {"lab": "1-(4)", "g": 0, "stem": "公布法律", "stemSay": [["zh", "第1小題，第4格。公布法律。"]], "a": 0}, {"lab": "1-(5)", "g": 0, "stem": "負責訴訟審判", "stemSay": [["zh", "第1小題，第5格。負責訴訟審判。"]], "a": 3}, {"lab": "1-(6)", "g": 0, "stem": "負責審議地方法規", "stemSay": [["zh", "第1小題，第6格。負責審議地方法規。"]], "a": 7}, {"lab": "1-(7)", "g": 0, "stem": "辦理國家公務人員考試", "stemSay": [["zh", "第1小題，第7格。辦理國家公務人員考試。"]], "a": 4}, {"lab": "2-(1)", "g": 1, "stem": "陶壺", "stemSay": [["zh", "第2小題，第1格。陶壺。"]], "a": 0}, {"lab": "2-(2)", "g": 1, "stem": "豌豆", "stemSay": [["zh", "第2小題，第2格。豌豆。"]], "a": 1}, {"lab": "2-(3)", "g": 1, "stem": "棒球", "stemSay": [["zh", "第2小題，第3格。棒球。"]], "a": 3}, {"lab": "2-(4)", "g": 1, "stem": "漢堡", "stemSay": [["zh", "第2小題，第4格。漢堡。"]], "a": 4}, {"lab": "2-(5)", "g": 1, "stem": "書院", "stemSay": [["zh", "第2小題，第5格。書院。"]], "a": 2}]}, {"id": "s4", "no": "四", "zh": "勾選題", "type": "check", "pct": 16, "per": 2, "perNote": "每個□ 2 分", "introSay": [["zh", "第四大題，勾選題。每個框框2分，共16分。對的敘述請打勾，可以勾很多個。"]], "items": [{"lab": "1", "stem": "下列哪些情況比較可能在~解嚴後~發生？在□裡打ˇ。", "stemSay": [["zh", "第1題。下列哪些情況，比較可能在解嚴後發生？可以勾很多個。"]], "o": ["小銘受邀去電視臺參加政論節目，談論政治。", "小安領取總統選舉的選票，準備投下神聖的一票。", "小孟創辦時事議論雜誌，希望能為弱勢族群發聲。", "小章平時言行謹慎，絕不會在他人面前談論政治，也不敢參加他人偷偷邀約的集會活動，就怕惹禍上身。"], "optSay": [[["zh", "1號，小銘受邀去電視臺參加政論節目，談論政治。"]], [["zh", "2號，小安領取總統選舉的選票，準備投下神聖的一票。"]], [["zh", "3號，小孟創辦時事議論雜誌，希望能為弱勢族群發聲。"]], [["zh", "4號，小章平時言行謹慎，絕不會在他人面前談論政治，也不敢參加他人偷偷邀約的集會活動，就怕惹禍上身。"]]], "a": "012", "kind": "multi"}, {"lab": "2", "stem": "不同族群在臺灣生活後，留下各具特色的聚落建築。下列哪些敘述是~正確~的？請在□中打ˇ。", "stemSay": [["zh", "第2題。不同族群在臺灣生活後，留下各具特色的聚落建築。下列哪些敘述是正確的？可以勾很多個。"]], "o": ["漢人來臺後興建的眷村。", "原住民族就地取材建造傳統住屋。", "日治時期出現的日式與西式建築。", "戰後政府興建的三合院建築。"], "optSay": [[["zh", "1號，漢人來臺後興建的眷村。"]], [["zh", "2號，原住民族就地取材建造傳統住屋。"]], [["zh", "3號，日治時期出現的日式與西式建築。"]], [["zh", "4號，戰後政府興建的三合院建築。"]]], "a": "12", "kind": "multi"}]}], "aud": {"zh|1號": "a/b2dfa8d989.mp3", "zh|1號，了解不同族群的歷史文化與生活特色": "a/589bb3b3a5.mp3", "zh|1號，事件發生時，政府以武力鎮壓，導致人民恐懼": "a/94f26c5d7d.mp3", "zh|1號，制定法律賠償受難者及其家屬": "a/cc260e5451.mp3", "zh|1號，原住民族、新住民、漢人、西方人": "a/6e3c9d0c24.mp3", "zh|1號，嚴格要求服裝儀容": "a/a0ce019fee.mp3", "zh|1號，國民教育的目的在培養學生終身學習的能力": "a/80e39ad614.mp3", "zh|1號，尊重子女的意見與選擇": "a/6b481a74e8.mp3", "zh|1號，小銘受邀去電視臺參加政論節目，談論政治。": "a/0af368c7f0.mp3", "zh|1號，平等權": "a/56d100fe55.mp3", "zh|1號，政府施政時，必須完全避免影響任何人民的權益": "a/ee44a6460b.mp3", "zh|1號，時間長短與當前戰備需求有關": "a/9a6a56cc2e.mp3", "zh|1號，減少班級學生人數": "a/63e3b9244b.mp3", "zh|1號，漢人來臺後興建的眷村。": "a/5643a86df5.mp3", "zh|1號，甲、丁、丙、乙": "a/a6ecde2837.mp3", "zh|1號，甲、乙、丙": "a/dbc582d09b.mp3", "zh|1號，解除戒嚴後": "a/148be2cd01.mp3", "zh|1號，阿德和朋友已經大學畢業了，他們同時去當兵": "a/5318587c80.mp3", "zh|2號": "a/f056f409f6.mp3", "zh|2號，丙、丁、甲、乙": "a/93b7709787.mp3", "zh|2號，乙、丙、丁": "a/ab4ff3d62b.mp3", "zh|2號，二二八事件前": "a/268d9e6cd3.mp3", "zh|2號，個人發展較受限制": "a/4a35b4c56f.mp3", "zh|2號，原住民族就地取材建造傳統住屋。": "a/04efb8e1f1.mp3", "zh|2號，參政權": "a/8ace25b019.mp3", "zh|2號，如果沒有依法接受國民教育，會依規定予以處分": "a/8a9e5ff13f.mp3", "zh|2號，小安領取總統選舉的選票，準備投下神聖的一票。": "a/d3ad221a63.mp3", "zh|2號，小艾是餐廳老闆，她會開立統一發票給消費者": "a/fa042ddfa1.mp3", "zh|2號，投資成立新的電視臺": "a/a9d93ddb17.mp3", "zh|2號，政府施政時可能會影響部分人民的權益，政府應提供救助與申訴管道": "a/f9daa52182.mp3", "zh|2號，服兵役的時間會改變": "a/e3e7c9bdee.mp3", "zh|2號，漢人、原住民族、西方人、新住民": "a/ba5a8d9407.mp3", "zh|2號，當時擔任政治人物的薪資並不高": "a/caf04d681e.mp3", "zh|2號，要求兒女長大後儘早結婚": "a/4939356ecb.mp3", "zh|2號，讓所有的居民居住在同一種聚落型態": "a/747e1f59b1.mp3", "zh|2號，進行多元的學習活動": "a/2ee2c9cdd8.mp3", "zh|3號": "a/28c0824e43.mp3", "zh|3號，原住民族、漢人、西方人、新住民": "a/610860f95f.mp3", "zh|3號，可以完全取代歷史課本中的學習內容": "a/2daab43cc7.mp3", "zh|3號，實施髮禁，學生必須遵守": "a/e215e5f2d1.mp3", "zh|3號，小孟創辦時事議論雜誌，希望能為弱勢族群發聲。": "a/32494928c3.mp3", "zh|3號，強調子承父業的重要性": "a/dcecf3132e.mp3", "zh|3號，戒嚴時期": "a/d8f6a3b3e4.mp3", "zh|3號，提高教師的薪水": "a/421708c2c8.mp3", "zh|3號，日治時期出現的日式與西式建築。": "a/84cae4dd18.mp3", "zh|3號，現在年滿18歲的男性需要服兵役兩年": "a/a5dac896cf.mp3", "zh|3號，甲、丙、丁、乙": "a/b516f13a40.mp3", "zh|3號，甲、乙、丁": "a/935dd0fd81.mp3", "zh|3號，自由權": "a/6b08889f03.mp3", "zh|3號，語言不通，無法參與政治": "a/ea39c49093.mp3", "zh|3號，部分餐廳和旅遊業者因為違法群聚，所以需要接受政府的輔導": "a/94edf1278c.mp3", "zh|3號，關押與審判抗議的民眾": "a/fab2a9c961.mp3", "zh|3號，香香參與選舉，選出她認同的候選人": "a/9ffd1ccda8.mp3", "zh|3號，高中、高職的教育屬於自願入學，不具強迫性": "a/cb32a7c44a.mp3", "zh|4號": "a/9fc5205114.mp3", "zh|4號，丙、甲、丁、乙": "a/e8686bc82d.mp3", "zh|4號，人民可以自由選擇是否要接受國民教育": "a/cc81715d93.mp3", "zh|4號，人民對政治原本就不感興趣": "a/9beaeda7c1.mp3", "zh|4號，受益權": "a/b289135b46.mp3", "zh|4號，小章平時言行謹慎，絕不會在他人面前談論政治，也不敢參加他人偷偷邀約的集會活動，就怕惹禍上身。": "a/423c53a4de.mp3", "zh|4號，小霖今年12歲，正在就讀伸東國小六年級": "a/e307569f1c.mp3", "zh|4號，戰後政府興建的三合院建築。": "a/b0bad44509.mp3", "zh|4號，政府施政時，完全不需要考慮人民的生活與權益": "a/b80a8e9416.mp3", "zh|4號，是為了保護國家安全，保障人民生命和財產安全": "a/807bed8ed4.mp3", "zh|4號，漢人、新住民、原住民族、西方人": "a/622b7a16f2.mp3", "zh|4號，甲、丙、丁": "a/bf29e0af47.mp3", "zh|4號，總統直選後": "a/85d9a805a0.mp3", "zh|4號，能使各地所有建築風格變為一致": "a/ee277a6f2b.mp3", "zh|4號，要求父母為孩子申請自學計畫": "a/47e2d129a2.mp3", "zh|4號，護送受難者家屬離開臺灣": "a/dfc487ded2.mp3", "zh|4號，鼓勵夫妻多生育子女": "a/d73bcac974.mp3", "zh|4號，鼓勵學生多元學習、探索個人興趣": "a/2ca1f106be.mp3", "zh|A，史前時代。": "a/52078d999f.mp3", "zh|A，總統。": "a/c22894c93d.mp3", "zh|B，大航海時代。": "a/75e8fa352a.mp3", "zh|B，行政院。": "a/516d595ce5.mp3", "zh|C，清帝國時期。": "a/bbb14563c9.mp3", "zh|C，立法院。": "a/5ee8b4385a.mp3", "zh|D，司法院。": "a/c8f504f849.mp3", "zh|D，日治時期。": "a/92f61e9607.mp3", "zh|E，中華民國時期。": "a/d35d7de97d.mp3", "zh|E，考試院。": "a/3dea37e81f.mp3", "zh|F，監察院。": "a/3e8aae3908.mp3", "zh|G，地方行政機關。": "a/dd04e57d80.mp3", "zh|H，地方立法機關。": "a/842a86e380.mp3", "zh|你勾了": "a/17dce18d32.mp3", "zh|你選的是1號": "a/94fd7adc9a.mp3", "zh|你選的是2號": "a/438658ed67.mp3", "zh|你選的是3號": "a/0f877761d5.mp3", "zh|你選的是4號": "a/ab40969c7b.mp3", "zh|你選的是A，史前時代": "a/33dc6bc36f.mp3", "zh|你選的是A，總統": "a/63c7398928.mp3", "zh|你選的是B，大航海時代": "a/748080e72c.mp3", "zh|你選的是B，行政院": "a/34307bee11.mp3", "zh|你選的是C，清帝國時期": "a/a18feb777f.mp3", "zh|你選的是C，立法院": "a/74dad5c86c.mp3", "zh|你選的是D，司法院": "a/ff27195957.mp3", "zh|你選的是D，日治時期": "a/60f3697a7c.mp3", "zh|你選的是E，中華民國時期": "a/4b69252c72.mp3", "zh|你選的是E，考試院": "a/65eb1df4e7.mp3", "zh|你選的是F，監察院": "a/930633f70c.mp3", "zh|你選的是G，地方行政機關": "a/afd83952a7.mp3", "zh|你選的是H，地方立法機關": "a/a33258b1e0.mp3", "zh|你選的是對": "a/00dbc46b97.mp3", "zh|你選的是錯": "a/cca63cd50e.mp3", "zh|你還沒有勾": "a/1100f20f4d.mp3", "zh|全部寫完了，可以交卷。": "a/f8838d16fc.mp3", "zh|勾了1號": "a/362856006e.mp3", "zh|勾了2號": "a/db0a69fb2e.mp3", "zh|勾了3號": "a/f05df13191.mp3", "zh|勾了4號": "a/0e82f2a9e4.mp3", "zh|取消1號": "a/4fa7a981a4.mp3", "zh|取消2號": "a/3c0d596f67.mp3", "zh|取消3號": "a/74037e11c4.mp3", "zh|取消4號": "a/1bb0971533.mp3", "zh|對": "a/0fa3e87254.mp3", "zh|已經交卷，請把作答紀錄交給老師。": "a/d36157750f.mp3", "zh|第10題。我國政府透過制定法律、改善設施與進行宣導等方式，確保不同性別的人在權益與機會上，能獲得平等的對待。": "a/1636474ff3.mp3", "zh|第10題。近年來，許多地方政府開始修復歷史聚落。有些聚落雖然不再作為住宅使用，但仍被改建成展覽空間或社區活動中心等。例如，四四南村的拆除或保留，曾引發不小的爭議，讓大家重新思考保存歷史建築的意義。下列哪一個，最能說明保存聚落建築的重要性？": "a/9a00a21dec.mp3", "zh|第11題。中央政府設立專線，即時回應民眾意見，為人民提供更完善的服務。": "a/1d407ceac7.mp3", "zh|第11題。隨著社會變遷，許多觀念都可能改變。下列哪一個，已經成為現代工商業社會中，大多數人的想法？": "a/e1e1cde84b.mp3", "zh|第12題。不同族群各有不同的宗教信仰。例如：甲，從家鄉帶來媽祖、王爺等神明的傳統信仰。乙，使伊斯蘭教的人口增加。丙，多為崇拜祖靈與自然界的神靈。丁，帶來基督教、天主教的信仰。這些不同的宗教信仰，為臺灣帶來不一樣的文化內涵。請問甲、乙、丙、丁，各代表什麼族群？下列哪個正確？": "a/1ccc60300c.mp3", "zh|第12題。臺灣早期傳統社會，一般人大多有「男主外、女主內」的性別刻板印象，所以多由女性負責外出工作，由男性承擔家務。": "a/b66232e68e.mp3", "zh|第13題。在臺灣，只要有熱忱、具備專業的技術知識並通過檢定，不論男性或女性，都可以擔任托育人員。": "a/243356d907.mp3", "zh|第13題。豪豪說：我最近買了新的唱片，要來聽聽嗎？小敏說：不了不了，晚上有宵禁，而且很多歌不能聽，怕被帶走！豪豪說：有這麼誇張嗎？小敏說：你不知道？巷口的老李上個月底，只是在廠裡唱望春風，就被帶走，一直到現在都沒消息。這段日常生活對話，最可能發生在戰後臺灣的哪一個時期？": "a/3bc3151161.mp3", "zh|第14題。不同的宗教信仰可能會帶來文化的交流、影響，並不會造成衝突。": "a/d010862fde.mp3", "zh|第14題。戒嚴令限制人們言論、出版、集會、結社等權利。這是指人民的哪一項權利受到侵害？": "a/a22d75c57f.mp3", "zh|第15題。疫情擴散時，政府要求人民避免群聚，卻也影響了部分餐廳和旅遊業者的生活，業者可以向政府申請補助。這段文字，最能說明下列哪一個觀念？": "a/b9ee2f21cd.mp3", "zh|第15題。臺灣的多元文化讓社會更加彼此尊重，也包容不同族群的生活方式。": "a/0b13729d99.mp3", "zh|第1小題。我國政府可分為中央政府與地方政府，彼此各司其職。請把政府機關的代號，填入相對應的工作事務。": "a/3f39d4eb07.mp3", "zh|第1小題，第1格。制定或修改法律。": "a/48df55423e.mp3", "zh|第1小題，第2格。負責推動政策、辦理地方事務。": "a/801fe79515.mp3", "zh|第1小題，第3格。規畫國家發展方向與相關政策。": "a/6119968220.mp3", "zh|第1小題，第4格。公布法律。": "a/6f6e2b459c.mp3", "zh|第1小題，第5格。負責訴訟審判。": "a/fdf5d57951.mp3", "zh|第1小題，第6格。負責審議地方法規。": "a/7120642ac7.mp3", "zh|第1小題，第7格。辦理國家公務人員考試。": "a/1476903321.mp3", "zh|第1題。下列哪一位民眾的行為，不屬於，憲法規定的義務？": "a/a8ddb07ce4.mp3", "zh|第1題。下列哪些情況，比較可能在解嚴後發生？可以勾很多個。": "a/c09c4c745f.mp3", "zh|第1題。二二八事件發生後，臺灣人民向政府提出改革要求，當時的政府接受人民的全部要求，並且開始大量任用臺灣人擔任公職。": "a/4b15e9ee4b.mp3", "zh|第2小題。華華參觀博物館時，發現原來蓮霧、土芒果，是荷蘭人引進臺灣的。展廳中還介紹許多不同時期的文物。請把時期的代號，填入相對應的文物。": "a/825dbad948.mp3", "zh|第2小題，第1格。陶壺。": "a/42f8b387f0.mp3", "zh|第2小題，第2格。豌豆。": "a/06d0c0f977.mp3", "zh|第2小題，第3格。棒球。": "a/a28c18c1a4.mp3", "zh|第2小題，第4格。漢堡。": "a/48d4d6236f.mp3", "zh|第2小題，第5格。書院。": "a/ba9a84e749.mp3", "zh|第2題。不同族群在臺灣生活後，留下各具特色的聚落建築。下列哪些敘述是正確的？可以勾很多個。": "a/eebb83df05.mp3", "zh|第2題。針對二二八事件，政府除了訂定紀念日，也與民間團體藉由出版書籍，探討事件過程與真相。": "a/d8b0e4ac27.mp3", "zh|第2題。關於我國服兵役的敘述，哪一個是，錯誤的？": "a/1bb2248ef0.mp3", "zh|第3題。在工商業社會下，近年來臺灣哪些家庭型態的比率逐漸增加？甲，單親家庭。乙，小家庭。丙，單人家庭。丁，夫妻家庭。": "a/a0920c7635.mp3", "zh|第3題。戒嚴時期，嚴禁以文字標語，或其他方法散布謠言，這是限制人民的集會自由。": "a/6376cef3bf.mp3", "zh|第4題。二二八事件後，許多臺灣人民選擇遠離政治，可能的原因是什麼？": "a/722781e9ae.mp3", "zh|第4題。人民可以運用選票來罷免不適任的民選公職人員，屬於憲法保障的參政權。": "a/df87894dc5.mp3", "zh|第5題。憲法規定的平等權是以不侵犯他人、不違背社會公益為原則，並不是毫無限制。": "a/839407f236.mp3", "zh|第5題。阿芳列了一張表，她想要比較臺灣早期跟現代的教育有什麼不同。請問下列哪一個，屬於現代的教育特色？": "a/00c813ac36.mp3", "zh|第6題。公民投票權和選舉權的年齡規定是相同的，都是年滿20歲。": "a/f1a720b6c5.mp3", "zh|第6題。臺灣解嚴後，政府做了什麼事情，希望能撫平歷史留下的傷痕？": "a/535447eda3.mp3", "zh|第7題。政府為了保障弱勢族群，可以依據法律，合理進行不同的對待。": "a/d486ee0427.mp3", "zh|第7題。文文放學後，在學校參加了很多社團，包含弦樂社、圍棋社和直排輪。這樣的狀況，跟現在的哪一種教育觀念有關？": "a/a33aefd0bd.mp3", "zh|第8題。政府在施政前辦理公聽會，或提供人民反映意見的平臺，能讓人民表達意見，政府也可以適時回應。": "a/08916d3535.mp3", "zh|第8題。有關人民受國民教育的敘述，哪一個是，錯誤的？": "a/9edcd69e55.mp3", "zh|第9題。不同時期的族群互動與交流常常會導致誤解和衝突，所以我們應該要避免與不同族群互動。": "a/3c32c16256.mp3", "zh|第9題。請將下列事件，依發生的時間先後順序排列。甲，二二八事件。乙，臺灣首次總統直選。丙，臺灣實施戒嚴。丁，臺灣解除戒嚴。": "a/1d5043e1c7.mp3", "zh|第一大題，是非題。每題2分，共30分。說得對，請按圓圈；說得不對，請按叉叉。": "a/08b0e759aa.mp3", "zh|第三大題，配合題。每題2分，共24分。請從大按鈕中，選出正確的代號。": "a/5856155b2e.mp3", "zh|第二大題，選擇題。每題2分，共30分。請選出正確的答案。": "a/b34317fa9e.mp3", "zh|第四大題，勾選題。每個框框2分，共16分。對的敘述請打勾，可以勾很多個。": "a/d7daab3dc1.mp3", "zh|請先勾選答案，才能到下一題。": "a/31b04e6ecc.mp3", "zh|請先選一個答案，才能到下一題。": "a/0460eca206.mp3", "zh|還有題目沒寫，要回去檢查嗎？": "a/f3d180c712.mp3", "zh|錯": "a/b3cfee8bb1.mp3"}};
+const SECS=DATA.secs, AUD=DATA.aud, NUM="1234", CIR="①②③④", TF=["○","✕"], TFW=["對","錯"];
+const ITEMS=[];
+SECS.forEach((s,si)=>s.items.forEach((it,ii)=>{it.id=s.id+"_"+ii; it.si=si; it.ii=ii; it.t=s.type; ITEMS.push(it);}));
+const $=id=>document.getElementById(id);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SPK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+const TICK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>';
+const FS=[20,24,28,32], RATES=[["慢",0.8],["正常",1],["快",1.2]];
+const KEY="social6-midterm-1151-pub";
+let st={ans:{},i:0,fs:1,hc:false,rate:1,t0:null,t1:null};
+try{const x=JSON.parse(localStorage.getItem(KEY)||"null"); if(x&&typeof x==="object")st=Object.assign(st,x);}catch(e){}
+const SITE_URL="https://liniris1023.github.io/sped-exam-reader/social6-midterm/";
+let TEACHER=false;
+function save(){ if(TEACHER)return; try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){} }
+
+/* 標記 → HTML：~字~ 底線、□ 方框、換行 */
+function M(t){ let h=esc(t).replace(/~([^~]+)~/g,'<u class="em">$1</u>');
+  return h.replace(/□/g,'<span class="sq"></span>').replace(/\n/g,"<br>"); }
+const ansStr=v=>v==null?"":String(v);
+
+/* result code for the teacher's QR */
+function encodeRes(){ const a=ITEMS.map(it=>{const v=st.ans[it.id]; return v==null||v===""?"x":String(v);}).join(".");
+  const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):0;
+  return "r-"+a+"-"+Math.floor((st.t1||Date.now())/60000).toString(36)+"-"+mins.toString(36); }
+function decodeRes(h){ const m=/^r-([0-9x.]+)-([0-9a-z]+)-([0-9a-z]+)$/.exec(h); if(!m)return null; const parts=m[1].split(".");
+  if(parts.length!==ITEMS.length)return null;
+  const ans={}; ITEMS.forEach((it,i)=>{ const c=parts[i]; if(c==="x")return; ans[it.id]=it.t==="check"?c:+c; });
+  const t1=parseInt(m[2],36)*60000, mins=parseInt(m[3],36); return {ans,t1,t0:mins?t1-mins*60000:null}; }
+function drawQR(el,text,size){ el.innerHTML=""; if(!window.QRCode){ el.textContent=text; return; }
+  try{ new QRCode(el,{text,width:size,height:size,colorDark:"#000000",colorLight:"#FFFFFF",correctLevel:QRCode.CorrectLevel.M}); }catch(e){ el.textContent=text; } }
+let view="home";
+
+/* ---------- speech: edge-tts clips (曉臻) first, browser voice as backup ---------- */
+const synth=window.speechSynthesis; let vZh=null;
+function pickVoice(){ if(!synth)return; const v=synth.getVoices();
+  vZh=v.find(x=>/zh[-_]TW/i.test(x.lang)&&/HsiaoChen|曉臻/i.test(x.name))||v.find(x=>/zh[-_]TW/i.test(x.lang))||v.find(x=>/^zh/i.test(x.lang))||null; }
+if(synth){pickVoice(); synth.onvoiceschanged=pickVoice;}
+const urls={}; const player=new Audio(); let playTok=0;
+function clipURL(seg){ const p=AUD[seg[0]+"|"+seg[1]]; if(!p)return Promise.resolve(null);
+  if(!urls[p]) urls[p]=fetch(p).then(r=>{if(!r.ok)throw 0; return r.blob();}).then(b=>URL.createObjectURL(b)).catch(()=>{delete urls[p]; return null;});
+  return urls[p]; }
+function prefetch(list){ list.forEach(s=>clipURL(s)); }
+function audioSay(url,tok){ return new Promise(res=>{ if(tok!==playTok){res();return;} let done=false; const fin=()=>{if(!done){done=true;res();}};
+  player.onended=fin; player.onerror=fin; player.src=url; player.playbackRate=RATES[st.rate][1]; player.preservesPitch=true;
+  const p=player.play(); if(p&&p.catch)p.catch(fin); }); }
+function synthSay(seg,tok){ return new Promise(res=>{ if(!synth||tok!==playTok){ $("live").textContent=seg[1]; res(); return; }
+  const u=new SpeechSynthesisUtterance(seg[1]); u.lang="zh-TW"; if(vZh)u.voice=vZh;
+  u.rate=RATES[st.rate][1]*0.95; let done=false; const fin=()=>{if(!done){done=true;res();}};
+  u.onend=fin; u.onerror=fin; synth.speak(u); setTimeout(fin,Math.max(4000,seg[1].length*300)); }); }
+function clearReading(){document.querySelectorAll(".reading").forEach(e=>e.classList.remove("reading"));}
+async function speak(parts){
+  const tok=++playTok; try{player.pause();}catch(e){} if(synth)synth.cancel(); clearReading();
+  for(const p of parts){ if(tok!==playTok)return; clearReading(); if(p.el){p.el.classList.add("reading"); follow(p.el);}
+    for(const seg of p.segs){ if(tok!==playTok)return; const url=await clipURL(seg); if(tok!==playTok)return;
+      if(url) await audioSay(url,tok); else await synthSay(seg,tok); }
+    if(tok===playTok) await new Promise(r=>setTimeout(r,200)); }
+  if(tok===playTok)clearReading(); }
+const say1=t=>speak([{segs:[["zh",t]]}]);
+function stopSpeak(){ playTok++; try{player.pause();}catch(e){} if(synth)synth.cancel(); clearReading(); }
+function follow(el){ try{ const r=el.getBoundingClientRect(), top=$("tools").offsetHeight+12, bar=$("bar"), bottom=window.innerHeight-(bar.hidden?0:bar.offsetHeight)-12;
+  if(r.top>=top&&r.bottom<=bottom)return; const smooth=!matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({top:Math.max(0,window.scrollY+r.top-top-Math.max(0,(bottom-top-r.height)/2)),behavior:smooth?"smooth":"auto"}); }catch(e){} }
+
+/* ---------- settings ---------- */
+function applySettings(){ document.documentElement.style.fontSize=FS[st.fs]+"px";
+  if(st.hc)document.documentElement.setAttribute("data-contrast","hc"); else document.documentElement.removeAttribute("data-contrast");
+  $("hc").setAttribute("aria-pressed",String(!!st.hc)); $("rate").textContent="語速："+RATES[st.rate][0]; }
+$("fsDown").onclick=()=>{st.fs=Math.max(0,st.fs-1);save();applySettings();};
+$("fsUp").onclick=()=>{st.fs=Math.min(FS.length-1,st.fs+1);save();applySettings();};
+$("hc").onclick=()=>{st.hc=!st.hc;save();applySettings();};
+$("rate").onclick=()=>{st.rate=(st.rate+1)%RATES.length;save();applySettings();};
+$("homeBtn").onclick=()=>{stopSpeak(); if(TEACHER){ try{history.replaceState(null,"",location.pathname+location.search);}catch(e){} leaveTeacher(); show("home"); } else show("home");};
+
+/* ---------- helpers ---------- */
+const isDone=it=>{const v=st.ans[it.id]; return v!=null&&v!=="";};
+const answered=()=>ITEMS.filter(isDone).length;
+function setProgress(){ $("prog").textContent = view==="q" ? `第 ${st.i+1} / ${ITEMS.length} 題　已答 ${answered()}` : `已答 ${answered()} / ${ITEMS.length}`; }
+function show(v){ view=v; $("bar").hidden = v!=="q"; ({home:renderHome,q:renderQ,check:renderCheck,done:renderDone})[v](); setProgress(); if(v!=="q")window.scrollTo(0,0); }
+const ckTxt=v=>ansStr(v).split("").map(d=>CIR[+d]).join("");
+
+/* ---------- home ---------- */
+function renderHome(){
+  const started=answered()>0||st.t0;
+  $("main").innerHTML=`<section class="screen">
+    <p class="eyebrow">115 學年度第一學期　期中學業評量</p>
+    <h1>六年級 社會科<br>報讀作答</h1>
+    <div class="facts"><span class="fact">4 大題</span><span class="fact">${ITEMS.length} 小題</span><span class="fact">滿分 100 分</span><span class="fact">全部在平板上作答</span></div>
+    <p style="margin:0;font-size:1.6rem;font-weight:900">六年丙班</p>
+    <div class="row">
+      <button class="big" id="startBtn" type="button" style="font-size:1.8rem;min-height:5.5rem;padding-inline:2.4rem">${started?"繼續作答":"開始作答"}</button>
+      ${started?'<button class="ghost" id="resetBtn" type="button">清除答案，重新作答</button>':""}
+    </div>
+    <ol class="help">
+      <li>按 <b>藍色喇叭</b> 聽題目，可以一直重聽。</li>
+      <li>是非題：對的按 <b>○</b>，錯的按 <b>✕</b>。</li>
+      <li>選擇題、配合題：點大按鈕選答案。勾選題：對的都要勾，可以勾很多個。</li>
+      <li>寫完按「交卷」，再按「下載作答 PDF」交給老師。</li>
+    </ol>
+    <div id="resetBox"></div>
+    <div class="qrbox"><div id="homeQR"></div><p>掃描 QR Code 打開這個報讀網站</p></div>
+  </section>`;
+  drawQR($("homeQR"),SITE_URL,220);
+  $("startBtn").onclick=()=>{ if(!st.t0){st.t0=Date.now();save();} show(st.t1?"done":"q"); window.scrollTo(0,0);};
+  if($("resetBtn")) $("resetBtn").onclick=()=>{ $("resetBox").innerHTML=`<div class="warnbox"><p>確定要清除全部答案嗎？清除後不能復原。</p>
+      <div class="row"><button class="big" id="yesReset" type="button" style="background:var(--bad);color:#fff">確定清除</button><button class="ghost" id="noReset" type="button">不要清除</button></div></div>`;
+    $("noReset").onclick=()=>{$("resetBox").innerHTML="";};
+    $("yesReset").onclick=()=>{ st.ans={}; st.i=0; st.t0=null; st.t1=null; save(); renderHome(); setProgress(); }; };
+}
+
+/* ---------- question ---------- */
+function secHead(s){
+  return `<div class="sec">
+    <div class="sech"><b>${s.no}、${M(s.zh)}</b><small>（${s.pct} 分，${s.perNote||"每題 "+s.per+" 分"}）</small></div>
+    <div class="row"><button class="speaker pill" id="secSpk" type="button" aria-label="唸大題說明">${SPK}大題說明</button></div>
+  </div>`;
+}
+function renderQ(keepScroll){
+  const y=window.scrollY; const it=ITEMS[st.i], s=SECS[it.si], a=st.ans[it.id];
+  let h=`<section class="screen" style="gap:.8rem">`+secHead(s);
+  if(it.t==="match"){
+    const g=s.groups[it.g];
+    h+=`<div class="passage"><div class="ptop"><b>${esc(g.title)}</b><button class="speaker pill" id="ctxSpk" type="button">${SPK}聽說明</button></div><p class="ctxp" id="ctx">${M(g.ctx)}</p></div>`;
+  }
+  h+=`<div class="card"><div class="qhead"><span class="qnum">${esc(it.lab)}</span><button class="speaker pill" id="stemSpk" type="button" aria-label="唸題目">${SPK}唸題目</button></div>`;
+  if(it.t==="tf"){
+    h+=`<p class="stem" id="stem">${M(it.stem)}</p>`;
+    h+=`<div class="picks tfs" role="radiogroup" aria-label="對或錯">${TF.map((c,k)=>`<button type="button" role="radio" aria-checked="${a===k}" data-tf="${k}" aria-label="${TFW[k]}"><span class="sym">${c}</span><span class="w">${TFW[k]}</span></button>`).join("")}</div>`;
+  } else if(it.t==="choice"){
+    h+=`<p class="stem" id="stem">${M(it.stem)}</p>`;
+    h+=`<div class="opts" role="radiogroup" aria-label="選項">`+it.o.map((o,k)=>`<div class="opt"><button class="optbtn" type="button" role="radio" aria-checked="${a===k}" data-k="${k}"><span class="no">${NUM[k]}</span><span>${M(o)}</span></button><button class="speaker" type="button" data-s="${k}" aria-label="唸選項 ${k+1}">${SPK}</button></div>`).join("")+`</div>`;
+  } else if(it.t==="match"){
+    const g=s.groups[it.g];
+    h+=`<p class="stem mstem" id="stem"><span class="bx mbx${a!=null?" filled":""} cur"><b>${a!=null?g.bank[a][0]:"&nbsp;"}</b></span><span>${M(it.stem)}</span></p>`;
+    h+=`<div class="row"><button class="speaker pill" id="bankSpk" type="button">${SPK}聽全部代號</button></div>`;
+    h+=`<div class="codes" role="radiogroup" aria-label="代號">${g.bank.map((b,k)=>`<button type="button" role="radio" aria-checked="${a===k}" data-m="${k}"><span class="code">${b[0]}</span><span class="cw">${esc(b[1])}</span></button>`).join("")}</div>`;
+  } else {
+    const on=ansStr(a);
+    h+=`<p class="stem" id="stem">${M(it.stem)}</p>`;
+    h+=`<div class="opts" aria-label="可以勾很多個">`+it.o.map((o,k)=>`<div class="opt"><button class="optbtn ckbtn" type="button" role="checkbox" aria-checked="${on.includes(k)}" data-ck="${k}"><span class="box ckbox">${TICK}</span><span><b class="cno">${CIR[k]}</b> ${M(o)}</span></button><button class="speaker" type="button" data-s="${k}" aria-label="唸選項 ${k+1}">${SPK}</button></div>`).join("")+`</div>`;
+    h+=`<div class="padshow"><span class="val${on?"":" empty"}" id="val">${on?"勾了 "+ckTxt(on):"點一下打勾，再點一次取消"}</span><button class="speaker pill" id="mySpk" type="button">${SPK}唸我勾的</button></div>`;
+  }
+  h+=`</div>`;
+  h+=`<details class="nav" id="navd"><summary>全部題目（點題號可跳題）</summary>`+SECS.map(sx=>`<div class="navsec"><b>${sx.no}、${M(sx.zh)}</b><div class="grid">${sx.items.map(x=>{const n=ITEMS.indexOf(x);return `<button type="button" data-go="${n}" class="${isDone(x)?"done":""}" aria-current="${n===st.i}"${n>reach()?" disabled":""}>${esc(x.lab)}</button>`;}).join("")}</div></div>`).join("")+`</details>`;
+  h+=`</section>`;
+  const navOpen=$("navd")&&$("navd").open;
+  $("main").innerHTML=h; if(navOpen)$("navd").open=true;
+  // wire
+  $("secSpk").onclick=()=>speak([{segs:s.introSay}]);
+  $("stemSpk").onclick=()=>speak([{segs:it.stemSay,el:$("stem")}]);
+  if($("ctxSpk")) $("ctxSpk").onclick=()=>speak([{segs:s.groups[it.g].ctxSay,el:$("ctx")}]);
+  if($("bankSpk")) $("bankSpk").onclick=()=>{ const g=s.groups[it.g], bs=[...document.querySelectorAll("[data-m]")];
+    speak(g.bankSay.map((seg,k)=>({segs:[seg],el:bs[k]}))); };
+  document.querySelectorAll("[data-tf]").forEach(b=>b.onclick=()=>pick(+b.dataset.tf,"你選的是"+TFW[+b.dataset.tf]));
+  document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>pick(+b.dataset.k,"你選的是"+(+b.dataset.k+1)+"號"));
+  document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{ const k=+b.dataset.m, bk=s.groups[it.g].bank[k]; pick(k,"你選的是"+bk[0]+"，"+bk[1]); });
+  document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const k=+b.dataset.s; speak([{segs:it.optSay[k],el:b.previousElementSibling}]);});
+  document.querySelectorAll("[data-ck]").forEach(b=>b.onclick=()=>{ const d=b.dataset.ck; let v=ansStr(st.ans[it.id]); const had=v.includes(d);
+    v=had?v.replace(d,""):v+d; v=v.split("").sort().join(""); setAns(v); say1((had?"取消":"勾了")+(+d+1)+"號"); });
+  if($("mySpk")) $("mySpk").onclick=()=>{ const v=ansStr(st.ans[it.id]); if(!v){ say1("你還沒有勾"); return; }
+    speak([{segs:[["zh","你勾了"],...v.split("").map(d=>["zh",(+d+1)+"號"])],el:$("val")}]); };
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(+b.dataset.go));
+  // bottom bar
+  $("prevBtn").disabled=st.i===0;
+  $("nextBtn").classList.toggle("locked",!isDone(it));
+  const last=st.i===ITEMS.length-1; $("nextBtn").textContent=last?"檢查並交卷 →":"下一題 →"; $("nextBtn").classList.toggle("finish",last);
+  prefetch([...it.stemSay,...(it.optSay||[]).flat(),...s.introSay,...(it.t==="match"?[...s.groups[it.g].ctxSay,...s.groups[it.g].bankSay]:[])]);
+  setProgress();
+  if(keepScroll) window.scrollTo(0,y); else window.scrollTo(0,0);
+}
+function setAns(v){ const it=ITEMS[st.i]; if(v===""||v==null) delete st.ans[it.id]; else st.ans[it.id]=v; if(st.t1)st.t1=null; save(); renderQ(true); }
+function pick(k,msg){ const it=ITEMS[st.i]; st.ans[it.id]=k; if(st.t1)st.t1=null; save(); renderQ(true); say1(msg); }
+function reach(){ const n=ITEMS.findIndex(x=>!isDone(x)); return n<0?ITEMS.length-1:n; }
+function go(n){ stopSpeak(); st.i=Math.max(0,Math.min(ITEMS.length-1,n)); save(); show("q"); }
+$("prevBtn").onclick=()=>go(st.i-1);
+$("nextBtn").onclick=()=>{ const it=ITEMS[st.i];
+  if(!isDone(it)){ say1(it.t==="check"?"請先勾選答案，才能到下一題。":"請先選一個答案，才能到下一題。"); const b=$("nextBtn"); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); return; }
+  if(st.i===ITEMS.length-1){stopSpeak(); show("check");} else go(st.i+1); };
+document.addEventListener("keydown",e=>{ if(view!=="q"||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
+  if(e.key==="ArrowRight")$("nextBtn").click(); if(e.key==="ArrowLeft"&&st.i>0)go(st.i-1); });
+
+/* ---------- check & submit ---------- */
+function renderCheck(){
+  const miss=ITEMS.filter(it=>!isDone(it));
+  $("main").innerHTML=`<section class="screen">
+    <h1>檢查一下</h1>
+    ${miss.length?`<div class="warnbox"><p>還有 ${miss.length} 題沒有寫：</p><div class="miss">${miss.map(it=>`<button type="button" data-go="${ITEMS.indexOf(it)}">${SECS[it.si].no}-${esc(it.lab)}</button>`).join("")}</div></div>`
+      :`<p style="margin:0;font-weight:900;font-size:1.3rem;color:var(--ok)">全部 ${ITEMS.length} 題都寫完了！</p>`}
+    <div class="row">
+      <button class="big" id="submitBtn" type="button" style="background:var(--stu);color:var(--stu-fg)"${miss.length?" disabled":""}>${miss.length?"寫完才能交卷":"交卷"}</button>
+      <button class="ghost" id="backBtn" type="button">回去檢查題目</button>
+    </div></section>`;
+  say1(miss.length?"還有題目沒寫，要回去檢查嗎？":"全部寫完了，可以交卷。");
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(+b.dataset.go));
+  $("backBtn").onclick=()=>go(st.i);
+  $("submitBtn").onclick=()=>{ if(ITEMS.some(it=>!isDone(it)))return; st.t1=Date.now(); save(); show("done"); };
+}
+let pdfBlob=null, pages=[];
+function renderDone(){
+  $("main").innerHTML=`<section class="screen">
+    <div class="done-mark" aria-hidden="true">✓</div>
+    <h1>${TEACHER?"老師批改：作答紀錄":"交卷完成"}</h1>
+    <p style="margin:0;font-weight:700">六年丙班　已答 ${answered()} / ${ITEMS.length} 題　交卷 ${fmt(st.t1)}</p>
+    <div class="row"><button class="big" id="pdfBtn" type="button" disabled>正在製作作答 PDF…</button>
+      ${TEACHER?'<button class="ghost" id="leaveBtn" type="button">離開批改畫面</button>':'<button class="ghost" id="reviewBtn" type="button">回去修改答案</button>'}</div>
+    <p class="status" id="pdfStatus" role="status"></p>
+    ${TEACHER?"":`<div class="qrbox"><div id="resQR"></div><p>老師用手機掃描，就能看到作答並下載 PDF</p></div>`}
+    <details class="nav"${TEACHER?" open":""}><summary>看作答紀錄（PDF 內容）</summary><div class="sheetprev" id="sheetPrev"></div></details>
+  </section>`;
+  if(!TEACHER){ say1("已經交卷，請把作答紀錄交給老師。"); drawQR($("resQR"),SITE_URL+"#"+encodeRes(),260);
+    $("reviewBtn").onclick=()=>{ st.t1=null; save(); go(st.i); }; }
+  else $("leaveBtn").onclick=()=>{ try{history.replaceState(null,"",location.pathname+location.search);}catch(e){} location.hash=""; leaveTeacher(); };
+  buildPDF().then(ok=>{ const b=$("pdfBtn"); if(!b)return;
+    if(ok){ b.disabled=false; b.textContent="下載作答 PDF 給老師"; b.onclick=downloadPDF; }
+    else { b.textContent="PDF 製作失敗"; $("pdfStatus").className="status bad"; $("pdfStatus").textContent="PDF 沒有做出來。請老師打開下方「看作答紀錄」直接批改，或重新整理頁面再試一次。"; renderSheetFallback(); } });
+}
+
+/* ---------- answer sheet (PDF) ---------- */
+function valText(it,v){ if(v==null||v==="")return null; const s=SECS[it.si];
+  if(it.t==="tf") return TF[v]; if(it.t==="choice") return NUM[v]+"　"+it.o[v];
+  if(it.t==="match"){ const b=s.groups[it.g].bank[v]; return b[0]+"　"+b[1]; }
+  return ansStr(v)?"勾 "+ckTxt(v):null; }
+const stuText=it=>valText(it,st.ans[it.id]);
+const keyText=it=>valText(it,it.a);
+function score(it){ if(!isDone(it))return 0; const s=SECS[it.si];
+  if(it.t==="check"){ const v=ansStr(st.ans[it.id]); let n=0; for(let k=0;k<it.o.length;k++) if(v.includes(k)===it.a.includes(k)) n++; return n*s.per; }
+  return String(st.ans[it.id])===String(it.a)?s.per:0; }
+const maxOf=it=>it.t==="check"?it.o.length*SECS[it.si].per:SECS[it.si].per;
+function fmt(t){ if(!t)return "—"; const d=new Date(t), p=x=>String(x).padStart(2,"0"); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function sheetBlocks(){
+  const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):null;
+  const B=[];
+  B.push(`<div><div><h2>115 學年度第一學期 期中學業評量　社會科</h2><p class="sub">作答紀錄（報讀版・學生平板作答）</p></div>
+    <div class="who"><span>六年 <b>丙</b> 班</span><span>姓名 <b>　　　　　</b></span></div>
+    <div class="who" style="font-size:12.5px;font-weight:500"><span>交卷時間：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span><span>已作答：${answered()} / ${ITEMS.length} 題</span></div></div>`);
+  let auto=0;
+  const rows=SECS.map(s=>{ const p=s.items.reduce((t,it)=>t+score(it),0); auto+=p;
+    const n=s.type==="check"?null:s.items.filter(it=>score(it)>0).length;
+    return `<tr><td>${s.no}、${M(s.zh)}</td><td class="c">${s.pct}</td><td class="c">${n==null?"":`對 ${n} / ${s.items.length} 題　`}<b>${p}</b> 分</td><td class="c">______ 分</td></tr>`; }).join("");
+  B.push(`<div><h3>成績</h3><table><tr><th>大題</th><th style="width:60px">配分</th><th>電腦批改</th><th style="width:120px">老師確認得分</th></tr>${rows}
+    <tr class="tot"><td>合計</td><td class="c">100</td><td class="c">電腦批改 <b>${auto}</b> / 100 分</td><td class="c">總分 ______</td></tr></table>
+    <p class="ctx" style="margin:6px 0 0">電腦批改依參考答案計分，請老師對照學校答案卷確認。</p></div>`);
+  SECS.forEach(s=>{
+    const head=`<tr><th style="width:56px">題號</th><th>題目／學生作答</th><th style="width:150px">參考答案</th><th style="width:60px">批改</th></tr>`;
+    let lastG=-1;
+    const body=s.items.map(it=>{ const t=stuText(it); let pre="";
+      if(it.t==="match"&&it.g!==lastG){ lastG=it.g; const g=s.groups[it.g];
+        pre=`<tr><td colspan="4" class="ctx" style="background:#F6F7F9"><b>${esc(g.title)}</b>　代號：${g.bank.map(b=>b[0]+" "+esc(b[1])).join("、")}</td></tr>`; }
+      const ansCell = t==null ? `<span class="no">（未作答）</span>` : `<span style="color:#C2410C;font-weight:900">學生作答：</span><b>${esc(t)}</b>`;
+      const ctx = it.t==="check" ? M(it.stem)+"<br>"+it.o.map((o,k)=>CIR[k]+esc(o)).join("<br>") : M(it.stem);
+      const mark = it.t==="check" ? `<b>${score(it)}</b> / ${maxOf(it)}` : (score(it)>0?'<span class="ok">○</span>':'<span class="no">✕</span>');
+      return pre+`<tr><td class="c"><b>${esc(it.lab)}</b></td><td><div class="ctx">${ctx}</div>${ansCell}</td><td>${esc(keyText(it))}</td><td class="c">${mark}</td></tr>`; }).join("");
+    B.push(`<div><h3>${s.no}、${M(s.zh)}（${s.perNote||"每題 "+s.per+" 分"}）</h3><table>${head}${body}</table></div>`);
+  });
+  return B;
+}
+function layoutPages(){
+  const host=$("report"); host.innerHTML=""; const blocks=sheetBlocks(); const out=[];
+  let pg=null; const newPage=()=>{ pg=document.createElement("div"); pg.className="pg"; host.appendChild(pg); out.push(pg); };
+  newPage();
+  blocks.forEach(html=>{ const d=document.createElement("div"); d.innerHTML=html; const blk=d.firstElementChild;
+    pg.appendChild(blk);
+    if(pg.scrollHeight>1123 && pg.children.length>1){ pg.removeChild(blk);
+      const tb=blk.querySelector("table");
+      if(tb&&tb.rows.length>3){
+        const h3=blk.querySelector("h3"), rows=[...tb.rows], hd=rows.shift();
+        let cur=null; const start=(first)=>{ const b=document.createElement("div"); if(first&&h3)b.appendChild(h3.cloneNode(true)); const t=document.createElement("table"); t.appendChild(hd.cloneNode(true)); b.appendChild(t); pg.appendChild(b); cur=t; };
+        start(true);
+        rows.forEach(r=>{ cur.appendChild(r); if(pg.scrollHeight>1123&&cur.rows.length>2){ cur.removeChild(r); newPage(); start(false); cur.appendChild(r);} });
+      } else { newPage(); pg.appendChild(blk); } } });
+  out.forEach((p,i)=>{ const f=document.createElement("div"); f.className="foot"; f.textContent=`第 ${i+1} / ${out.length} 頁`; p.appendChild(f); });
+  return out;
+}
+async function buildPDF(){
+  try{
+    if(!window.html2canvas||!window.jspdf) return false;
+    try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,3000))]); }catch(e){}
+    pages=layoutPages();
+    const doc=new window.jspdf.jsPDF({unit:"pt",format:"a4",compress:true}); const prev=$("sheetPrev");
+    for(let i=0;i<pages.length;i++){
+      const c=await html2canvas(pages[i],{scale:2,backgroundColor:"#FFFFFF",useCORS:true,logging:false});
+      const url=c.toDataURL("image/jpeg",0.9);
+      if(i)doc.addPage(); doc.addImage(url,"JPEG",0,0,595.28,841.89);
+      if(prev){ const im=new Image(); im.src=url; im.alt=`作答紀錄第 ${i+1} 頁`; prev.appendChild(im); }
+    }
+    pdfBlob=doc.output("blob"); return true;
+  }catch(e){ console.error(e); return false; }
+}
+function renderSheetFallback(){ const prev=$("sheetPrev"); if(!prev)return; prev.innerHTML=""; layoutPages().forEach(p=>{ const c=p.cloneNode(true); c.style.height="auto"; const w=document.createElement("div"); w.style.overflowX="auto"; w.appendChild(c); prev.appendChild(w); }); }
+async function downloadPDF(){
+  const s=$("pdfStatus"); s.className="status"; s.textContent="";
+  const fname="六上社會期中評量_六丙.pdf";
+  try{
+    const file=new File([pdfBlob],fname,{type:"application/pdf"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})&&/iPad|iPhone|Android/i.test(navigator.userAgent)){
+      try{ await navigator.share({files:[file],title:fname}); s.className="status ok"; s.textContent="已送出："+fname; return; }catch(e){ if(e&&e.name==="AbortError"){ s.textContent="沒有下載。想下載時再按一次按鈕。"; return; } }
+    }
+    const url=URL.createObjectURL(pdfBlob), a=document.createElement("a"); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000); s.className="status ok"; s.textContent="已下載："+fname+"，請交給老師。"; return;
+  }catch(e){ s.className="status bad"; s.textContent="這個畫面不能下載檔案。請老師打開下方「看作答紀錄」直接批改。"; }
+}
+
+let saved=null;
+function checkHash(){ const h=(location.hash||"").slice(1); const r=decodeRes(h);
+  if(r){ if(!TEACHER){ saved=st; } TEACHER=true; st=Object.assign({},saved||st,{ans:r.ans,t0:r.t0,t1:r.t1,i:0}); stopSpeak(); show("done"); return true; }
+  return false; }
+function leaveTeacher(){ if(!TEACHER)return; TEACHER=false; if(saved)st=saved; saved=null; show(st.t1?"done":"home"); }
+window.addEventListener("hashchange",()=>{ if(!checkHash()) leaveTeacher(); });
+applySettings();
+if(!checkHash()) show(st.t1?"done":"home");
+</script>
+
+</body></html>
