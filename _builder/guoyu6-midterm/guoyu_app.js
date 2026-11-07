@@ -181,7 +181,9 @@ function renderQ(keepScroll){
     h+=`<div class="takes" id="takes"></div>`;
     h+=`<div class="warnbox" id="recWarn" hidden><p id="recWarnP"></p></div>`;
   } else if(it.t==="paper"){
-    h+=`<p class="stem${it.big?" zybig":""}" id="stem">${M(it.stem)}</p>`;
+    if(it.zoom){ h+=`<p class="stem zybig zoomw" id="stem">${[...it.stem].map((c,k)=>`<button type="button" class="zch" data-zc="${k}" aria-label="放大第 ${k+1} 個字">${esc(c)}</button>`).join("")}</p>`;
+      h+=`<div class="row"><button type="button" class="zallbtn" id="zAll">🔍 整個語詞放大看</button><span class="zhint">點一個字，可以放到最大</span></div>`; }
+    else h+=`<p class="stem${it.big?" zybig":""}" id="stem">${M(it.stem)}</p>`;
     if(it.sub) h+=`<p class="subline">${M(it.sub)}</p>`;
     if(it.img) h+=`<figure class="mfig"><img class="zoomable" src="img/${it.img}.png" alt="${esc(it.alt)}"><figcaption>點圖片可以放大</figcaption></figure>`;
     h+=`<div class="paperbox">${PEN}<span>${esc(s.note)}<br>（${s.no}-${esc(it.lab)}，${it.pts} 分）</span></div>`;
@@ -219,6 +221,8 @@ function renderQ(keepScroll){
     v=had?v.replace(d,""):v+d; v=v.split("").sort().join(""); setAns(v); say1((had?it.offSay:it.onSay)[k]); });
   document.querySelectorAll("[data-bk]").forEach(b=>b.onclick=()=>jumpBlank(s,+b.dataset.bk));
   if(it.t==="rec") wireRec(it);
+  document.querySelectorAll("[data-zc]").forEach(b=>b.onclick=()=>zoomText(it.stem[+b.dataset.zc],true));
+  if($("zAll")) $("zAll").onclick=()=>zoomText(it.stem,false);
   if($("paperDone")) $("paperDone").onclick=()=>{ st.ans[it.id]=1; if(st.t1)st.t1=null; save(); if(st.i===ITEMS.length-1){stopSpeak(); show("check");} else go(st.i+1); };
   if($("txtin")){ const ti=$("txtin"); ti.oninput=()=>{ const v=ti.value; if(v.trim()==="") delete st.ans[it.id]; else st.ans[it.id]=v.trim(); if(st.t1)st.t1=null; save(); $("nextBtn").classList.remove("locked"); setProgress(); }; }
   document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const k=+b.dataset.s; speak([{segs:it.optSay[k],el:b.previousElementSibling}]);});
@@ -289,6 +293,9 @@ function wireRec(it){
       start(); }
   };
 }
+function zoomText(t,one){ stopSpeak(); const d=document.createElement("div"); d.className="zoomov";
+  d.innerHTML=`<div class="zbox"><div class="zc${one?"":" zw"}" style="${one?"":"font-size:min("+Math.floor(88/[...t].length)+"vw,42vh)"}">${esc(t)}</div><button type="button" class="zclose">關閉 ✕</button></div>`;
+  d.onclick=()=>d.remove(); document.body.appendChild(d); d.querySelector("button").focus(); }
 function zoom(src,alt){ const d=document.createElement("div"); d.className="zoom"; d.innerHTML=`<img src="${src}" alt="${esc(alt)}"><button type="button">關閉 ✕</button>`;
   d.onclick=()=>d.remove(); document.body.appendChild(d); d.querySelector("button").focus(); }
 function setAns(v){ const it=ITEMS[st.i]; if(v===""||v==null) delete st.ans[it.id]; else st.ans[it.id]=v; if(st.t1)st.t1=null; save(); renderQ(true); }

@@ -185,7 +185,7 @@ def build():
          "introSay": Z("第三大題，改錯字。每題2分，共20分。請找出語詞中的錯字，把正確的字寫在大字版考卷的方格裡。"), "items": []}
     for i, (w, say, ctx, key) in enumerate(FIX):
         n = i + 1
-        s["items"].append({"lab": str(n), "stem": w, "big": True, "sub": "原來的句子：" + ctx,
+        s["items"].append({"lab": str(n), "stem": w, "big": True, "zoom": True, "sub": "原來的句子：" + ctx,
                            "stemSay": Z(f"第{n}題。{say}。原來的句子是：{ctx.replace('~', '')}。"), "key": [key], "pts": 2})
     secs.append(s)
     # 四、照樣照句
