@@ -477,6 +477,7 @@ $('bScan').onclick = async () => {
     dirs = j.filter(n => n.type==='dir' && !/^[_.]/.test(n.name) && !/-test$/.test(n.name) && !['tests','exams','lib','a','img'].includes(n.name)).map(n=>n.name);
   }catch(e){ $('scanHint').textContent='讀不到存放庫：'+e.message; return; }
   const have = new Set(DATA.sites.map(s=>normUrl(s.url).replace(/\/$/,'')));
+  (DATA.ignore||[]).forEach(x=>have.add(x));
   const todo = dirs.filter(d => !have.has(d));
   if(!todo.length){ $('scanHint').textContent='全部的報讀網站都已經在總覽裡了 👍'; return; }
   $('scanHint').textContent='找到 '+todo.length+' 個還沒加入的資料夾，按「加入」會先帶入資料讓你確認：';

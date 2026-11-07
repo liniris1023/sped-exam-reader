@@ -1,13 +1,87 @@
 {
- "updated": "2026-11-07T15:40:00.000Z",
+ "updated": "2026-11-07T15:57:06.164Z",
  "sites": [
-  {"id":"guoyu6-midterm","title":"六上國語期中評量報讀","year":115,"grade":6,"term":"上","subject":"國語","type":"期中考","url":"guoyu6-midterm/","test":"guoyu6-midterm-test/","note":"","added":1793900000000},
-  {"id":"math6-midterm","title":"六上數學期中評量報讀","year":115,"grade":6,"term":"上","subject":"數學","type":"期中考","url":"math6-midterm/","test":"math6-midterm-test/","note":"","added":1793900000001},
-  {"id":"social6-midterm","title":"六上社會期中評量報讀","year":115,"grade":6,"term":"上","subject":"社會","type":"期中考","url":"social6-midterm/","test":"social6-midterm-test/","note":"","added":1793900000002},
-  {"id":"en6-midterm","title":"六上英語期中評量報讀","year":115,"grade":6,"term":"上","subject":"英語","type":"期中考","url":"en6-midterm/","test":"en6-midterm-test/","note":"","added":1793900000003},
-  {"id":"sci5-midterm","title":"五上自然期中評量報讀","year":115,"grade":5,"term":"上","subject":"自然","type":"期中考","url":"sci5-midterm/","test":"sci5-midterm-test/","note":"","added":1793900000004},
-  {"id":"math6-exam1","title":"六上數學第一次評量報讀（第一～四單元）","year":115,"grade":6,"term":"上","subject":"數學","type":"其他評量","url":"math6-exam1/","test":"","note":"","added":1793900000005},
-  {"id":"guoyu-l1l3","title":"國語複習卷 L1–L3 報讀版","year":115,"grade":0,"term":"上","subject":"國語","type":"其他評量","url":"guoyu-l1l3/","test":"","note":"","added":1793900000006},
-  {"id":"guoyu-l4l6","title":"國語複習卷 L4–L6 報讀版","year":115,"grade":0,"term":"上","subject":"國語","type":"其他評量","url":"guoyu-l4l6/","test":"","note":"","added":1793900000007}
+  {
+   "id": "guoyu6-midterm",
+   "title": "六上國語期中評量報讀",
+   "year": 115,
+   "grade": 6,
+   "term": "上",
+   "subject": "國語",
+   "type": "期中考",
+   "url": "guoyu6-midterm/",
+   "test": "guoyu6-midterm-test/",
+   "note": "",
+   "added": 1793900000000
+  },
+  {
+   "id": "math6-midterm",
+   "title": "六上數學期中評量報讀",
+   "year": 115,
+   "grade": 6,
+   "term": "上",
+   "subject": "數學",
+   "type": "期中考",
+   "url": "math6-midterm/",
+   "test": "math6-midterm-test/",
+   "note": "",
+   "added": 1793900000001
+  },
+  {
+   "id": "social6-midterm",
+   "title": "六上社會期中評量報讀",
+   "year": 115,
+   "grade": 6,
+   "term": "上",
+   "subject": "社會",
+   "type": "期中考",
+   "url": "social6-midterm/",
+   "test": "social6-midterm-test/",
+   "note": "",
+   "added": 1793900000002
+  },
+  {
+   "id": "en6-midterm",
+   "title": "六上英語期中評量報讀",
+   "year": 115,
+   "grade": 6,
+   "term": "上",
+   "subject": "英語",
+   "type": "期中考",
+   "url": "en6-midterm/",
+   "test": "en6-midterm-test/",
+   "note": "",
+   "added": 1793900000003
+  },
+  {
+   "id": "sci5-midterm",
+   "title": "五上自然期中評量報讀",
+   "year": 115,
+   "grade": 5,
+   "term": "上",
+   "subject": "自然",
+   "type": "期中考",
+   "url": "sci5-midterm/",
+   "test": "sci5-midterm-test/",
+   "note": "",
+   "added": 1793900000004
+  },
+  {
+   "id": "math6-exam1",
+   "title": "六上數學第一次評量報讀（第一～四單元）",
+   "year": 115,
+   "grade": 6,
+   "term": "上",
+   "subject": "數學",
+   "type": "其他評量",
+   "url": "math6-exam1/",
+   "test": "",
+   "note": "",
+   "added": 1793900000005
+  }
+ ],
+ "ignore": [
+  "guoyu-l1l3",
+  "guoyu-l4l6"
  ]
 }
