@@ -80,7 +80,12 @@ assert html.count('/*NEED*/!isDone(it)') == 3
 html = html.replace('/*NEED*/!isDone(it)', 'false')
 rep('/*SUB*/${miss.length?" disabled":""}>${miss.length?"寫完才能交卷":"交卷"}', '>${miss.length?"還是要交卷（測試）":"交卷"}')
 rep('/*SUB2*/if(ITEMS.some(it=>!isDone(it)))return; ', '')
-rep('每一題都要作答，才能到下一題；按「上一題」可以回去看寫過的題目。', '測試版可以自由按「上一題」「下一題」，不用每題都寫。')
+rep('每一題都要作答，才能到下一題；按「上一題」可以回去看寫過的題目。', '測試版可以自由跳題，不用每題都寫；按下面中間的 <b>考卷目錄</b> 可以直接跳到任何一題。')
+# 測試版才有考卷目錄
+rep('<button class="prev" id="prevBtn" type="button">← 上一題</button>', '<button class="prev" id="prevBtn" type="button">← 上一題</button>\n  <button class="tocbtn" id="tocBtn" type="button">📋 考卷目錄</button>')
+rep("</style>\n<div class=\"wrap\">", ".bar .wrap{grid-template-columns:1fr 1.15fr 1fr}\n</style>\n<div class=\"wrap\">")
+rep('點題號就能回到寫過的題目。', '點題號就能跳到那一題（測試版）。')
+rep('say1("考卷目錄。點題號，就能回到寫過的題目。");', 'say1("考卷目錄。點題號，就能跳到那一題。");')
 rep('const fname="六上國語期中評量.pdf";', 'const fname="六上國語期中評量_測試版.pdf";')
 rep("applySettings();\nif(!checkHash())", """$("tFill").onclick=()=>{ ITEMS.forEach(it=>{ const r=n=>Math.floor(Math.random()*n);
   if(it.t==="choice")st.ans[it.id]=r(it.o.length);
@@ -88,6 +93,7 @@ rep("applySettings();\nif(!checkHash())", """$("tFill").onclick=()=>{ ITEMS.forE
   else if(it.t==="match")st.ans[it.id]=r(SECS[it.si].groups[it.g].bank.length);
   else if(it.t==="rec")st.ans[it.id]=["即便下雨，我也要去倒垃圾。","即便路很遠，我們也要一起守護大自然。"][r(2)]; });
   if(!st.t0)st.t0=Date.now(); save(); show(view==="home"?"home":"q"); };
+$("tocBtn").onclick=()=>{ stopRec(); stopTake(); stopSpeak(); show("toc"); };
 $("tSubmit").onclick=()=>{ stopSpeak(); if(!st.t0)st.t0=Date.now(); st.t1=Date.now(); save(); show("done"); };
 $("tClear").onclick=()=>{ stopSpeak(); st.ans={}; st.i=0; st.t0=null; st.t1=null; save(); show("home"); };
 applySettings();
