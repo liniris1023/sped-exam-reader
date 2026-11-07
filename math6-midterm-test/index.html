@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>
+<title>六上數學期中評量報讀測試版</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Noto+Sans+TC:wght@500;700;900&display=swap">
+<style>
+/* Layout: one question per screen; sticky tool bar on top; big prev/next bar fixed at bottom (same frame as 自然/社會作業簿報讀, scaled up) */
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --fg:#101317; --muted:#424A57; --line:#B8C0CC;
+  --accent:#0A4DA3; --accent-fg:#FFFFFF; --sel:#DCE8FA; --listen:#6A1B9A; --listen-bg:#F1E6F8;
+  --ok:#1C7A33; --bad:#B3261E; --focus:#FF9F00; --reading:#FFF1B8; --stu:#C2410C; --stu-fg:#FFFFFF;
+  --zh:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Heiti TC",sans-serif;
+  --en:"Andika","Noto Sans TC","Arial Rounded MT Bold",Arial,sans-serif;
+  font-size:24px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0E1013; --surface:#1A1D22; --fg:#F5F7FA; --muted:#BCC3CD; --line:#4A525E;
+  --accent:#FFD54A; --accent-fg:#111111; --sel:#3B3414; --listen:#D7A6F2; --listen-bg:#2B1D33;
+  --ok:#7EDB91; --bad:#FF8F86; --focus:#FFD54A; --reading:#4A3F12; --stu:#FFA94D; --stu-fg:#111111; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E1013; --surface:#1A1D22; --fg:#F5F7FA; --muted:#BCC3CD; --line:#4A525E;
+  --accent:#FFD54A; --accent-fg:#111111; --sel:#3B3414; --listen:#D7A6F2; --listen-bg:#2B1D33;
+  --ok:#7EDB91; --bad:#FF8F86; --focus:#FFD54A; --reading:#4A3F12; --stu:#FFA94D; --stu-fg:#111111; color-scheme:dark }
+:root[data-contrast="hc"]{
+  --bg:#000000; --surface:#000000; --fg:#FFEB3B; --muted:#FFEB3B; --line:#FFEB3B;
+  --accent:#FFEB3B; --accent-fg:#000000; --sel:#3D3800; --listen:#FFFFFF; --listen-bg:#1A1A1A;
+  --ok:#5CFF8A; --bad:#FF7070; --focus:#FFFFFF; --reading:#3D3800; --stu:#FFEB3B; --stu-fg:#000000; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--zh);font-size:1rem;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-bottom:calc(7.5rem + env(safe-area-inset-bottom,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
+.wrap{max-width:52rem;margin:0 auto}
+.en{font-family:var(--en)}
+svg{flex:none}
+
+/* tool bar */
+.tools{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:2px solid var(--line);padding-block:.45rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.tool{border:2px solid var(--line);background:var(--surface);border-radius:.5rem;padding:.2rem .6rem;font-size:.75rem;font-weight:700;min-height:2.3rem}
+.tool[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.tools .grow{flex:1}
+.home{display:inline-flex;align-items:center;gap:.3rem;background:var(--fg);color:var(--bg);border:0;border-radius:.6rem;padding:.25rem .8rem .25rem .5rem;font-size:.95rem;font-weight:900;min-height:2.8rem}
+.home svg{width:1.6rem;height:1.6rem}
+.progress{font-size:.75rem;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* screens */
+.screen{padding-block:1.2rem;display:flex;flex-direction:column;gap:1rem}
+.eyebrow{font-size:.8rem;font-weight:700;color:var(--muted);letter-spacing:.05em;margin:0}
+h1{font-size:2rem;line-height:1.3;margin:0;font-weight:900;text-wrap:balance}
+.facts{display:flex;flex-wrap:wrap;gap:.5rem}
+.fact{border:2px solid var(--line);border-radius:.5rem;padding:.2rem .7rem;font-weight:700;background:var(--surface);font-size:.85rem}
+.help{margin:0;padding-left:1.3rem;color:var(--muted);font-size:.85rem;display:flex;flex-direction:column;gap:.2rem}
+.big{background:var(--accent);color:var(--accent-fg);border:0;border-radius:.8rem;font-size:1.3rem;font-weight:900;padding:.7rem 1.4rem;min-height:4rem}
+.big:disabled{opacity:.45;cursor:default}
+.ghost{background:var(--surface);border:3px solid var(--fg);border-radius:.8rem;font-size:1rem;font-weight:700;padding:.5rem 1.1rem;min-height:3.2rem}
+.row{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.8rem}
+.field{display:flex;flex-direction:column;gap:.3rem;min-width:0}
+.field label{font-weight:900;font-size:1rem}
+.input{font:inherit;font-size:1.4rem;font-weight:700;padding:.4rem .7rem;border:3px solid var(--fg);border-radius:.7rem;background:var(--surface);color:var(--fg);min-height:3.6rem;width:100%}
+.warnbox{border:3px solid var(--bad);border-radius:1rem;padding:1rem;background:var(--surface);display:flex;flex-direction:column;gap:.7rem}
+.warnbox p{margin:0;font-weight:900;color:var(--bad)}
+
+/* section head */
+.sec{padding-top:.9rem;display:flex;flex-direction:column;gap:.4rem}
+.sech{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .8rem}
+.sech b{font-size:1.25rem;font-weight:900;line-height:1.35}
+.sech .en{font-weight:700}
+.sech small{color:var(--muted);font-weight:700;font-size:.85rem}
+.tag{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.15rem .8rem .15rem .55rem;font-weight:900;font-size:.85rem;border:2px solid currentColor}
+.tag svg{width:1.3rem;height:1.3rem}
+.tag.listen{color:var(--listen);background:var(--listen-bg)}
+.tag.over{color:var(--ok)}
+
+/* speakers */
+.speaker{flex:none;width:4.6rem;height:4.6rem;border-radius:50%;border:4px solid var(--accent);background:var(--surface);color:var(--accent);display:grid;place-items:center}
+.speaker svg{width:2.6rem;height:2.6rem}
+.pill{width:auto;height:auto;min-height:3.6rem;border-radius:999px;display:inline-flex;align-items:center;gap:.4rem;padding:.3rem 1.2rem .3rem .8rem;font-size:1.05rem;font-weight:900}
+.pill svg{width:2rem;height:2rem}
+.reading{background:var(--reading)!important;outline:4px solid var(--accent);outline-offset:3px;border-radius:.6rem}
+
+/* passage / dialogue */
+.passage{border:3px solid var(--line);background:var(--surface);border-radius:1rem;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.5rem}
+.ptop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem}
+.ptop b{font-size:1.05rem;font-weight:900}
+.fig{margin:0;align-self:center;width:100%;max-width:30rem;background:#FFFFFF;border:3px solid var(--line);border-radius:.8rem;padding:.5rem}
+.fig img{display:block;width:100%;height:auto}
+.zoomable{cursor:zoom-in}
+.lnrow{display:flex;align-items:center;gap:.5rem}
+.lnspk{width:3.8rem;height:3.8rem;border-width:3px}
+.lnspk svg{width:2.2rem;height:2.2rem}
+.ln{display:block;flex:1;min-width:0;width:100%;text-align:left;background:transparent;border:0;border-radius:.5rem;padding:.25rem .35rem;font-family:var(--en);font-size:1.45rem;font-weight:700;line-height:2.1}
+.ln.cur{background:var(--sel)}
+.blank{cursor:pointer;display:inline-flex;align-items:baseline;gap:.25rem;min-width:4.2em;border-bottom:4px solid var(--fg);padding:0 .3rem;margin:0 .15rem;line-height:1.5;justify-content:center}
+.blank i{font-style:normal;font-family:var(--zh);font-size:.75em;font-weight:900;color:var(--muted)}
+.blank.filled{color:var(--accent)}
+.blank.cur{background:var(--reading);border-bottom-color:var(--accent);border-bottom-width:6px;outline:3px dashed var(--accent);outline-offset:2px;border-radius:.3rem .3rem 0 0}
+.vocab{display:flex;flex-wrap:wrap;gap:.4rem;border-top:2px dashed var(--line);padding-top:.6rem}
+.vocab button{border:2px solid var(--line);background:var(--bg);border-radius:.5rem;padding:.2rem .6rem;font-size:.95rem;font-weight:700;min-height:2.8rem}
+.vocab button .en{font-size:1.05rem}
+.vocab button{display:inline-flex;align-items:center;gap:.2rem}
+.vspk{display:inline-grid;place-items:center;width:2.2rem;height:2.2rem;margin-left:.3rem;border-radius:50%;border:3px solid var(--accent);color:var(--accent);background:var(--surface)}
+.vspk svg{width:1.3rem;height:1.3rem}
+.note{color:var(--muted);font-weight:700;font-size:.95rem;margin:0}
+
+/* question card */
+.card{background:var(--surface);border:3px solid var(--line);border-radius:1rem;padding:1rem;display:flex;flex-direction:column;gap:1rem}
+.qhead{display:flex;gap:.8rem;align-items:flex-start}
+.qnum{flex:none;font-weight:900;font-size:1.7rem;line-height:1.5;background:var(--fg);color:var(--bg);border-radius:.6rem;padding:.1rem .7rem;font-variant-numeric:tabular-nums;min-width:3rem;text-align:center}
+.stem{font-size:1.4rem;font-weight:700;line-height:1.7;margin:0;min-width:0;flex:1;border-radius:.4rem;padding:0 .2rem}
+.stem.en{font-size:1.6rem}
+.stem .ln{padding:0;font-size:1.6rem}
+.qhead{align-items:center;flex-wrap:wrap}
+.stemrow{display:flex}
+.opts.bigw .optbtn{font-size:3.4rem;min-height:7.5rem;letter-spacing:.03em}
+.wpop{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wcard{background:var(--surface);color:var(--fg);border:6px solid var(--accent);border-radius:1.4rem;padding:1.5rem 2rem;display:flex;flex-direction:column;align-items:center;gap:1rem;max-width:100%;min-width:min(30rem,100%)}
+.wno{width:6rem;height:6rem;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-family:var(--en);font-size:4rem;font-weight:700;line-height:1}
+.wword{font-family:var(--en);font-weight:700;font-size:clamp(4.5rem,20vw,10rem);line-height:1.1;letter-spacing:.04em;overflow-wrap:anywhere;text-align:center}
+.wsel{font-weight:900;font-size:1.3rem;color:var(--accent)}
+.pcard{width:min(44rem,100%);max-height:100%;overflow:auto;padding:1rem 1.2rem;gap:.7rem}
+.pcard .wno{width:4.6rem;height:4.6rem;font-size:3rem;flex:none}
+.pcard img{display:block;width:100%;max-height:52vh;object-fit:contain;background:#FFFFFF;border-radius:.6rem;border:3px solid var(--line)}
+.pcap{margin:0;font-weight:900;font-size:1.9rem;line-height:1.35;text-align:center;border-radius:.5rem;padding:0 .4rem}
+.pcap .en{font-size:2.3rem}
+.listenbox{display:flex;align-items:center;gap:.7rem;border:3px dashed var(--listen);color:var(--listen);background:var(--listen-bg);border-radius:.8rem;padding:.6rem .9rem;font-weight:900;font-size:1.1rem}
+.listenbox svg{width:2.6rem;height:2.6rem}
+
+.opts{display:flex;flex-direction:column;gap:.8rem}
+.opt{display:flex;gap:.6rem;align-items:stretch}
+.optbtn{flex:1;min-width:0;display:flex;gap:1rem;align-items:center;text-align:left;border:4px solid var(--line);background:var(--surface);border-radius:1rem;padding:.7rem 1rem;font-family:var(--en);font-size:1.7rem;font-weight:700;min-height:6rem;line-height:1.35}
+.optbtn .no{flex:none;width:5.2rem;height:5.2rem;border-radius:50%;border:6px solid currentColor;display:grid;place-items:center;font-family:var(--en);font-size:3.2rem;font-weight:700;line-height:1}
+.optbtn .box{flex:none;width:4.6rem;height:4.6rem;border-radius:.5rem;display:grid;place-items:center}
+.optbtn .box svg{width:3.4rem;height:3.4rem;visibility:hidden}
+.optbtn[aria-checked="true"]{border-color:var(--accent);background:var(--sel);outline:4px solid var(--accent)}
+.optbtn[aria-checked="true"] .no{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.optbtn[aria-checked="true"] .box{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.optbtn[aria-checked="true"] .box svg{visibility:visible}
+.opt .speaker{width:6rem;height:auto;min-height:6rem;border-radius:1rem}
+.opt .speaker svg{width:3.4rem;height:3.4rem}
+.words{display:grid;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));gap:.8rem}
+.words .opt{min-width:0}
+.words .optbtn{justify-content:center;text-align:center;font-size:2.2rem;min-height:6.4rem;padding:.5rem}
+.words .speaker{width:4.6rem;min-height:auto}
+.words .speaker svg{width:2.6rem;height:2.6rem}
+.pics{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
+.picbtn{position:relative;border:5px solid var(--line);background:#FFFFFF;color:#101317;border-radius:1rem;padding:.6rem .6rem .6rem 6.2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;min-height:13rem}
+.picbtn .cap{font-weight:900;font-size:1.15rem;line-height:1.3;text-align:center}
+.picbtn .cap .en{font-size:1.3rem}
+.picbtn img{display:block;width:100%;max-height:15rem;object-fit:contain}
+.picbtn .no{position:absolute;left:.6rem;top:.6rem;width:5.2rem;height:5.2rem;border-radius:50%;border:6px solid #101317;color:#101317;background:#FFFFFF;display:grid;place-items:center;font-family:var(--en);font-size:3.2rem;font-weight:700;line-height:1}
+.picbtn[aria-checked="true"]{border-color:var(--accent);outline:5px solid var(--accent);background:#EAF1FC}
+.picbtn[aria-checked="true"] .no{background:#0A4DA3;color:#FFFFFF;border-color:#0A4DA3}
+.bank{border:3px solid var(--fg);border-radius:.7rem;padding:.5rem .8rem;display:flex;flex-direction:column;gap:.3rem}
+.bank b{font-size:1.1rem}
+.bank div{display:flex;flex-wrap:wrap;gap:.4rem 1.6rem;font-size:1.6rem;font-weight:700}
+.psgfold{margin-top:0}
+.psgfold .passage{margin-bottom:.6rem}
+.paperdone{width:100%;min-height:5.2rem;font-size:1.5rem;background:var(--ok);color:#FFFFFF}
+:root[data-contrast="hc"] .paperdone{color:#000000}
+.paperbox{display:flex;align-items:center;gap:.9rem;border:4px dashed var(--accent);border-radius:1rem;padding:1rem 1.1rem;font-size:1.4rem;font-weight:900;line-height:1.5}
+.paperbox svg{width:3.4rem;height:3.4rem;color:var(--accent)}
+.chosen{font-weight:900;font-size:1.05rem;color:var(--accent);margin:0}
+
+/* navigator */
+details.nav{margin-top:1rem;border:2px solid var(--line);border-radius:.8rem;background:var(--surface);padding:.3rem .8rem}
+details.nav summary{font-weight:900;font-size:.95rem;cursor:pointer;padding:.4rem 0;min-height:2.6rem}
+.navsec{display:flex;flex-direction:column;gap:.3rem;padding-block:.4rem;border-top:1px solid var(--line)}
+.navsec b{font-size:.8rem}
+.grid{display:flex;flex-wrap:wrap;gap:.35rem}
+.grid button{border:2px solid var(--line);background:var(--bg);border-radius:.5rem;min-height:2.8rem;min-width:3.2rem;padding:0 .4rem;font-weight:900;font-size:.85rem;font-variant-numeric:tabular-nums}
+.grid button.done{background:var(--sel);border-color:var(--accent)}
+.grid button[aria-current="true"]{outline:4px solid var(--fg)}
+
+/* bottom bar */
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:3px solid var(--line);z-index:6;
+  padding:.6rem max(16px,env(safe-area-inset-right,0px)) calc(.6rem + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar .wrap{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.bar button{min-height:4.4rem;border-radius:.9rem;font-size:1.3rem;font-weight:900}
+.prev{background:var(--surface);border:3px solid var(--fg)}
+.next{background:var(--accent);color:var(--accent-fg);border:0}
+.next.finish{background:var(--stu);color:var(--stu-fg)}
+.bar button:disabled{opacity:.35;cursor:default}
+.next.locked{opacity:.4}
+@media (prefers-reduced-motion:no-preference){ .shake{animation:shake .35s} @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}} }
+
+/* check & done */
+.miss{display:flex;flex-wrap:wrap;gap:.5rem}
+.miss button{border:3px solid var(--bad);color:var(--bad);background:var(--surface);border-radius:.6rem;min-height:3rem;padding:0 .8rem;font-weight:900}
+.done-mark{font-size:4.5rem;line-height:1;color:var(--ok);font-weight:900}
+.status{font-weight:900;min-height:1.6em;margin:0}
+.status.bad{color:var(--bad)} .status.ok{color:var(--ok)}
+.qrbox{align-self:flex-start;background:#FFFFFF;color:#111111;border:4px solid var(--fg);border-radius:1rem;padding:1rem;display:flex;flex-direction:column;align-items:center;gap:.5rem;max-width:100%}
+.qrbox img,.qrbox canvas{display:block;max-width:100%;height:auto}
+.qrbox p{margin:0;font-weight:900;font-size:1rem;color:#111111;text-align:center}
+.sheetprev{display:flex;flex-direction:column;gap:.8rem;overflow-x:auto}
+.sheetprev img{width:100%;max-width:40rem;border:2px solid var(--line);background:#FFFFFF}
+
+/* zoom overlay */
+.zoom{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.zoom img{max-width:100%;max-height:100%;background:#FFFFFF;border-radius:.6rem}
+.zoom button{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));background:#FFFFFF;color:#101317;border:0;border-radius:999px;font-weight:900;font-size:1.1rem;min-height:3.4rem;padding:0 1.2rem}
+
+/* answer sheet for PDF (always printed light) */
+#report{position:absolute;left:-20000px;top:0}
+.pg{width:794px;height:1123px;padding:44px 48px;background:#FFFFFF;color:#111111;font-family:"Noto Sans TC",sans-serif;font-size:14px;line-height:1.45;overflow:hidden;display:flex;flex-direction:column;gap:14px}
+.pg h2{margin:0;font-size:19px;font-weight:900;text-align:center}
+.pg .sub{text-align:center;font-weight:700;font-size:14px;margin:0}
+.pg .who{display:flex;gap:22px;justify-content:center;font-size:15px;font-weight:700;flex-wrap:wrap}
+.pg .who span b{border-bottom:1.5px solid #111;padding:0 8px;font-weight:900}
+.pg table{border-collapse:collapse;width:100%}
+.pg th,.pg td{border:1.2px solid #444;padding:4px 7px;text-align:left;vertical-align:middle}
+.pg th{background:#ECEFF3;font-size:12.5px}
+.pg td.c{text-align:center}
+.pg .enr{font-family:"Andika","Noto Sans TC",sans-serif;font-size:15px}
+.pg .ok{color:#1C7A33;font-weight:900}
+.pg .no{color:#B3261E;font-weight:900}
+.pg .blankcell{color:#999}
+.pg h3{margin:0 0 5px;font-size:15px;font-weight:900}
+.pg .thumb{height:38px;vertical-align:middle;margin-left:8px;border:1px solid #999}
+.pg .foot{margin-top:auto;font-size:11px;color:#666;text-align:right}
+.pg .tot td{font-weight:900;font-size:15px}
+@media (max-width:520px){ :root{font-size:20px} .optbtn{font-size:1.45rem} .words .optbtn{font-size:1.8rem} .ln{font-size:1.25rem} .stem.en,.stem .ln{font-size:1.4rem} .pics{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:no-preference){ .optbtn,.picbtn{transition:background .15s} }
+</style>
+
+<style>
+/* math additions: fractions, answer boxes, number pad, compare buttons */
+.mx{display:inline-flex;align-items:center;gap:.08em;vertical-align:middle;margin:0 .1em}
+.fr{display:inline-flex;flex-direction:column;align-items:center;line-height:1.15;font-size:.8em;vertical-align:middle}
+.fr>span{display:block;padding:0 .18em;text-align:center}
+.fr>span:first-child{border-bottom:.1em solid currentColor}
+.mline{font-size:2rem;font-weight:700;line-height:2.4;margin:0;border-radius:.5rem;padding:.2rem .3rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.mline.mbig{font-size:2.6rem;text-align:center}
+.stem .mx{font-size:1.15em}
+u.em{text-decoration-thickness:.12em;text-underline-offset:.2em}
+.sq{display:inline-block;width:1em;height:1em;border:.1em solid currentColor;vertical-align:-.12em;margin:0 .1em}
+.bx{display:inline-flex;align-items:center;justify-content:center;gap:.2rem;min-width:2.6em;min-height:1.5em;border:.12em solid var(--fg);border-radius:.3rem;padding:0 .25em;margin:0 .12em;vertical-align:middle;line-height:1.3;background:var(--surface);cursor:pointer;font:inherit;color:inherit}
+.fr .bx{min-width:2em;min-height:1.3em}
+.bx i{font-style:normal;font-size:.55em;font-weight:900;color:var(--muted)}
+.bx.filled b{color:var(--accent)}
+.bx.cur{background:var(--reading);border-color:var(--accent);outline:.12em dashed var(--accent);outline-offset:.08em}
+.bx.cmpbx{min-width:1.6em;outline:none}
+.pad{display:flex;flex-direction:column;gap:.8rem}
+.padshow{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.padshow .val{flex:1;min-width:8rem;min-height:5.4rem;border:5px solid var(--accent);border-radius:1rem;background:var(--surface);font-size:3.4rem;font-weight:900;display:flex;align-items:center;padding:0 1rem;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+.padshow .val.empty{color:var(--muted);font-size:1.4rem;letter-spacing:0}
+.keys{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem}
+.keys button{min-height:5.4rem;border:4px solid var(--line);background:var(--surface);border-radius:1rem;font-size:2.8rem;font-weight:900;font-variant-numeric:tabular-nums}
+.keys button:active{background:var(--sel)}
+.keys button.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.keys2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.keys2 button{min-height:4.2rem;border:3px solid var(--fg);background:var(--surface);border-radius:1rem;font-size:1.3rem;font-weight:900}
+.cmps{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem}
+.cmps button,.picks button{border:5px solid var(--line);background:var(--surface);border-radius:1.2rem;min-height:9rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;padding:.4rem}
+.cmps .sym{font-size:5rem;font-weight:900;line-height:1}
+.cmps .w,.picks .w{font-size:1.3rem;font-weight:900;color:var(--muted)}
+.picks{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.picks .sym{font-size:4.4rem;font-weight:900;line-height:1.1}
+.cmps button[aria-checked="true"],.picks button[aria-checked="true"]{border-color:var(--accent);background:var(--sel);outline:5px solid var(--accent)}
+.cmps button[aria-checked="true"] .w,.picks button[aria-checked="true"] .w{color:var(--accent)}
+.optbtn{font-family:var(--zh)}
+.mfig{margin:0;align-self:center;width:100%;max-width:17rem;background:#FFFFFF;border:3px solid var(--line);border-radius:.8rem;padding:.5rem}
+.mfig img{display:block;width:100%;height:auto}
+.mfig figcaption{color:#424A57;font-size:.85rem;font-weight:700;text-align:center}
+.pg .mx{font-size:14px} .pg .bx{min-width:26px;font-size:13px;border-width:1.2px}
+.pg .keyl{font-size:13.5px;line-height:1.9}
+.pg .ctx{font-size:12.5px;color:#555;line-height:1.9}
+@media (max-width:520px){ .mline{font-size:1.6rem} .mline.mbig{font-size:2rem} .keys button{font-size:2.2rem;min-height:4.6rem} .cmps .sym{font-size:4rem} }
+</style>
+<style>
+/* social additions: 是非 ○✕, 配合代號, 勾選 */
+.tfs button{min-height:11rem}
+.tfs .sym{font-size:7rem;line-height:1}
+.tfs .w{font-size:1.6rem}
+.codes{display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:.8rem}
+.codes button{border:5px solid var(--line);background:var(--surface);border-radius:1.2rem;min-height:8rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;padding:.4rem}
+.codes .code{font-family:var(--en);font-size:3.6rem;font-weight:700;line-height:1}
+.codes .cw{font-size:1.25rem;font-weight:900;line-height:1.3;text-align:center}
+.codes button[aria-checked="true"]{border-color:var(--accent);background:var(--sel);outline:5px solid var(--accent)}
+.codes button[aria-checked="true"] .cw{color:var(--accent)}
+.mstem{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;font-size:1.7rem}
+.mbx{min-width:2.4em;min-height:1.6em;font-family:var(--en);font-size:1.5em;cursor:default}
+.ctxp{margin:0;font-size:1.25rem;font-weight:700;line-height:1.7;border-radius:.4rem;padding:0 .2rem}
+.ckbtn .ckbox{border:5px solid currentColor;border-radius:.5rem}
+.ckbtn .cno{font-size:1.1em;margin-right:.2rem}
+.ckbtn{font-size:1.45rem}
+.padshow .val{font-size:2.4rem}
+.stem{white-space:normal}
+@media (max-width:520px){ .tfs .sym{font-size:5rem} .codes{grid-template-columns:repeat(2,1fr)} .codes .code{font-size:2.8rem} .ckbtn{font-size:1.25rem} }
+.ctxtop{justify-content:flex-start;gap:1rem}
+.ctxtop b{font-size:1.4rem}
+.ctxspk{min-height:4.6rem;font-size:1.4rem;padding:.4rem 1.6rem .4rem 1.1rem;border-width:5px}
+.ctxspk svg{width:2.8rem;height:2.8rem}
+.gfig{max-width:40rem;align-self:center}
+.longp{font-size:1.35rem;line-height:1.9;white-space:normal}
+.txtwrap{display:flex;flex-wrap:wrap;gap:.8rem;align-items:center}
+.txtin{flex:1 1 16rem;min-width:0;font-size:2.6rem;font-weight:900;padding:.5rem .9rem;min-height:5rem;border:5px solid var(--accent);border-radius:1rem;background:var(--surface);color:var(--fg);font-family:inherit}
+.txtin:focus{outline:5px solid var(--accent);outline-offset:3px}
+.codes button[role="checkbox"][aria-checked="true"]{border-color:var(--accent);background:var(--sel);outline:5px solid var(--accent)}
+/* math6-midterm additions */
+.frkeys{grid-template-columns:repeat(4,1fr)}
+.frkeys button{min-height:7rem;font-size:2.4rem}
+.frkeys .mx{font-size:1em}
+.padshow .val .mx{font-size:.8em}
+.mline .txtin{font-size:2rem}
+.mline .bx b .mx{font-size:.75em}
+.mfig{max-width:22rem}
+@media (max-width:520px){ .frkeys{grid-template-columns:repeat(4,1fr)} .frkeys button{min-height:5.4rem;font-size:1.8rem} }
+
+.testbar{margin-top:.6rem;border:3px dashed var(--bad);color:var(--bad);border-radius:.7rem;padding:.4rem .8rem;font-weight:900;font-size:.85rem;display:flex;flex-wrap:wrap;gap:.4rem .8rem;align-items:center}
+.testbar .tool{color:var(--fg)}
+</style>
+<div class="wrap">
+  <div class="tools" id="tools">
+    <button class="home" id="homeBtn" type="button" aria-label="回首頁"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>首頁</button>
+    <button class="tool" id="fsDown" type="button" aria-label="字變小">字−</button>
+    <button class="tool" id="fsUp" type="button" aria-label="字變大">字＋</button>
+    <button class="tool" id="hc" type="button" aria-pressed="false">黑底黃字</button>
+    <button class="tool" id="rate" type="button">語速：正常</button>
+    <span class="grow"></span>
+    <span class="progress" id="prog"></span>
+  </div>
+<div class="testbar" role="note"><b>測試版</b>　可以自由跳題，不用每題都寫；作答不會影響學生的正式版。
+  <span class="row" style="gap:.4rem"><button type="button" class="tool" id="tFill">一鍵隨機填答</button><button type="button" class="tool" id="tSubmit">直接交卷看 PDF</button><button type="button" class="tool" id="tClear">清除全部答案</button></span></div>
+  <main id="main"></main>
+</div>
+<div class="bar" id="bar" hidden><div class="wrap">
+  <button class="prev" id="prevBtn" type="button">← 上一題</button>
+  <button class="next" id="nextBtn" type="button">下一題 →</button>
+</div></div>
+<div id="report" aria-hidden="true"></div>
+<div id="live" class="sr" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></div>
+
+<script src="../math6-midterm/lib/html2canvas.min.js"></script>
+<script src="../math6-midterm/lib/jspdf.umd.min.js"></script>
+<script src="../math6-midterm/lib/qrcode.min.js"></script>
+<script>
+const DATA={"secs": [{"id": "s1", "no": "一", "zh": "選擇題", "type": "choice", "pct": 10, "per": 2, "introSay": [["zh", "第一大題，選擇題。每題2分，共10分。請選出正確的答案。"]], "items": [{"lab": "1", "stem": "當一個圓的直徑變成 4 倍時，下面哪個~不會~改變？", "stemSay": [["zh", "第1題。當一個圓的直徑變成4倍時，下面哪一個，不會，改變？"]], "o": ["圓面積", "圓周長", "圓周率", "半徑"], "optSay": [[["zh", "1，圓面積"]], [["zh", "2，圓周長"]], [["zh", "3，圓周率"]], [["zh", "4，半徑"]]], "a": 2}, {"lab": "2", "stem": "將 72 做質因數分解，正確的結果是哪一個？", "stemSay": [["zh", "第2題。將72做質因數分解，正確的結果是哪一個？"]], "o": ["2×2×2×3×3", "2×2×3×3×3", "2×2×2×2×3", "2×3×3×3×3"], "optSay": [[["zh", "1，2乘2乘2乘3乘3"]], [["zh", "2，2乘2乘3乘3乘3"]], [["zh", "3，2乘2乘2乘2乘3"]], [["zh", "4，2乘3乘3乘3乘3"]]], "a": 0}, {"lab": "3", "stem": "已知 [|A|B] 這個分數已經無法再透過約分的方式找到等值分數，下列哪一項敘述正確？", "stemSay": [["zh", "第3題。已知，B分之A，這個分數，已經無法再透過約分的方式，找到等值分數。下列哪一項敘述正確？"]], "o": ["A 和 B 的最小公倍數是 A×B", "A 一定大於 B", "B 不可能是合數", "A 和 B 一定都是質數"], "optSay": [[["zh", "1，A和B的最小公倍數，是A乘以B"]], [["zh", "2，A一定大於B"]], [["zh", "3，B不可能是合數"]], [["zh", "4，A和B一定都是質數"]]], "a": 0}, {"lab": "4", "stem": "「A÷1.5＝B，A÷0.8＝C」，下面何者正確？", "stemSay": [["zh", "第4題。A除以1.5等於B，A除以0.8等於C。下面哪一個正確？"]], "o": ["A＜B", "B＜C", "A＞C", "B＞C＞A"], "optSay": [[["zh", "1，A小於B"]], [["zh", "2，B小於C"]], [["zh", "3，A大於C"]], [["zh", "4，B大於C，C大於A"]]], "a": 1}, {"lab": "5", "stem": "10 到 20 的質數中，所有質數加起來的和是多少？", "stemSay": [["zh", "第5題。10到20的質數中，所有質數加起來的和是多少？"]], "o": ["45", "55", "60", "75"], "optSay": [[["zh", "1，45"]], [["zh", "2，55"]], [["zh", "3，60"]], [["zh", "4，75"]]], "a": 2}]}, {"id": "s2", "no": "二", "zh": "填填看", "type": "fill", "pct": 13, "per": 1, "perNote": "每格 1 分", "introSay": [["zh", "第二大題，填填看。每格1分，共13分。用下面的大按鈕填答案。"]], "groups": [{"title": "第1小題", "line": "分母為 9 的真分數中，哪些~不是~最簡分數？{1}（全對給分）", "say": [["zh", "分母是9的真分數中，哪些，不是，最簡分數？要全部選對才給分。"]]}, {"title": "第2小題", "line": "當兩個數的最大公因數是 1，表示這兩個數{2}。", "say": [["zh", "當兩個數的最大公因數是1，表示這兩個數，括號。"]]}, {"title": "第3小題", "line": "一個圓的半徑變成原來的 4 倍，圓周長變成原來的{3}倍；面積會變成原來的{4}倍。", "say": [["zh", "一個圓的半徑變成原來的4倍，圓周長變成原來的，括號一，倍；面積會變成原來的，括號二，倍。"]]}, {"title": "第4小題", "line": "4.8÷0.05＝{5}÷5\n　　　　＝{6}", "say": [["zh", "4.8除以0.05，等於，括號一，除以5，等於，括號二。"]]}, {"title": "第5小題", "line": "將 91 做質因數分解：\n91＝{7}", "say": [["zh", "將91做質因數分解。91等於，括號。"]]}, {"title": "第6小題", "line": "[|33|4]÷4＝[|{8}|{9}×{10}]＝[{11}|{12}|{13}]", "say": [["zh", "4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。"]]}], "items": [{"lab": "1", "g": 0, "k": 1, "bl": "", "kind": "multi", "stemSay": [["zh", "第1小題。分母是9的真分數中，哪些，不是，最簡分數？可以選很多個，要全部選對才給分。選好再按下一題。"]], "a": "25", "mk": ["[|1|9]", "[|2|9]", "[|3|9]", "[|4|9]", "[|5|9]", "[|6|9]", "[|7|9]", "[|8|9]"], "mkSay": ["9分之1", "9分之2", "9分之3", "9分之4", "9分之5", "9分之6", "9分之7", "9分之8"], "onSay": ["選了9分之1", "選了9分之2", "選了9分之3", "選了9分之4", "選了9分之5", "選了9分之6", "選了9分之7", "選了9分之8"], "offSay": ["取消9分之1", "取消9分之2", "取消9分之3", "取消9分之4", "取消9分之5", "取消9分之6", "取消9分之7", "取消9分之8"], "mkSegs": [["zh", "9分之1"], ["zh", "9分之2"], ["zh", "9分之3"], ["zh", "9分之4"], ["zh", "9分之5"], ["zh", "9分之6"], ["zh", "9分之7"], ["zh", "9分之8"]]}, {"lab": "2", "g": 1, "k": 2, "bl": "", "kind": "text", "stemSay": [["zh", "第2小題。當兩個數的最大公因數是1，表示這兩個數，怎麼樣？請在格子裡寫出答案。"]], "a": "互質", "acc": ["互質", "互質數", "兩數互質", "互為質數", "這兩個數互質"]}, {"lab": "3-①", "g": 2, "k": 3, "bl": "①", "kind": "num", "stemSay": [["zh", "第3小題，括號一。一個圓的半徑變成原來的4倍，圓周長會變成原來的幾倍？"]], "a": "4"}, {"lab": "3-②", "g": 2, "k": 4, "bl": "②", "kind": "num", "stemSay": [["zh", "第3小題，括號二。一個圓的半徑變成原來的4倍，面積會變成原來的幾倍？"]], "a": "16"}, {"lab": "4-①", "g": 3, "k": 5, "bl": "①", "kind": "num", "stemSay": [["zh", "第4小題，括號一。4.8除以0.05，等於，括號一，除以5。請填括號一。"]], "a": "480", "keys": ["."]}, {"lab": "4-②", "g": 3, "k": 6, "bl": "②", "kind": "num", "stemSay": [["zh", "第4小題，括號二。4.8除以0.05，等於，括號二。請填括號二。"]], "a": "96", "keys": ["."]}, {"lab": "5", "g": 4, "k": 7, "bl": "", "kind": "num", "stemSay": [["zh", "第5小題。將91做質因數分解。91等於，括號。請用乘號，把質因數寫出來。"]], "a": "7×13", "acc": ["7×13", "13×7"], "keys": ["×"]}, {"lab": "6-①", "g": 5, "k": 8, "bl": "①", "kind": "num", "stemSay": [["zh", "第6小題，括號一。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號一，是第一個分數的分子。"]], "a": "33"}, {"lab": "6-②", "g": 5, "k": 9, "bl": "②", "kind": "num", "stemSay": [["zh", "第6小題，括號二。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號二，是分母裡，乘號前面的數。"]], "a": "4"}, {"lab": "6-③", "g": 5, "k": 10, "bl": "③", "kind": "num", "stemSay": [["zh", "第6小題，括號三。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號三，是分母裡，乘號後面的數。"]], "a": "4"}, {"lab": "6-④", "g": 5, "k": 11, "bl": "④", "kind": "num", "stemSay": [["zh", "第6小題，括號四。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號四，是帶分數的整數。"]], "a": "2"}, {"lab": "6-⑤", "g": 5, "k": 12, "bl": "⑤", "kind": "num", "stemSay": [["zh", "第6小題，括號五。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號五，是帶分數的分子。"]], "a": "1"}, {"lab": "6-⑥", "g": 5, "k": 13, "bl": "⑥", "kind": "num", "stemSay": [["zh", "第6小題，括號六。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號六，是帶分數的分母。"]], "a": "16"}]}, {"id": "s3", "no": "三", "zh": "算算看", "type": "paper", "pct": 15, "per": 3, "note": "請在答案紙上寫出算式和答案", "introSay": [["zh", "第三大題，算算看。每題3分，共15分。請在答案紙上寫出算式和答案。"]], "items": [{"lab": "1", "stem": "用短除法算出 36、48 的最大公因數", "stemSay": [["zh", "第1題。用短除法，算出36和48的最大公因數。"]], "key": ["36＝2×2×3×3，48＝2×2×2×2×3", "最大公因數＝2×2×3＝12"], "pts": 3}, {"lab": "2", "stem": "用短除法算出 38、95 的最小公倍數", "stemSay": [["zh", "第2題。用短除法，算出38和95的最小公倍數。"]], "key": ["38＝2×19，95＝5×19", "最小公倍數＝19×2×5＝190"], "pts": 3}, {"lab": "3", "stem": "[2|4|5]÷[1|3|4]", "stemSay": [["zh", "第3題。2又5分之4，除以，1又4分之3。"]], "key": ["＝[|14|5]×[|4|7]＝[|8|5]＝[1|3|5]"], "pts": 3}, {"lab": "4", "stem": "35.1÷2.7\n（需寫出直式）", "stemSay": [["zh", "第4題。35.1，除以，2.7。需要寫出直式。"]], "key": ["＝13"], "pts": 3}, {"lab": "5", "stem": "45.8÷5.05\n（需寫出直式）\n（用四捨五入法求商到小數點後第二位）", "stemSay": [["zh", "第5題。45.8，除以，5.05。需要寫出直式，用四捨五入法，求商到小數點後第二位。"]], "key": ["45.8÷5.05＝9.069…", "≒9.07"], "pts": 3}]}, {"id": "s4", "no": "四", "zh": "做做看", "type": "paper", "pct": 62, "per": 4, "perNote": "共 62 分", "note": "請在答案紙上寫出算式和答案", "introSay": [["zh", "第四大題，做做看。共62分。請在答案紙上寫出算式和答案。"]], "groups": [{"title": "第4題", "ctx": "1.5 包米重 7.5 公斤，請回答下列問題：", "ctxSay": [["zh", "第4題。1.5包米，重7.5公斤。請回答下列問題。"]], "readEach": true}, {"title": "情境題（第6～10題）", "ctx": "今年暑假，小明到奧地利哈修塔特地區參加自然探索體驗活動，以下是他這次旅行所遇到的狀況，要請大家幫他解決這些問題：", "ctxSay": [["zh", "第6到第10題是情境題，請在讀完題目描述後回答問題。今年暑假，小明到奧地利哈修塔特地區，參加自然探索體驗活動。以下是他這次旅行所遇到的狀況，要請大家幫他解決這些問題。"]], "readEach": false}, {"title": "第11題", "ctx": "小霞想畫一個圓周長約 50.24 公分的圓：", "ctxSay": [["zh", "第11題。小霞想畫一個圓周長，大約50.24公分的圓。"]], "readEach": true}, {"title": "第12題", "ctx": "有一位熱愛數學的學者，將自己的一生分成三個階段：\n第一階段是學習與成長的時光，占一生的 [|1|4]。\n第二階段是工作與旅行的歲月，占一生的 [|1|3]。\n第三階段是研究數學的時光，共 35 年。\n假設這三個階段合起來恰好是他的一生。", "ctxSay": [["zh", "第12題。有一位熱愛數學的學者，將自己的一生分成三個階段。第一階段，是學習與成長的時光，占一生的4分之1。第二階段，是工作與旅行的歲月，占一生的3分之1。第三階段，是研究數學的時光，共35年。假設這三個階段合起來，恰好是他的一生。"]], "readEach": true}], "items": [{"lab": "1", "stem": "下面圓形的圓周長大約是幾公尺？\n（圖：圓的半徑是 25 m）", "stemSay": [["zh", "第1題。看圖。圖上有一個圓，從圓心到圓周畫一條線，是半徑，長25公尺。這個圓形的圓周長，大約是幾公尺？這題4分。"]], "key": ["25×2×3.14＝157", "答：約 157 公尺"], "pts": 4, "img": "q4_1", "alt": "一個圓，從圓心到圓周的半徑是 25 公尺"}, {"lab": "2", "stem": "直徑 14 公分的圓，面積大約是幾平方公分？", "stemSay": [["zh", "第2題。直徑14公分的圓，面積大約是幾平方公分？這題4分。"]], "key": ["14÷2＝7", "7×7×3.14＝153.86", "答：約 153.86 平方公分"], "pts": 4}, {"lab": "3", "stem": "計算出下列塗色部分的面積\n（圖：大圓半徑 13 cm，外圈灰色寬 7 cm，中間小灰圓半徑 3.5 cm）", "stemSay": [["zh", "第3題。看圖，計算出塗色部分的面積。圖上是三個圓心相同的圓。最外面的大圓，半徑13公分，外圈是灰色的，灰色這一圈的寬是7公分。再往裡面是一圈白色。正中間是一個灰色的小圓，半徑3.5公分。請算出灰色部分的面積。這題6分。"]], "key": ["13－7＝6（白色圓半徑）", "13×13×3.14－6×6×3.14＝417.62", "3.5×3.5×3.14＝38.465", "417.62＋38.465＝456.085", "答：456.085 平方公分（請老師依學校答案核對）"], "pts": 6, "img": "q4_3", "alt": "三個同心圓：大圓半徑 13 公分，外圈灰色寬 7 公分，中間白色一圈，正中間灰色小圓半徑 3.5 公分"}, {"lab": "4(1)", "stem": "（1）1 包米是幾公斤？", "stemSay": [["zh", "第4題，第1小題。1包米是幾公斤？這題4分。"]], "key": ["7.5÷1.5＝5", "答：5 公斤"], "pts": 4, "g": 0}, {"lab": "4(2)", "stem": "（2）1 公斤是幾包米？", "stemSay": [["zh", "第4題，第2小題。1公斤是幾包米？這題4分。"]], "key": ["1.5÷7.5＝0.2", "答：0.2 包"], "pts": 4, "g": 0}, {"lab": "5", "stem": "小智把長 60 公分、寬 48 公分的長方形紙剪成數個大小相同且邊長為~整數~公分的正方形，全部剪完，最大可以剪成邊長幾公分的正方形？共可剪成幾個？", "stemSay": [["zh", "第5題。小智把長60公分、寬48公分的長方形紙，剪成好幾個大小相同，而且邊長是整數公分的正方形，全部剪完。最大可以剪成邊長幾公分的正方形？一共可以剪成幾個？這題4分。"]], "key": ["60 和 48 的最大公因數是 12", "(60÷12)×(48÷12)＝5×4＝20", "答：邊長 12 公分，共 20 個"], "pts": 4}, {"lab": "6", "stem": "在出發到奧地利前，小明先到銀行將 8000 元新台幣兌換成歐元。假設當天的匯率是 36.7 新台幣兌換 1 歐元，在不考慮手續費的狀況下，小明大約可以兌換到幾歐元？（用四捨五入法求商到小數點第一位）", "stemSay": [["zh", "第6題。在出發到奧地利前，小明先到銀行，將8000元新台幣，兌換成歐元。假設當天的匯率，是36.7元新台幣，兌換1歐元。在不考慮手續費的狀況下，小明大約可以兌換到幾歐元？用四捨五入法，求商到小數點第一位。這題4分。"]], "key": ["8000÷36.7＝217.98…", "≒218.0", "答：約 218.0 歐元"], "pts": 4, "g": 1}, {"lab": "7", "stem": "抵達營隊後，教練開始安排住宿。這次有 72 位男生和 66 位女生參加活動。男生和女生必須分開住宿，而且每間房間安排的人數都要相同，最少需要幾間房間？", "stemSay": [["zh", "第7題。抵達營隊後，教練開始安排住宿。這次有72位男生，和66位女生參加活動。男生和女生必須分開住宿，而且每間房間安排的人數都要相同。最少需要幾間房間？這題4分。"]], "key": ["72 和 66 的最大公因數是 6", "72÷6＋66÷6＝12＋11＝23", "答：23 間"], "pts": 4, "g": 1}, {"lab": "8", "stem": "營隊活動場地有一座長方形花園，長 25 公尺、寬 12 公尺，花園內設有一個直徑 12 公尺的圓形水池，其餘部分都種植薰衣草，種植薰衣草的面積是多少平方公尺？", "stemSay": [["zh", "第8題。營隊活動場地，有一座長方形花園，長25公尺、寬12公尺。花園內有一個直徑12公尺的圓形水池，其餘部分都種植薰衣草。種植薰衣草的面積，是多少平方公尺？這題4分。"]], "key": ["25×12＝300", "12÷2＝6，6×6×3.14＝113.04", "300－113.04＝186.96", "答：186.96 平方公尺"], "pts": 4, "g": 1}, {"lab": "9", "stem": "活動結束後，小明到超市買水果，發現三種水果的價格如下：番茄 [|3|4] 公斤賣 51 元，草莓 1 公斤賣 51 元，葡萄 [1|1|2] 公斤賣 51 元。如果以相同金額購買水果，哪一種水果最划算？", "stemSay": [["zh", "第9題。活動結束後，小明到超市買水果，發現三種水果的價格如下。番茄，4分之3公斤，賣51元。草莓，1公斤，賣51元。葡萄，1又2分之1公斤，賣51元。如果用相同的錢買水果，哪一種水果最划算？這題4分。"]], "key": ["同樣 51 元：[|3|4]＜1＜[1|1|2]", "答：葡萄最划算"], "pts": 4, "g": 1}, {"lab": "10", "stem": "回到維也納，小明準備搭巴士前往機場。前往機場有 A、B 兩種路線的巴士，A 路線每隔 20 分鐘發車一次，B 路線每隔 15 分鐘發車一次。已知上午 8 時兩條路線的巴士同時發車，下一次兩條路線的巴士同時發車是幾時幾分？", "stemSay": [["zh", "第10題。回到維也納，小明準備搭巴士前往機場。前往機場有A、B兩種路線的巴士。A路線每隔20分鐘發車一次，B路線每隔15分鐘發車一次。已知上午8時，兩條路線的巴士同時發車。下一次兩條路線的巴士同時發車，是幾時幾分？這題4分。"]], "key": ["20 和 15 的最小公倍數是 60", "8 時＋60 分＝9 時", "答：上午 9 時 0 分"], "pts": 4, "g": 1}, {"lab": "11(1)", "stem": "（1）他應該將圓規張開大約多少公分來畫？", "stemSay": [["zh", "第11題，第1小題。他應該將圓規張開大約多少公分來畫？這題4分。"]], "key": ["50.24÷3.14＝16（直徑）", "16÷2＝8", "答：約 8 公分"], "pts": 4, "g": 2}, {"lab": "11(2)", "stem": "（2）這個圓的面積大約是多少平方公分？", "stemSay": [["zh", "第11題，第2小題。這個圓的面積，大約是多少平方公分？這題4分。"]], "key": ["8×8×3.14＝200.96", "答：約 200.96 平方公分"], "pts": 4, "g": 2}, {"lab": "12(1)", "stem": "（1）前兩個階段合計占一生的幾分之幾？", "stemSay": [["zh", "第12題，第1小題。前兩個階段合計，占一生的幾分之幾？這題2分。"]], "key": ["[|1|4]＋[|1|3]＝[|3|12]＋[|4|12]＝[|7|12]", "答：[|7|12]"], "pts": 2, "g": 3}, {"lab": "12(2)", "stem": "（2）研究數學的時間占一生的幾分之幾？", "stemSay": [["zh", "第12題，第2小題。研究數學的時間，占一生的幾分之幾？這題2分。"]], "key": ["1－[|7|12]＝[|5|12]", "答：[|5|12]"], "pts": 2, "g": 3}, {"lab": "12(3)", "stem": "（3）這位學者一共活了幾年？", "stemSay": [["zh", "第12題，第3小題。這位學者一共活了幾年？這題4分。"]], "key": ["35÷[|5|12]＝35×[|12|5]＝84", "答：84 年"], "pts": 4, "g": 3}]}], "aud": {"zh|0": "../math6-midterm/a/cfcd208495.mp3", "zh|1": "../math6-midterm/a/c4ca4238a0.mp3", "zh|1，2乘2乘2乘3乘3": "../math6-midterm/a/3f01753133.mp3", "zh|1，45": "../math6-midterm/a/defeda6938.mp3", "zh|1，A和B的最小公倍數，是A乘以B": "../math6-midterm/a/b5fd0a67e4.mp3", "zh|1，A小於B": "../math6-midterm/a/2d2e1f2798.mp3", "zh|1，圓面積": "../math6-midterm/a/2a1ab264db.mp3", "zh|2": "../math6-midterm/a/c81e728d9d.mp3", "zh|2，2乘2乘3乘3乘3": "../math6-midterm/a/35432dde29.mp3", "zh|2，55": "../math6-midterm/a/18d4be63f4.mp3", "zh|2，A一定大於B": "../math6-midterm/a/e9bf27718a.mp3", "zh|2，B小於C": "../math6-midterm/a/1fba6d3388.mp3", "zh|2，圓周長": "../math6-midterm/a/e482040e60.mp3", "zh|3": "../math6-midterm/a/eccbc87e4b.mp3", "zh|3，2乘2乘2乘2乘3": "../math6-midterm/a/865c6405ae.mp3", "zh|3，60": "../math6-midterm/a/dcee8dfec6.mp3", "zh|3，A大於C": "../math6-midterm/a/8bde4efb2a.mp3", "zh|3，B不可能是合數": "../math6-midterm/a/0f4ff3a526.mp3", "zh|3，圓周率": "../math6-midterm/a/160e0d7dc3.mp3", "zh|4": "../math6-midterm/a/a87ff679a2.mp3", "zh|4.8除以0.05，等於，括號一，除以5，等於，括號二。": "../math6-midterm/a/4eb9477073.mp3", "zh|4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。": "../math6-midterm/a/079121b273.mp3", "zh|4，2乘3乘3乘3乘3": "../math6-midterm/a/cf1f1cdaf2.mp3", "zh|4，75": "../math6-midterm/a/11bd85fccb.mp3", "zh|4，A和B一定都是質數": "../math6-midterm/a/83daf66fbf.mp3", "zh|4，B大於C，C大於A": "../math6-midterm/a/20f3949476.mp3", "zh|4，半徑": "../math6-midterm/a/f76caaf087.mp3", "zh|5": "../math6-midterm/a/e4da3b7fbb.mp3", "zh|6": "../math6-midterm/a/1679091c5a.mp3", "zh|7": "../math6-midterm/a/8f14e45fce.mp3", "zh|8": "../math6-midterm/a/c9f0f895fb.mp3", "zh|9": "../math6-midterm/a/45c48cce2e.mp3", "zh|9分之1": "../math6-midterm/a/b2ba8fac36.mp3", "zh|9分之2": "../math6-midterm/a/4b648dd318.mp3", "zh|9分之3": "../math6-midterm/a/3bc5067979.mp3", "zh|9分之4": "../math6-midterm/a/fe2f9e0164.mp3", "zh|9分之5": "../math6-midterm/a/edd9b491ed.mp3", "zh|9分之6": "../math6-midterm/a/99512c9222.mp3", "zh|9分之7": "../math6-midterm/a/a821bf77a5.mp3", "zh|9分之8": "../math6-midterm/a/d079dd273c.mp3", "zh|一個圓的半徑變成原來的4倍，圓周長變成原來的，括號一，倍；面積會變成原來的，括號二，倍。": "../math6-midterm/a/45bc3748b9.mp3", "zh|乘": "../math6-midterm/a/f3a668c23d.mp3", "zh|乘以": "../math6-midterm/a/d239664d10.mp3", "zh|你寫的是": "../math6-midterm/a/24037f0c78.mp3", "zh|你選了": "../math6-midterm/a/2b1f30dfb6.mp3", "zh|你選的是1號": "../math6-midterm/a/94fd7adc9a.mp3", "zh|你選的是2號": "../math6-midterm/a/438658ed67.mp3", "zh|你選的是3號": "../math6-midterm/a/0f877761d5.mp3", "zh|你選的是4號": "../math6-midterm/a/ab40969c7b.mp3", "zh|你還沒有寫": "../math6-midterm/a/fdad69b072.mp3", "zh|你還沒有寫答案": "../math6-midterm/a/6d04e250c0.mp3", "zh|你還沒有選": "../math6-midterm/a/81192ed0fa.mp3", "zh|全部寫完了，可以交卷。": "../math6-midterm/a/f8838d16fc.mp3", "zh|全部清除": "../math6-midterm/a/aa43fa462b.mp3", "zh|分母是9的真分數中，哪些，不是，最簡分數？要全部選對才給分。": "../math6-midterm/a/be64e30f2e.mp3", "zh|刪掉一個": "../math6-midterm/a/384faf2314.mp3", "zh|取消9分之1": "../math6-midterm/a/8028769270.mp3", "zh|取消9分之2": "../math6-midterm/a/d6ca8e67cf.mp3", "zh|取消9分之3": "../math6-midterm/a/29d88c0e51.mp3", "zh|取消9分之4": "../math6-midterm/a/a189603fa7.mp3", "zh|取消9分之5": "../math6-midterm/a/d983e7c37a.mp3", "zh|取消9分之6": "../math6-midterm/a/ee23d4cc33.mp3", "zh|取消9分之7": "../math6-midterm/a/d95e1f958c.mp3", "zh|取消9分之8": "../math6-midterm/a/84561fd6a6.mp3", "zh|將91做質因數分解。91等於，括號。": "../math6-midterm/a/221a3b5672.mp3", "zh|已經交卷，請把作答紀錄交給老師。": "../math6-midterm/a/d36157750f.mp3", "zh|最多只能寫8個字": "../math6-midterm/a/a6052e97e4.mp3", "zh|當兩個數的最大公因數是1，表示這兩個數，括號。": "../math6-midterm/a/56b006fc24.mp3", "zh|第10題。回到維也納，小明準備搭巴士前往機場。前往機場有A、B兩種路線的巴士。A路線每隔20分鐘發車一次，B路線每隔15分鐘發車一次。已知上午8時，兩條路線的巴士同時發車。下一次兩條路線的巴士同時發車，是幾時幾分？這題4分。": "../math6-midterm/a/a2d44fcdb5.mp3", "zh|第11題。小霞想畫一個圓周長，大約50.24公分的圓。": "../math6-midterm/a/92003e9798.mp3", "zh|第11題，第1小題。他應該將圓規張開大約多少公分來畫？這題4分。": "../math6-midterm/a/c592e097cb.mp3", "zh|第11題，第2小題。這個圓的面積，大約是多少平方公分？這題4分。": "../math6-midterm/a/f4820d70d3.mp3", "zh|第12題。有一位熱愛數學的學者，將自己的一生分成三個階段。第一階段，是學習與成長的時光，占一生的4分之1。第二階段，是工作與旅行的歲月，占一生的3分之1。第三階段，是研究數學的時光，共35年。假設這三個階段合起來，恰好是他的一生。": "../math6-midterm/a/dd4e329a36.mp3", "zh|第12題，第1小題。前兩個階段合計，占一生的幾分之幾？這題2分。": "../math6-midterm/a/e77e6efac8.mp3", "zh|第12題，第2小題。研究數學的時間，占一生的幾分之幾？這題2分。": "../math6-midterm/a/f45286ea25.mp3", "zh|第12題，第3小題。這位學者一共活了幾年？這題4分。": "../math6-midterm/a/ea0bf43e32.mp3", "zh|第1小題。分母是9的真分數中，哪些，不是，最簡分數？可以選很多個，要全部選對才給分。選好再按下一題。": "../math6-midterm/a/f50ffb0bca.mp3", "zh|第1題。用短除法，算出36和48的最大公因數。": "../math6-midterm/a/5722ace2e1.mp3", "zh|第1題。當一個圓的直徑變成4倍時，下面哪一個，不會，改變？": "../math6-midterm/a/f8fc819e9b.mp3", "zh|第1題。看圖。圖上有一個圓，從圓心到圓周畫一條線，是半徑，長25公尺。這個圓形的圓周長，大約是幾公尺？這題4分。": "../math6-midterm/a/cb875aac31.mp3", "zh|第2小題。當兩個數的最大公因數是1，表示這兩個數，怎麼樣？請在格子裡寫出答案。": "../math6-midterm/a/7fb3ed243b.mp3", "zh|第2題。將72做質因數分解，正確的結果是哪一個？": "../math6-midterm/a/ad63ca9c31.mp3", "zh|第2題。用短除法，算出38和95的最小公倍數。": "../math6-midterm/a/8af2fbde5e.mp3", "zh|第2題。直徑14公分的圓，面積大約是幾平方公分？這題4分。": "../math6-midterm/a/9a4419e50a.mp3", "zh|第3小題，括號一。一個圓的半徑變成原來的4倍，圓周長會變成原來的幾倍？": "../math6-midterm/a/b17dc551d2.mp3", "zh|第3小題，括號二。一個圓的半徑變成原來的4倍，面積會變成原來的幾倍？": "../math6-midterm/a/8c3b4fe527.mp3", "zh|第3題。2又5分之4，除以，1又4分之3。": "../math6-midterm/a/b530b37af2.mp3", "zh|第3題。已知，B分之A，這個分數，已經無法再透過約分的方式，找到等值分數。下列哪一項敘述正確？": "../math6-midterm/a/2754b94176.mp3", "zh|第3題。看圖，計算出塗色部分的面積。圖上是三個圓心相同的圓。最外面的大圓，半徑13公分，外圈是灰色的，灰色這一圈的寬是7公分。再往裡面是一圈白色。正中間是一個灰色的小圓，半徑3.5公分。請算出灰色部分的面積。這題6分。": "../math6-midterm/a/a34d00ee8a.mp3", "zh|第4小題，括號一。4.8除以0.05，等於，括號一，除以5。請填括號一。": "../math6-midterm/a/df6f8b48aa.mp3", "zh|第4小題，括號二。4.8除以0.05，等於，括號二。請填括號二。": "../math6-midterm/a/c81821936e.mp3", "zh|第4題。1.5包米，重7.5公斤。請回答下列問題。": "../math6-midterm/a/50ab9f078c.mp3", "zh|第4題。35.1，除以，2.7。需要寫出直式。": "../math6-midterm/a/8c1f07a412.mp3", "zh|第4題。A除以1.5等於B，A除以0.8等於C。下面哪一個正確？": "../math6-midterm/a/e9bf7baeed.mp3", "zh|第4題，第1小題。1包米是幾公斤？這題4分。": "../math6-midterm/a/aedc9a0930.mp3", "zh|第4題，第2小題。1公斤是幾包米？這題4分。": "../math6-midterm/a/91da678ee8.mp3", "zh|第5小題。將91做質因數分解。91等於，括號。請用乘號，把質因數寫出來。": "../math6-midterm/a/20632f1084.mp3", "zh|第5題。10到20的質數中，所有質數加起來的和是多少？": "../math6-midterm/a/9672f52cc3.mp3", "zh|第5題。45.8，除以，5.05。需要寫出直式，用四捨五入法，求商到小數點後第二位。": "../math6-midterm/a/933b3edd56.mp3", "zh|第5題。小智把長60公分、寬48公分的長方形紙，剪成好幾個大小相同，而且邊長是整數公分的正方形，全部剪完。最大可以剪成邊長幾公分的正方形？一共可以剪成幾個？這題4分。": "../math6-midterm/a/dfde68400f.mp3", "zh|第6到第10題是情境題，請在讀完題目描述後回答問題。今年暑假，小明到奧地利哈修塔特地區，參加自然探索體驗活動。以下是他這次旅行所遇到的狀況，要請大家幫他解決這些問題。": "../math6-midterm/a/3582d35f2f.mp3", "zh|第6小題，括號一。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號一，是第一個分數的分子。": "../math6-midterm/a/baa77e5731.mp3", "zh|第6小題，括號三。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號三，是分母裡，乘號後面的數。": "../math6-midterm/a/44f3de8936.mp3", "zh|第6小題，括號二。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號二，是分母裡，乘號前面的數。": "../math6-midterm/a/434e804802.mp3", "zh|第6小題，括號五。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號五，是帶分數的分子。": "../math6-midterm/a/436266ab0b.mp3", "zh|第6小題，括號六。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號六，是帶分數的分母。": "../math6-midterm/a/e2cd0e60e3.mp3", "zh|第6小題，括號四。4分之33，除以4，等於，括號二乘以括號三，分之，括號一，等於，括號四，又，括號六，分之，括號五。請填括號四，是帶分數的整數。": "../math6-midterm/a/d6ec8faadf.mp3", "zh|第6題。在出發到奧地利前，小明先到銀行，將8000元新台幣，兌換成歐元。假設當天的匯率，是36.7元新台幣，兌換1歐元。在不考慮手續費的狀況下，小明大約可以兌換到幾歐元？用四捨五入法，求商到小數點第一位。這題4分。": "../math6-midterm/a/1969c00f17.mp3", "zh|第7題。抵達營隊後，教練開始安排住宿。這次有72位男生，和66位女生參加活動。男生和女生必須分開住宿，而且每間房間安排的人數都要相同。最少需要幾間房間？這題4分。": "../math6-midterm/a/924a3e007a.mp3", "zh|第8題。營隊活動場地，有一座長方形花園，長25公尺、寬12公尺。花園內有一個直徑12公尺的圓形水池，其餘部分都種植薰衣草。種植薰衣草的面積，是多少平方公尺？這題4分。": "../math6-midterm/a/c8114e3717.mp3", "zh|第9題。活動結束後，小明到超市買水果，發現三種水果的價格如下。番茄，4分之3公斤，賣51元。草莓，1公斤，賣51元。葡萄，1又2分之1公斤，賣51元。如果用相同的錢買水果，哪一種水果最划算？這題4分。": "../math6-midterm/a/30922bdbad.mp3", "zh|第一大題，選擇題。每題2分，共10分。請選出正確的答案。": "../math6-midterm/a/bc04c8e9fc.mp3", "zh|第三大題，算算看。每題3分，共15分。請在答案紙上寫出算式和答案。": "../math6-midterm/a/6f2ca9427f.mp3", "zh|第二大題，填填看。每格1分，共13分。用下面的大按鈕填答案。": "../math6-midterm/a/a2eb2e5a0c.mp3", "zh|第四大題，做做看。共62分。請在答案紙上寫出算式和答案。": "../math6-midterm/a/3073becfb1.mp3", "zh|請先在答案紙寫好，再按這個大按鈕。": "../math6-midterm/a/174026d4b5.mp3", "zh|請先寫好答案，才能到下一題。": "../math6-midterm/a/1f63e3121a.mp3", "zh|請先選一個答案，才能到下一題。": "../math6-midterm/a/0460eca206.mp3", "zh|選了9分之1": "../math6-midterm/a/7839718872.mp3", "zh|選了9分之2": "../math6-midterm/a/9081ca4dcc.mp3", "zh|選了9分之3": "../math6-midterm/a/e973416422.mp3", "zh|選了9分之4": "../math6-midterm/a/5a4262d109.mp3", "zh|選了9分之5": "../math6-midterm/a/c97f70eaba.mp3", "zh|選了9分之6": "../math6-midterm/a/a9c06bbb41.mp3", "zh|選了9分之7": "../math6-midterm/a/cee2bd9a5e.mp3", "zh|選了9分之8": "../math6-midterm/a/d150c7d76f.mp3", "zh|還有題目沒寫，要回去檢查嗎？": "../math6-midterm/a/f3d180c712.mp3", "zh|點": "../math6-midterm/a/a284714e35.mp3"}};
+const SECS=DATA.secs, AUD=DATA.aud, NUM="1234", CIR="①②③④", TF=["○","✕"], TFW=["對","錯"];
+const ITEMS=[];
+SECS.forEach((s,si)=>s.items.forEach((it,ii)=>{it.id=s.id+"_"+ii; it.si=si; it.ii=ii; it.t=it.t||s.type; ITEMS.push(it);}));
+ITEMS.forEach(it=>{ if(it.g!=null){ it.gj=ITEMS.filter(x=>x.si===it.si&&x.g===it.g).indexOf(it); } });
+const $=id=>document.getElementById(id);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SPK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+const PEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>';
+const TICK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>';
+const FS=[20,24,28,32], RATES=[["慢",0.8],["正常",1],["快",1.2]];
+const KEY="math6-midterm-1151-pub-test";
+let st={ans:{},i:0,fs:1,hc:false,rate:1,t0:null,t1:null};
+try{const x=JSON.parse(localStorage.getItem(KEY)||"null"); if(x&&typeof x==="object")st=Object.assign(st,x);}catch(e){}
+const SITE_URL="https://liniris1023.github.io/sped-exam-reader/math6-midterm-test/";
+let TEACHER=false;
+function save(){ if(TEACHER)return; try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){} }
+
+/* 標記 → HTML：~字~ 底線、□ 方框、換行 */
+function M(t,box){ let h=esc(t).replace(/~([^~]+)~/g,'<u class="em">$1</u>');
+  h=h.replace(/\[([^\[\]|]*)\|([^\[\]|]*)\|([^\[\]|]*)\]/g,(m,w,n,d)=>`<span class="mx">${w}<span class="fr"><span>${n}</span><span>${d}</span></span></span>`);
+  h=h.replace(/\{(\d+)\}/g,(m,k)=>box?box(+k):"（　）");
+  return h.replace(/□/g,'<span class="sq"></span>').replace(/\n/g,"<br>"); }
+const isT=it=>it.t==="text"||it.kind==="text"||it.kind==="num";
+const ansStr=v=>v==null?"":String(v);
+
+/* result code for the teacher's QR */
+function encodeRes(){ const a=ITEMS.map(it=>{const v=st.ans[it.id]; if(v==null||v==="")return "x"; if(isT(it)) return "t"+[...String(v)].map(c=>c.codePointAt(0).toString(36)).join("_"); return String(v);}).join(".");
+  const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):0;
+  return "r-"+a+"-"+Math.floor((st.t1||Date.now())/60000).toString(36)+"-"+mins.toString(36); }
+function decodeRes(h){ const m=/^r-([0-9a-z_.]+)-([0-9a-z]+)-([0-9a-z]+)$/.exec(h); if(!m)return null; const parts=m[1].split(".");
+  if(parts.length!==ITEMS.length)return null;
+  const ans={}; ITEMS.forEach((it,i)=>{ const c=parts[i]; if(c==="x")return; if(isT(it)&&c[0]==="t"){ ans[it.id]=c.slice(1).split("_").map(x=>String.fromCodePoint(parseInt(x,36))).join(""); return; }
+    ans[it.id]=(it.t==="check"||it.multi||it.kind==="multi")?c:+c; });
+  const t1=parseInt(m[2],36)*60000, mins=parseInt(m[3],36); return {ans,t1,t0:mins?t1-mins*60000:null}; }
+function drawQR(el,text,size){ el.innerHTML=""; if(!window.QRCode){ el.textContent=text; return; }
+  try{ new QRCode(el,{text,width:size,height:size,colorDark:"#000000",colorLight:"#FFFFFF",correctLevel:QRCode.CorrectLevel.M}); }catch(e){ el.textContent=text; } }
+let view="home";
+
+/* ---------- speech: edge-tts clips (曉臻) first, browser voice as backup ---------- */
+const synth=window.speechSynthesis; let vZh=null;
+function pickVoice(){ if(!synth)return; const v=synth.getVoices();
+  vZh=v.find(x=>/zh[-_]TW/i.test(x.lang)&&/HsiaoChen|曉臻/i.test(x.name))||v.find(x=>/zh[-_]TW/i.test(x.lang))||v.find(x=>/^zh/i.test(x.lang))||null; }
+if(synth){pickVoice(); synth.onvoiceschanged=pickVoice;}
+const urls={}; const player=new Audio(); let playTok=0;
+function clipURL(seg){ const p=AUD[seg[0]+"|"+seg[1]]; if(!p)return Promise.resolve(null);
+  if(!urls[p]) urls[p]=fetch(p).then(r=>{if(!r.ok)throw 0; return r.blob();}).then(b=>URL.createObjectURL(b)).catch(()=>{delete urls[p]; return null;});
+  return urls[p]; }
+function prefetch(list){ list.forEach(s=>clipURL(s)); }
+function audioSay(url,tok){ return new Promise(res=>{ if(tok!==playTok){res();return;} let done=false; const fin=()=>{if(!done){done=true;res();}};
+  player.onended=fin; player.onerror=fin; player.src=url; player.playbackRate=RATES[st.rate][1]; player.preservesPitch=true;
+  const p=player.play(); if(p&&p.catch)p.catch(fin); }); }
+function synthSay(seg,tok){ return new Promise(res=>{ if(!synth||tok!==playTok){ $("live").textContent=seg[1]; res(); return; }
+  const u=new SpeechSynthesisUtterance(seg[1]); u.lang="zh-TW"; if(vZh)u.voice=vZh;
+  u.rate=RATES[st.rate][1]*0.95; let done=false; const fin=()=>{if(!done){done=true;res();}};
+  u.onend=fin; u.onerror=fin; synth.speak(u); setTimeout(fin,Math.max(4000,seg[1].length*300)); }); }
+function clearReading(){document.querySelectorAll(".reading").forEach(e=>e.classList.remove("reading"));}
+async function speak(parts){
+  const tok=++playTok; try{player.pause();}catch(e){} if(synth)synth.cancel(); clearReading();
+  for(const p of parts){ if(tok!==playTok)return; clearReading(); if(p.el){p.el.classList.add("reading"); follow(p.el);}
+    for(const seg of p.segs){ if(tok!==playTok)return; const url=await clipURL(seg); if(tok!==playTok)return;
+      if(url) await audioSay(url,tok); else await synthSay(seg,tok); }
+    if(tok===playTok) await new Promise(r=>setTimeout(r,200)); }
+  if(tok===playTok)clearReading(); }
+const say1=t=>speak([{segs:[["zh",t]]}]);
+function stopSpeak(){ playTok++; try{player.pause();}catch(e){} if(synth)synth.cancel(); clearReading(); }
+function follow(el){ try{ const r=el.getBoundingClientRect(), top=$("tools").offsetHeight+12, bar=$("bar"), bottom=window.innerHeight-(bar.hidden?0:bar.offsetHeight)-12;
+  if(r.top>=top&&r.bottom<=bottom)return; const smooth=!matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({top:Math.max(0,window.scrollY+r.top-top-Math.max(0,(bottom-top-r.height)/2)),behavior:smooth?"smooth":"auto"}); }catch(e){} }
+
+/* ---------- settings ---------- */
+function applySettings(){ document.documentElement.style.fontSize=FS[st.fs]+"px";
+  if(st.hc)document.documentElement.setAttribute("data-contrast","hc"); else document.documentElement.removeAttribute("data-contrast");
+  $("hc").setAttribute("aria-pressed",String(!!st.hc)); $("rate").textContent="語速："+RATES[st.rate][0]; }
+$("fsDown").onclick=()=>{st.fs=Math.max(0,st.fs-1);save();applySettings();};
+$("fsUp").onclick=()=>{st.fs=Math.min(FS.length-1,st.fs+1);save();applySettings();};
+$("hc").onclick=()=>{st.hc=!st.hc;save();applySettings();};
+$("rate").onclick=()=>{st.rate=(st.rate+1)%RATES.length;save();applySettings();};
+$("homeBtn").onclick=()=>{stopSpeak(); if(TEACHER){ try{history.replaceState(null,"",location.pathname+location.search);}catch(e){} leaveTeacher(); show("home"); } else show("home");};
+
+/* ---------- helpers ---------- */
+const isDone=it=>{const v=st.ans[it.id]; return v!=null&&String(v).trim()!=="";};
+const answered=()=>ITEMS.filter(isDone).length;
+function setProgress(){ $("prog").textContent = view==="q" ? `第 ${st.i+1} / ${ITEMS.length} 題　已答 ${answered()}` : `已答 ${answered()} / ${ITEMS.length}`; }
+function show(v){ view=v; $("bar").hidden = v!=="q"; ({home:renderHome,q:renderQ,check:renderCheck,done:renderDone})[v](); setProgress(); if(v!=="q")window.scrollTo(0,0); }
+const symOf=it=>SECS[it.si].sym||TF;
+const mTxt=(it,v)=>ansStr(v).split("").map(d=>SECS[it.si].groups[it.g].bank[+d][0]).join("、");
+function showVal(it,v){ if(v==null||v==="")return ""; if(it.kind==="multi")return ansStr(v).split("").map(d=>it.mk[+d]).join("、"); return String(v); }
+function fillLine(s,g,curK){ return M(g.line,k=>{ const it=s.items.find(x=>x.k===k), sv=showVal(it,st.ans[it.id]), cur=k===curK;
+  return `<button type="button" class="bx${cur?" cur":""}${sv?" filled":""}" data-bk="${k}" aria-label="${esc((it.bl?"括號"+it.bl:"括號")+(sv?"，寫了 "+sv:"，還沒寫"))}">${it.bl?`<i>${it.bl}</i>`:""}<b>${sv?M(sv):"&nbsp;"}</b></button>`; }); }
+const CH_SAY={".":"點","×":"乘"};
+const charSegs=v=>[...String(v)].map(c=>["zh",CH_SAY[c]||c]);
+const ckTxt=v=>ansStr(v).split("").map(d=>CIR[+d]).join("");
+
+/* ---------- home ---------- */
+function renderHome(){
+  const started=answered()>0||st.t0;
+  $("main").innerHTML=`<section class="screen">
+    <p class="eyebrow">115 學年度第一學期　期中學業評量</p>
+    <h1>六年級 數學科<br>報讀作答</h1>
+    <div class="facts"><span class="fact">4 大題</span><span class="fact">${ITEMS.length} 題</span><span class="fact">滿分 100 分</span><span class="fact">算算看、做做看寫在答案紙</span></div>
+    <p style="margin:0;font-size:1.6rem;font-weight:900">六年丙班　數學科</p>
+    <div class="row">
+      <button class="big" id="startBtn" type="button" style="font-size:1.8rem;min-height:5.5rem;padding-inline:2.4rem">${started?"繼續作答":"開始作答"}</button>
+      ${started?'<button class="ghost" id="resetBtn" type="button">清除答案，重新作答</button>':""}
+    </div>
+    <ol class="help">
+      <li>按 <b>藍色喇叭</b> 聽題目，可以一直重聽。</li>
+      <li>選擇題：點 1、2、3、4 大按鈕選答案。</li>
+      <li>填填看：用下面的數字按鈕填格子；點題目裡的格子可以換格子。</li>
+      <li>算算看、做做看：聽完題目，在 <b>答案紙</b> 上寫算式和答案，寫好再按大按鈕。</li>
+      <li>有圖片的題目，點圖片可以放大。</li>
+      <li>寫完按「交卷」，再按「下載作答 PDF」交給老師。</li>
+    </ol>
+    <div id="resetBox"></div>
+    <div class="qrbox"><div id="homeQR"></div><p>掃描 QR Code 打開這個報讀網站</p></div>
+  </section>`;
+  drawQR($("homeQR"),SITE_URL,220);
+  $("startBtn").onclick=()=>{ if(!st.t0){st.t0=Date.now();save();} show(st.t1?"done":"q"); window.scrollTo(0,0);};
+  if($("resetBtn")) $("resetBtn").onclick=()=>{ $("resetBox").innerHTML=`<div class="warnbox"><p>確定要清除全部答案嗎？清除後不能復原。</p>
+      <div class="row"><button class="big" id="yesReset" type="button" style="background:var(--bad);color:#fff">確定清除</button><button class="ghost" id="noReset" type="button">不要清除</button></div></div>`;
+    $("noReset").onclick=()=>{$("resetBox").innerHTML="";};
+    $("yesReset").onclick=()=>{ st.ans={}; st.i=0; st.t0=null; st.t1=null; save(); renderHome(); setProgress(); }; };
+}
+
+/* ---------- question ---------- */
+function secHead(s){
+  return `<div class="sec">
+    <div class="sech"><b>${s.no}、${M(s.zh)}</b><small>（${s.pct} 分，${s.perNote||"每題 "+s.per+" 分"}）</small></div>
+    <div class="row"><button class="speaker pill" id="secSpk" type="button" aria-label="唸大題說明">${SPK}大題說明</button></div>
+  </div>`;
+}
+function renderQ(keepScroll){
+  const y=window.scrollY; const it=ITEMS[st.i], s=SECS[it.si], a=st.ans[it.id];
+  let h=`<section class="screen" style="gap:.8rem">`+secHead(s);
+  const G=(it.g!=null&&s.groups&&s.groups[it.g].ctx!=null)?s.groups[it.g]:null;
+  if(G){
+    h+=`<div class="passage"><div class="ptop ctxtop"><b>${esc(G.title)}</b><button class="speaker pill ctxspk" id="ctxSpk" type="button" aria-label="${G.readEach===false?"聽文章":"聽說明"}">${SPK}${G.readEach===false?"聽文章":"聽說明"}</button></div><p class="ctxp${G.readEach===false?" longp":""}" id="ctx">${M(G.ctx)}</p>${G.img?`<figure class="mfig gfig"><img class="zoomable" src="../math6-midterm/img/${G.img}.png" alt="${esc(G.alt)}"><figcaption>點圖片可以放大</figcaption></figure>`:""}</div>`;
+  }
+  h+=`<div class="card"><div class="qhead"><span class="qnum">${esc(it.lab)}</span><button class="speaker pill" id="stemSpk" type="button" aria-label="唸題目">${SPK}唸題目</button></div>`;
+  if(it.t==="tf"){
+    h+=`<p class="stem" id="stem">${M(it.stem)}</p>`;
+    h+=`<div class="picks tfs" role="radiogroup" aria-label="對或錯">${symOf(it).map((c,k)=>`<button type="button" role="radio" aria-checked="${a===k}" data-tf="${k}" aria-label="${TFW[k]}"><span class="sym">${c}</span><span class="w">${TFW[k]}</span></button>`).join("")}</div>`;
+  } else if(it.t==="choice"){
+    h+=`<p class="stem" id="stem">${M(it.stem)}</p>`;
+    h+=`<div class="opts" role="radiogroup" aria-label="選項">`+it.o.map((o,k)=>`<div class="opt"><button class="optbtn" type="button" role="radio" aria-checked="${a===k}" data-k="${k}"><span class="no">${NUM[k]}</span><span>${M(o)}</span></button><button class="speaker" type="button" data-s="${k}" aria-label="唸選項 ${k+1}">${SPK}</button></div>`).join("")+`</div>`;
+  } else if(it.t==="match"){
+    const g=s.groups[it.g], mv=ansStr(a);
+    const shown=it.multi?(mv?mTxt(it,mv):"&nbsp;"):(a!=null?g.bank[a][0]:"&nbsp;");
+    h+=`<p class="stem mstem" id="stem"><span class="bx mbx${isDone(it)?" filled":""} cur"><b>${shown}</b></span><span>${M(it.stem)}</span></p>`;
+    h+=`<div class="row"><button class="speaker pill" id="bankSpk" type="button">${SPK}聽全部代號</button>${it.multi?`<button class="speaker pill" id="mySpk" type="button">${SPK}唸我選的</button>`:""}</div>`;
+    h+=`<div class="codes" role="${it.multi?"group":"radiogroup"}" aria-label="代號">${g.bank.map((b,k)=>`<button type="button" role="${it.multi?"checkbox":"radio"}" aria-checked="${it.multi?mv.includes(k):a===k}" data-m="${k}"><span class="code">${b[0]}</span><span class="cw">${esc(b[1])}</span></button>`).join("")}</div>`;
+  } else if(it.t==="text"){
+    h+=`<p class="stem" id="stem">${M(it.stem)}</p>`;
+    h+=`<div class="txtwrap"><input class="txtin" id="txtin" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="在這裡寫答案" placeholder="在這裡寫答案" value="${esc(ansStr(a))}"><button class="speaker pill" id="mySpk" type="button">${SPK}唸我寫的</button></div>`;
+  } else if(it.t==="fill"){
+    h+=`<p class="mline${it.g===5?" mbig":""}" id="stem">${fillLine(s,s.groups[it.g],it.k)}</p>`;
+    if(it.kind==="num"){
+      h+=`<div class="pad"><div class="padshow"><span class="val${a?"":" empty"}" id="val">${a?esc(a):"按下面的按鈕"}</span><button class="speaker pill" id="mySpk" type="button">${SPK}唸我寫的</button></div>
+        <div class="keys">${[1,2,3,4,5,6,7,8,9,0,...(it.keys||[])].map(d=>`<button type="button" data-d="${d}" aria-label="${CH_SAY[d]||d}">${d}</button>`).join("")}</div>
+        <div class="keys2"><button type="button" id="bsBtn">⌫ 刪掉一個</button><button type="button" id="clrBtn">全部清除</button></div></div>`;
+    } else if(it.kind==="text"){
+      h+=`<div class="txtwrap"><input class="txtin" id="txtin" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="在這裡寫答案" placeholder="在這裡寫答案" value="${esc(ansStr(a))}"><button class="speaker pill" id="mySpk" type="button">${SPK}唸我寫的</button></div>`;
+    } else {
+      const on=ansStr(a);
+      h+=`<div class="pad"><div class="padshow"><span class="val${on?"":" empty"}" id="val">${on?M(showVal(it,on)):"點分數選，再點一次取消"}</span><button class="speaker pill" id="mySpk" type="button">${SPK}唸我選的</button></div>
+        <div class="keys frkeys">${it.mk.map((f,k)=>`<button type="button" data-mk="${k}" aria-pressed="${on.includes(k)}" aria-label="${esc(it.mkSay[k])}" class="${on.includes(k)?"on":""}">${M(f)}</button>`).join("")}</div></div>`;
+    }
+  } else if(it.t==="paper"){
+    h+=`<p class="stem" id="stem">${M(it.stem)}</p>`;
+    if(it.img) h+=`<figure class="mfig"><img class="zoomable" src="../math6-midterm/img/${it.img}.png" alt="${esc(it.alt)}"><figcaption>點圖片可以放大</figcaption></figure>`;
+    h+=`<div class="paperbox">${PEN}<span>${esc(s.note)}<br>（${s.no}-${esc(it.lab)}，${it.pts} 分）</span></div>`;
+    h+=`<button class="big paperdone" id="paperDone" type="button">${a!=null?"✓ ":""}我在答案紙寫好了，下一題 →</button>`;
+  } else {
+    const on=ansStr(a);
+    h+=`<p class="stem" id="stem">${M(it.stem)}</p>`;
+    h+=`<div class="opts" aria-label="可以勾很多個">`+it.o.map((o,k)=>`<div class="opt"><button class="optbtn ckbtn" type="button" role="checkbox" aria-checked="${on.includes(k)}" data-ck="${k}"><span class="box ckbox">${TICK}</span><span><b class="cno">${CIR[k]}</b> ${M(o)}</span></button><button class="speaker" type="button" data-s="${k}" aria-label="唸選項 ${k+1}">${SPK}</button></div>`).join("")+`</div>`;
+    h+=`<div class="padshow"><span class="val${on?"":" empty"}" id="val">${on?"勾了 "+ckTxt(on):"點一下打勾，再點一次取消"}</span><button class="speaker pill" id="mySpk" type="button">${SPK}唸我勾的</button></div>`;
+  }
+  h+=`</div>`;
+  h+=`<details class="nav" id="navd"><summary>全部題目（點題號可跳題）</summary>`+SECS.map(sx=>`<div class="navsec"><b>${sx.no}、${M(sx.zh)}</b><div class="grid">${sx.items.map(x=>{const n=ITEMS.indexOf(x);return `<button type="button" data-go="${n}" class="${isDone(x)?"done":""}" aria-current="${n===st.i}"${n>reach()?" disabled":""}>${esc(x.lab)}</button>`;}).join("")}</div></div>`).join("")+`</details>`;
+  h+=`</section>`;
+  const navOpen=$("navd")&&$("navd").open;
+  $("main").innerHTML=h; if(navOpen)$("navd").open=true;
+  // wire
+  $("secSpk").onclick=()=>speak([{segs:s.introSay}]);
+  const readStem=(auto)=>{ const parts=[{segs:it.stemSay,el:$("stem")}];
+    if(G&&(G.readEach!==false||(auto&&it.gj===0))) parts.unshift({segs:G.ctxSay,el:$("ctx")});
+    if(it.t==="match"){ const bs=[...document.querySelectorAll("[data-m]")]; G.bankSay.forEach((seg,k)=>parts.push({segs:[seg],el:bs[k]})); }
+    if(it.kind==="multi"){ const bs=[...document.querySelectorAll("[data-mk]")]; it.mkSegs.forEach((seg,k)=>parts.push({segs:[seg],el:bs[k]})); }
+    if(it.optSay){ const bs=[...document.querySelectorAll("[data-k],[data-ck]")]; it.optSay.forEach((seg,k)=>parts.push({segs:seg,el:bs[k]})); }
+    speak(parts); };
+  $("stemSpk").onclick=()=>readStem(false);
+  if($("ctxSpk")) $("ctxSpk").onclick=()=>speak([{segs:s.groups[it.g].ctxSay,el:$("ctx")}]);
+  if($("bankSpk")) $("bankSpk").onclick=()=>{ const g=s.groups[it.g], bs=[...document.querySelectorAll("[data-m]")];
+    speak(g.bankSay.map((seg,k)=>({segs:[seg],el:bs[k]}))); };
+  document.querySelectorAll("[data-tf]").forEach(b=>b.onclick=()=>pick(+b.dataset.tf,"你選的是"+TFW[+b.dataset.tf]));
+  document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>pick(+b.dataset.k,"你選的是"+(+b.dataset.k+1)+"號"));
+  document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{ const k=+b.dataset.m;
+    if(it.multi){ const d=String(k); let v=ansStr(st.ans[it.id]); const had=v.includes(d); v=had?v.replace(d,""):v+d; v=v.split("").sort().join(""); setAns(v); say1((had?G.offSay:G.onSay)[k]); }
+    else pick(k,G.pickSay[k]); });
+  document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ const v=ansStr(st.ans[it.id]); if(v.length>=8){say1("最多只能寫8個字");return;} setAns(v+b.dataset.d); say1(CH_SAY[b.dataset.d]||b.dataset.d); });
+  if($("bsBtn")) $("bsBtn").onclick=()=>{ setAns(ansStr(st.ans[it.id]).slice(0,-1)); say1("刪掉一個"); };
+  if($("clrBtn")) $("clrBtn").onclick=()=>{ setAns(""); say1("全部清除"); };
+  document.querySelectorAll("[data-mk]").forEach(b=>b.onclick=()=>{ const k=+b.dataset.mk, d=String(k); let v=ansStr(st.ans[it.id]); const had=v.includes(d);
+    v=had?v.replace(d,""):v+d; v=v.split("").sort().join(""); setAns(v); say1((had?it.offSay:it.onSay)[k]); });
+  document.querySelectorAll("[data-bk]").forEach(b=>b.onclick=()=>jumpBlank(s,+b.dataset.bk));
+  if($("paperDone")) $("paperDone").onclick=()=>{ st.ans[it.id]=1; if(st.t1)st.t1=null; save(); if(st.i===ITEMS.length-1){stopSpeak(); show("check");} else go(st.i+1); };
+  if($("txtin")){ const ti=$("txtin"); ti.oninput=()=>{ const v=ti.value; if(v.trim()==="") delete st.ans[it.id]; else st.ans[it.id]=v.trim(); if(st.t1)st.t1=null; save(); $("nextBtn").classList.toggle("locked",false); setProgress(); }; }
+  document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const k=+b.dataset.s; speak([{segs:it.optSay[k],el:b.previousElementSibling}]);});
+  document.querySelectorAll("[data-ck]").forEach(b=>b.onclick=()=>{ const d=b.dataset.ck; let v=ansStr(st.ans[it.id]); const had=v.includes(d);
+    v=had?v.replace(d,""):v+d; v=v.split("").sort().join(""); setAns(v); say1((had?"取消":"勾了")+(+d+1)+"號"); });
+  if($("mySpk")&&it.t==="fill"&&it.kind==="num") $("mySpk").onclick=()=>{ const v=ansStr(st.ans[it.id]); if(!v){ say1("你還沒有寫答案"); return; } speak([{segs:[["zh","你寫的是"],...charSegs(v)],el:$("val")}]); };
+  else if($("mySpk")&&it.t==="fill"&&it.kind==="multi") $("mySpk").onclick=()=>{ const v=ansStr(st.ans[it.id]); if(!v){ say1("你還沒有選"); return; } speak([{segs:[["zh","你選了"],...v.split("").map(d=>it.mkSegs[+d])],el:$("val")}]); };
+  else if($("mySpk")&&(it.t==="text"||it.kind==="text")) $("mySpk").onclick=()=>{ const v=ansStr(st.ans[it.id]); if(!v){ say1("你還沒有寫"); return; } speak([{segs:[["zh","你寫的是"],["zh",v]],el:$("txtin")}]); };
+  else if($("mySpk")&&it.t==="match") $("mySpk").onclick=()=>{ const v=ansStr(st.ans[it.id]); if(!v){ say1("你還沒有選"); return; } speak([{segs:[["zh","你選了"],...v.split("").map(d=>G.bankSay[+d])],el:$("stem")}]); };
+  else if($("mySpk")) $("mySpk").onclick=()=>{ const v=ansStr(st.ans[it.id]); if(!v){ say1("你還沒有勾"); return; }
+    speak([{segs:[["zh","你勾了"],...v.split("").map(d=>["zh",(+d+1)+"號"])],el:$("val")}]); };
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(+b.dataset.go));
+  document.querySelectorAll(".zoomable").forEach(im=>im.onclick=()=>zoom(im.src,im.alt));
+  // bottom bar
+  $("prevBtn").disabled=st.i===0;
+  $("nextBtn").classList.toggle("locked",false);
+  const last=st.i===ITEMS.length-1; $("nextBtn").textContent=last?"檢查並交卷 →":"下一題 →"; $("nextBtn").classList.toggle("finish",last);
+  prefetch([...it.stemSay,...(it.optSay||[]).flat(),...s.introSay,...(G?G.ctxSay:[]),...(it.t==="match"?G.bankSay:[]),...(it.mkSegs||[])]);
+  setProgress();
+  if(keepScroll) window.scrollTo(0,y); else { window.scrollTo(0,0); readStem(true); } /* 換到新題目就自動唸 */
+}
+function zoom(src,alt){ const d=document.createElement("div"); d.className="zoom"; d.innerHTML=`<img src="${src}" alt="${esc(alt)}"><button type="button">關閉 ✕</button>`;
+  d.onclick=()=>d.remove(); document.body.appendChild(d); d.querySelector("button").focus(); }
+function setAns(v){ const it=ITEMS[st.i]; if(v===""||v==null) delete st.ans[it.id]; else st.ans[it.id]=v; if(st.t1)st.t1=null; save(); renderQ(true); }
+function pick(k,msg){ const it=ITEMS[st.i]; st.ans[it.id]=k; if(st.t1)st.t1=null; save(); renderQ(true); say1(msg); }
+function jumpBlank(s,k){ const it=s.items.find(x=>x.k===k); if(!it)return; const n=ITEMS.indexOf(it);
+  if(n>reach()){ say1("請先寫好答案，才能到下一題。"); return; }
+  if(n!==st.i){ stopSpeak(); st.i=n; save(); renderQ(true); }
+  speak([{segs:it.stemSay,el:$("stem")}]); }
+function reach(){ return ITEMS.length-1; const n=ITEMS.findIndex(x=>!isDone(x)); return n<0?ITEMS.length-1:n; }
+function go(n){ stopSpeak(); st.i=Math.max(0,Math.min(ITEMS.length-1,n)); save(); show("q"); }
+$("prevBtn").onclick=()=>go(st.i-1);
+$("nextBtn").onclick=()=>{ const it=ITEMS[st.i];
+  if(false){ say1(it.t==="paper"?"請先在答案紙寫好，再按這個大按鈕。":it.t==="fill"&&it.kind!=="multi"?"請先寫好答案，才能到下一題。":"請先選一個答案，才能到下一題。"); const b=$("nextBtn"); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); return; }
+  if(st.i===ITEMS.length-1){stopSpeak(); show("check");} else go(st.i+1); };
+document.addEventListener("keydown",e=>{ if(view!=="q"||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
+  if(e.key==="ArrowRight")$("nextBtn").click(); if(e.key==="ArrowLeft"&&st.i>0)go(st.i-1); });
+
+/* ---------- check & submit ---------- */
+function renderCheck(){
+  const miss=ITEMS.filter(it=>!isDone(it));
+  $("main").innerHTML=`<section class="screen">
+    <h1>檢查一下</h1>
+    ${miss.length?`<div class="warnbox"><p>還有 ${miss.length} 題沒有寫：</p><div class="miss">${miss.map(it=>`<button type="button" data-go="${ITEMS.indexOf(it)}">${SECS[it.si].no}-${esc(it.lab)}</button>`).join("")}</div></div>`
+      :`<p style="margin:0;font-weight:900;font-size:1.3rem;color:var(--ok)">全部 ${ITEMS.length} 題都寫完了！</p>`}
+    <div class="row">
+      <button class="big" id="submitBtn" type="button" style="background:var(--stu);color:var(--stu-fg)">${miss.length?"還是要交卷（測試）":"交卷"}</button>
+      <button class="ghost" id="backBtn" type="button">回去檢查題目</button>
+    </div></section>`;
+  say1(miss.length?"還有題目沒寫，要回去檢查嗎？":"全部寫完了，可以交卷。");
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(+b.dataset.go));
+  $("backBtn").onclick=()=>go(st.i);
+  $("submitBtn").onclick=()=>{ st.t1=Date.now(); save(); show("done"); };
+}
+let pdfBlob=null, pages=[];
+function renderDone(){
+  $("main").innerHTML=`<section class="screen">
+    <div class="done-mark" aria-hidden="true">✓</div>
+    <h1>${TEACHER?"老師批改：作答紀錄":"交卷完成"}</h1>
+    <p style="margin:0;font-weight:700">六年丙班　已答 ${answered()} / ${ITEMS.length} 題　交卷 ${fmt(st.t1)}</p>
+    <div class="row"><button class="big" id="pdfBtn" type="button" disabled>正在製作作答 PDF…</button>
+      ${TEACHER?'<button class="ghost" id="leaveBtn" type="button">離開批改畫面</button>':'<button class="ghost" id="reviewBtn" type="button">回去修改答案</button>'}</div>
+    <p class="status" id="pdfStatus" role="status"></p>
+    ${TEACHER?"":`<div class="qrbox"><div id="resQR"></div><p>老師用手機掃描，就能看到作答並下載 PDF</p></div>`}
+    <details class="nav"${TEACHER?" open":""}><summary>看作答紀錄（PDF 內容）</summary><div class="sheetprev" id="sheetPrev"></div></details>
+  </section>`;
+  if(!TEACHER){ say1("已經交卷，請把作答紀錄交給老師。"); drawQR($("resQR"),SITE_URL+"#"+encodeRes(),260);
+    $("reviewBtn").onclick=()=>{ st.t1=null; save(); go(st.i); }; }
+  else $("leaveBtn").onclick=()=>{ try{history.replaceState(null,"",location.pathname+location.search);}catch(e){} location.hash=""; leaveTeacher(); };
+  buildPDF().then(ok=>{ const b=$("pdfBtn"); if(!b)return;
+    if(ok){ b.disabled=false; b.textContent="下載作答 PDF 給老師"; b.onclick=downloadPDF; }
+    else { b.textContent="PDF 製作失敗"; $("pdfStatus").className="status bad"; $("pdfStatus").textContent="PDF 沒有做出來。請老師打開下方「看作答紀錄」直接批改，或重新整理頁面再試一次。"; renderSheetFallback(); } });
+}
+
+/* ---------- answer sheet (PDF) ---------- */
+function valText(it,v){ if(v==null||v==="")return null; const s=SECS[it.si];
+  if(it.t==="tf") return symOf(it)[v]; if(it.t==="choice") return NUM[v]+"　"+it.o[v];
+  if(it.t==="text"||it.t==="fill") return showVal(it,v);
+  if(it.t==="paper") return "寫在答案紙";
+  if(it.t==="match"&&it.multi) return ansStr(v).split("").map(d=>{const b=s.groups[it.g].bank[+d]; return b[0]+" "+b[1];}).join("、");
+  if(it.t==="match"){ const b=s.groups[it.g].bank[v]; return b[0]+"　"+b[1]; }
+  return ansStr(v)?"勾 "+ckTxt(v):null; }
+const stuText=it=>valText(it,st.ans[it.id]);
+const keyText=it=>valText(it,it.a);
+function score(it){ if(!isDone(it))return 0; const s=SECS[it.si];
+  if(it.t==="check"){ const v=ansStr(st.ans[it.id]); let n=0; for(let k=0;k<it.o.length;k++) if(v.includes(k)===it.a.includes(k)) n++; return n*s.per; }
+  if(it.t==="paper") return 0;
+  if(it.t==="text"||it.kind==="text"||it.kind==="num"){ const v=String(st.ans[it.id]).replace(/[\s（）()]/g,"").replace(/[xX*＊]/g,"×").replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248)).replace(/．/g,".");
+    const acc=it.acc||[it.a]; if(acc.includes(v))return s.per;
+    if(/^\d*\.?\d+$/.test(v)&&acc.some(x=>/^\d*\.?\d+$/.test(x)&&parseFloat(x)===parseFloat(v)))return s.per; return 0; }
+  return String(st.ans[it.id])===String(it.a)?s.per:0; }
+const maxOf=it=>it.t==="check"?it.o.length*SECS[it.si].per:SECS[it.si].per;
+function fmt(t){ if(!t)return "—"; const d=new Date(t), p=x=>String(x).padStart(2,"0"); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function sheetBlocks(){
+  const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):null;
+  const B=[];
+  B.push(`<div><div><h2>115 學年度第一學期 期中學業評量　六年級數學科</h2><p class="sub">作答紀錄（報讀版・學生平板作答；算算看、做做看寫在答案紙）</p></div>
+    <div class="who"><span>六年 <b>丙</b> 班</span><span>姓名 <b>　　　　　</b></span></div>
+    <div class="who" style="font-size:12.5px;font-weight:500"><span>交卷時間：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span><span>已作答：${answered()} / ${ITEMS.length} 題</span></div></div>`);
+  let auto=0, autoMax=0;
+  const rows=SECS.map(s=>{
+    if(s.type==="paper") return `<tr><td>${s.no}、${M(s.zh)}（寫在答案紙）</td><td class="c">${s.pct}</td><td class="c">請老師批改答案紙</td><td class="c">______ 分</td></tr>`;
+    autoMax+=s.pct; const p=s.items.reduce((t,it)=>t+score(it),0); auto+=p;
+    const n=s.items.some(it=>it.t==="check")?null:s.items.filter(it=>score(it)>0).length;
+    return `<tr><td>${s.no}、${M(s.zh)}</td><td class="c">${s.pct}</td><td class="c">${n==null?"":`對 ${n} / ${s.items.length} ${s.type==="fill"?"格":"題"}　`}<b>${p}</b> 分</td><td class="c">______ 分</td></tr>`; }).join("");
+  B.push(`<div><h3>成績</h3><table><tr><th>大題</th><th style="width:60px">配分</th><th>電腦批改</th><th style="width:120px">老師確認得分</th></tr>${rows}
+    <tr class="tot"><td>合計</td><td class="c">100</td><td class="c">電腦批改 <b>${auto}</b> / ${autoMax} 分；老師批改 ______ / ${100-autoMax} 分</td><td class="c">總分 ______</td></tr></table>
+    <p class="ctx" style="margin:6px 0 0">電腦批改依參考答案計分，請老師對照學校答案卷確認。</p></div>`);
+  SECS.forEach(s=>{
+    if(s.type==="paper"){
+      const head=`<tr><th style="width:56px">題號</th><th>題目</th><th style="width:260px">參考答案（做法僅供參考）</th><th style="width:64px">得分</th></tr>`;
+      let lastG=-1;
+      const body=s.items.map(it=>{ let pre="";
+        if(it.g!=null&&it.g!==lastG){ lastG=it.g; const g=s.groups[it.g]; pre=`<tr><td colspan="4" class="ctx" style="background:#F6F7F9"><b>${esc(g.title)}</b>　${M(g.ctx)}</td></tr>`; }
+        return pre+`<tr><td class="c"><b>${esc(it.lab)}</b></td><td class="ctx">${M(it.stem)}<br><span style="color:#111;font-weight:700">${isDone(it)?"✓ 學生已在答案紙作答":"（未按完成）"}</span></td><td class="keyl">${it.key.map(k=>M(k)).join("<br>")}</td><td class="c"><span style="color:#999">___ / ${it.pts}</span></td></tr>`; }).join("");
+      B.push(`<div><h3>${s.no}、${M(s.zh)}（${s.pct} 分，寫在答案紙上）</h3><table>${head}${body}</table></div>`); return; }
+    const head=`<tr><th style="width:56px">題號</th><th>題目／學生作答</th><th style="width:150px">參考答案</th><th style="width:60px">批改</th></tr>`;
+    let lastG=-1;
+    const body=s.items.map(it=>{ const t=stuText(it); let pre="";
+      if(it.t==="fill"&&it.g!==lastG){ lastG=it.g; pre=`<tr><td colspan="4" class="ctx" style="background:#F6F7F9"><b>${esc(s.groups[it.g].title)}</b>　${M(s.groups[it.g].line,k=>{const x=s.items.find(y=>y.k===k); return `（${x.bl||"　"}）`;})}</td></tr>`; }
+      if(it.t==="match"&&it.g!==lastG){ lastG=it.g; const g=s.groups[it.g];
+        pre=`<tr><td colspan="4" class="ctx" style="background:#F6F7F9"><b>${esc(g.title)}</b>　${M(g.ctx)}<br>代號：${g.bank.map(b=>b[0]+" "+esc(b[1])).join("、")}</td></tr>`; }
+      const ansCell = t==null ? `<span class="no">（未作答）</span>` : `<span style="color:#C2410C;font-weight:900">學生作答：</span><b>${M(t)}</b>`;
+      if(it.g!=null&&s.groups&&it.t!=="match"&&it.t!=="fill"&&it.gj===0){ const g=s.groups[it.g]; pre+=`<tr><td colspan="4" class="ctx" style="background:#F6F7F9"><b>${esc(g.title)}</b>　${g.readEach===false?"（文章略）":M(g.ctx)}</td></tr>`; }
+      const ctx = it.t==="check" ? M(it.stem)+"<br>"+it.o.map((o,k)=>CIR[k]+esc(o)).join("<br>") : it.t==="fill" ? "括號"+(it.bl||"") : M(it.stem);
+      const mark = it.t==="check" ? `<b>${score(it)}</b> / ${maxOf(it)}` : (score(it)>0?'<span class="ok">○</span>':'<span class="no">✕</span>');
+      return pre+`<tr><td class="c"><b>${esc(it.lab)}</b></td><td><div class="ctx">${ctx}</div>${ansCell}</td><td>${M(keyText(it))}</td><td class="c">${mark}</td></tr>`; }).join("");
+    B.push(`<div><h3>${s.no}、${M(s.zh)}（${s.perNote||"每題 "+s.per+" 分"}）</h3><table>${head}${body}</table></div>`);
+  });
+  return B;
+}
+function layoutPages(){
+  const host=$("report"); host.innerHTML=""; const blocks=sheetBlocks(); const out=[];
+  let pg=null; const newPage=()=>{ pg=document.createElement("div"); pg.className="pg"; host.appendChild(pg); out.push(pg); };
+  newPage();
+  blocks.forEach(html=>{ const d=document.createElement("div"); d.innerHTML=html; const blk=d.firstElementChild;
+    pg.appendChild(blk);
+    if(pg.scrollHeight>1123 && pg.children.length>1){ pg.removeChild(blk);
+      const tb=blk.querySelector("table");
+      if(tb&&tb.rows.length>3){
+        const h3=blk.querySelector("h3"), rows=[...tb.rows], hd=rows.shift();
+        let cur=null; const start=(first)=>{ const b=document.createElement("div"); if(first&&h3)b.appendChild(h3.cloneNode(true)); const t=document.createElement("table"); t.appendChild(hd.cloneNode(true)); b.appendChild(t); pg.appendChild(b); cur=t; };
+        start(true);
+        rows.forEach(r=>{ cur.appendChild(r); if(pg.scrollHeight>1123&&cur.rows.length>2){ cur.removeChild(r); newPage(); start(false); cur.appendChild(r);} });
+      } else { newPage(); pg.appendChild(blk); } } });
+  out.forEach((p,i)=>{ const f=document.createElement("div"); f.className="foot"; f.textContent=`第 ${i+1} / ${out.length} 頁`; p.appendChild(f); });
+  return out;
+}
+async function buildPDF(){
+  try{
+    if(!window.html2canvas||!window.jspdf) return false;
+    try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,3000))]); }catch(e){}
+    pages=layoutPages();
+    const doc=new window.jspdf.jsPDF({unit:"pt",format:"a4",compress:true}); const prev=$("sheetPrev");
+    for(let i=0;i<pages.length;i++){
+      const c=await html2canvas(pages[i],{scale:2,backgroundColor:"#FFFFFF",useCORS:true,logging:false});
+      const url=c.toDataURL("image/jpeg",0.9);
+      if(i)doc.addPage(); doc.addImage(url,"JPEG",0,0,595.28,841.89);
+      if(prev){ const im=new Image(); im.src=url; im.alt=`作答紀錄第 ${i+1} 頁`; prev.appendChild(im); }
+    }
+    pdfBlob=doc.output("blob"); return true;
+  }catch(e){ console.error(e); return false; }
+}
+function renderSheetFallback(){ const prev=$("sheetPrev"); if(!prev)return; prev.innerHTML=""; layoutPages().forEach(p=>{ const c=p.cloneNode(true); c.style.height="auto"; const w=document.createElement("div"); w.style.overflowX="auto"; w.appendChild(c); prev.appendChild(w); }); }
+async function downloadPDF(){
+  const s=$("pdfStatus"); s.className="status"; s.textContent="";
+  const fname="六上數學期中評量_測試版.pdf";
+  try{
+    const file=new File([pdfBlob],fname,{type:"application/pdf"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})&&/iPad|iPhone|Android/i.test(navigator.userAgent)){
+      try{ await navigator.share({files:[file],title:fname}); s.className="status ok"; s.textContent="已送出："+fname; return; }catch(e){ if(e&&e.name==="AbortError"){ s.textContent="沒有下載。想下載時再按一次按鈕。"; return; } }
+    }
+    const url=URL.createObjectURL(pdfBlob), a=document.createElement("a"); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000); s.className="status ok"; s.textContent="已下載："+fname+"，請交給老師。"; return;
+  }catch(e){ s.className="status bad"; s.textContent="這個畫面不能下載檔案。請老師打開下方「看作答紀錄」直接批改。"; }
+}
+
+let saved=null;
+function checkHash(){ const h=(location.hash||"").slice(1); const r=decodeRes(h);
+  if(r){ if(!TEACHER){ saved=st; } TEACHER=true; st=Object.assign({},saved||st,{ans:r.ans,t0:r.t0,t1:r.t1,i:0}); stopSpeak(); show("done"); return true; }
+  return false; }
+function leaveTeacher(){ if(!TEACHER)return; TEACHER=false; if(saved)st=saved; saved=null; show(st.t1?"done":"home"); }
+window.addEventListener("hashchange",()=>{ if(!checkHash()) leaveTeacher(); });
+$("tFill").onclick=()=>{ ITEMS.forEach(it=>{ const r=n=>Math.floor(Math.random()*n);
+  if(it.t==="choice")st.ans[it.id]=r(it.o.length);
+  else if(it.t==="paper")st.ans[it.id]=1;
+  else if(it.kind==="multi"){ let v=""; for(let k=0;k<it.mk.length;k++) if(Math.random()<.3)v+=k; st.ans[it.id]=v||"2"; }
+  else if(it.kind==="text")st.ans[it.id]=["互質","質數","合數"][r(3)];
+  else st.ans[it.id]=Math.random()<.6?String(it.a):String(r(20)); });
+  if(!st.t0)st.t0=Date.now(); save(); show(view==="home"?"home":"q"); };
+$("tSubmit").onclick=()=>{ stopSpeak(); if(!st.t0)st.t0=Date.now(); st.t1=Date.now(); save(); show("done"); };
+$("tClear").onclick=()=>{ stopSpeak(); st.ans={}; st.i=0; st.t0=null; st.t1=null; save(); show("home"); };
+applySettings();
+if(!checkHash()) show(st.t1?"done":"home");
+</script>
+
+</body></html>
