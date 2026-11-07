@@ -24,7 +24,7 @@ function M(t,box){ let h=esc(t).replace(/~([^~]+)~/g,'<u class="em">$1</u>');
   return h.replace(/□/g,'<span class="sq"></span>').replace(/\n/g,"<br>"); }
 function zyHTML(z){ let light=false, tone=""; if(z[0]==="˙"){light=true; z=z.slice(1);} if(/[ˊˇˋ]$/.test(z)){tone=z.slice(-1); z=z.slice(0,-1);}
   return `<span class="zyv"><span class="zys">${light?'<i class="zl">˙</i>':""}${[...z].map(c=>`<i>${c}</i>`).join("")}</span><span class="zt">${tone}</span></span>`; }
-const isT=it=>it.t==="text"||it.kind==="text"||it.kind==="num";
+const isT=it=>it.t==="rec"||it.t==="text"||it.kind==="text"||it.kind==="num";
 const NO=s=>s.no+(/）$/.test(s.no)?"　":"、");
 const ansStr=v=>v==null?"":String(v);
 
@@ -80,7 +80,7 @@ $("fsDown").onclick=()=>{st.fs=Math.max(0,st.fs-1);save();applySettings();};
 $("fsUp").onclick=()=>{st.fs=Math.min(FS.length-1,st.fs+1);save();applySettings();};
 $("hc").onclick=()=>{st.hc=!st.hc;save();applySettings();};
 $("rate").onclick=()=>{st.rate=(st.rate+1)%RATES.length;save();applySettings();};
-$("homeBtn").onclick=()=>{stopSpeak(); if(TEACHER){ try{history.replaceState(null,"",location.pathname+location.search);}catch(e){} leaveTeacher(); show("home"); } else show("home");};
+$("homeBtn").onclick=()=>{ try{stopRec();stopTake();}catch(e){} stopSpeak(); if(TEACHER){ try{history.replaceState(null,"",location.pathname+location.search);}catch(e){} leaveTeacher(); show("home"); } else show("home");};
 
 /* ---------- helpers ---------- */
 const isDone=it=>{const v=st.ans[it.id]; return v!=null&&String(v).trim()!=="";};
@@ -102,7 +102,7 @@ function renderHome(){
   $("main").innerHTML=`<section class="screen">
     <p class="eyebrow">115 學年度第一學期　期中學業評量</p>
     <h1>六年級 國語科<br>報讀作答</h1>
-    <div class="facts"><span class="fact">6 大題</span><span class="fact">${ITEMS.length} 題</span><span class="fact">滿分 100 分</span><span class="fact">國字、改錯、造句寫在紙上</span></div>
+    <div class="facts"><span class="fact">6 大題</span><span class="fact">${ITEMS.length} 題</span><span class="fact">滿分 100 分</span><span class="fact">國字、改錯、照樣照句寫在紙上</span><span class="fact">句型造句用說的</span></div>
     <p style="margin:0;font-size:1.6rem;font-weight:900">六年丙班　國語科</p>
     <div class="row">
       <button class="big" id="startBtn" type="button" style="font-size:1.8rem;min-height:5.5rem;padding-inline:2.4rem">${started?"繼續作答":"開始作答"}</button>
@@ -112,7 +112,8 @@ function renderHome(){
       <li>換到新題目會自動唸題目；按 <b>藍色喇叭</b> 可以一直重聽。</li>
       <li>看注音寫國字、改錯字：把字寫在 <b>大字版考卷</b> 的方格裡，寫好再按大按鈕。</li>
       <li>閱讀測驗、選擇題：點 1、2、3、4 大按鈕選答案。</li>
-      <li>照樣照句、句型造句：聽完題目，寫在 <b>答案紙</b> 上，寫好再按大按鈕。</li>
+      <li>照樣照句：聽完題目，寫在 <b>答案紙</b> 上，寫好再按大按鈕。</li>
+      <li>句型造句：按 <b>紅色大按鈕</b> 開始錄音，說完再按一次停止；可以錄很多次，也可以按「聽第幾次錄音」聽自己說的。</li>
       <li>感官摹寫：聽完短文，點代號大按鈕選感官。</li>
       <li>每一題都要作答，才能到下一題；按 <b>考卷目錄</b> 可以回到寫過的題目。</li>
       <li>全部寫完按「交卷」，再按「下載作答 PDF」交給老師。</li>
@@ -171,6 +172,14 @@ function renderQ(keepScroll){
       h+=`<div class="pad"><div class="padshow"><span class="val${on?"":" empty"}" id="val">${on?M(showVal(it,on)):"點分數選，再點一次取消"}</span><button class="speaker pill" id="mySpk" type="button">${SPK}唸我選的</button></div>
         <div class="keys frkeys">${it.mk.map((f,k)=>`<button type="button" data-mk="${k}" aria-pressed="${on.includes(k)}" aria-label="${esc(it.mkSay[k])}" class="${on.includes(k)?"on":""}">${M(f)}</button>`).join("")}</div></div>`;
     }
+  } else if(it.t==="rec"){
+    h+=`<p class="stem" id="stem">${M(it.stem)}</p>`;
+    h+=`<div class="recrow"><button class="recbtn" id="recBtn" type="button"><span class="led"></span><span class="t">${(RECS[it.id]||[]).length?"再錄一次":"按這裡開始錄音"}</span></button><span class="recstate" id="recState" role="status"></span></div>`;
+    h+=`<div class="interim" id="interim"></div>`;
+    h+=`<p class="heard">電腦聽到的句子（說錯了可以再錄，或請老師幫忙改字）：</p>`;
+    h+=`<textarea class="rectxt" id="recTxt" aria-label="電腦聽到的句子">${esc(ansStr(a))}</textarea>`;
+    h+=`<div class="takes" id="takes"></div>`;
+    h+=`<div class="warnbox" id="recWarn" hidden><p id="recWarnP"></p></div>`;
   } else if(it.t==="paper"){
     h+=`<p class="stem${it.big?" zybig":""}" id="stem">${M(it.stem)}</p>`;
     if(it.sub) h+=`<p class="subline">${M(it.sub)}</p>`;
@@ -209,6 +218,7 @@ function renderQ(keepScroll){
   document.querySelectorAll("[data-mk]").forEach(b=>b.onclick=()=>{ const k=+b.dataset.mk, d=String(k); let v=ansStr(st.ans[it.id]); const had=v.includes(d);
     v=had?v.replace(d,""):v+d; v=v.split("").sort().join(""); setAns(v); say1((had?it.offSay:it.onSay)[k]); });
   document.querySelectorAll("[data-bk]").forEach(b=>b.onclick=()=>jumpBlank(s,+b.dataset.bk));
+  if(it.t==="rec") wireRec(it);
   if($("paperDone")) $("paperDone").onclick=()=>{ st.ans[it.id]=1; if(st.t1)st.t1=null; save(); if(st.i===ITEMS.length-1){stopSpeak(); show("check");} else go(st.i+1); };
   if($("txtin")){ const ti=$("txtin"); ti.oninput=()=>{ const v=ti.value; if(v.trim()==="") delete st.ans[it.id]; else st.ans[it.id]=v.trim(); if(st.t1)st.t1=null; save(); $("nextBtn").classList.remove("locked"); setProgress(); }; }
   document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const k=+b.dataset.s; speak([{segs:it.optSay[k],el:b.previousElementSibling}]);});
@@ -230,6 +240,55 @@ function renderQ(keepScroll){
   setProgress();
   if(keepScroll) window.scrollTo(0,y); else { window.scrollTo(0,0); readStem(true); } /* 換到新題目就自動唸 */
 }
+/* 五、句型造句：口說錄音（可以錄很多次）＋語音轉文字 */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const RECS={}; /* 錄音只存在這次開啟的頁面 */
+let rec=null, recog=null, recId=null, stream=null, chunks=[], keepGoing=false, takePlayer=null;
+function stopRec(){ keepGoing=false; try{recog&&recog.stop();}catch(e){} try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){}
+  if(stream){stream.getTracks().forEach(t=>t.stop()); stream=null;} recId=null; }
+function stopTake(){ if(takePlayer){ try{takePlayer.pause();}catch(e){} takePlayer=null; } }
+function showTakes(it){ const box=$("takes"); if(!box)return; const L=RECS[it.id]||[]; box.innerHTML="";
+  L.forEach((u,k)=>{ const b=document.createElement("button"); b.type="button"; b.className="playbtn"; const lab=`▶ 聽第 ${k+1} 次錄音`; b.textContent=lab;
+    b.onclick=()=>{ if(b.classList.contains("on")){ stopTake(); b.classList.remove("on"); b.textContent=lab; return; }
+      stopSpeak(); stopTake(); box.querySelectorAll(".playbtn.on").forEach(x=>{x.classList.remove("on"); x.textContent=x.dataset.lab;});
+      takePlayer=new Audio(u); b.classList.add("on"); b.textContent="■ 停止播放";
+      const end=()=>{ b.classList.remove("on"); b.textContent=lab; }; takePlayer.onended=end; takePlayer.play().catch(end); };
+    b.dataset.lab=lab; box.appendChild(b); }); }
+function recWarn(t){ const w=$("recWarn"); if(!w)return; w.hidden=false; $("recWarnP").textContent=t; }
+function setRecAns(it,v){ v=(v||"").trim(); if(v) st.ans[it.id]=v; else delete st.ans[it.id]; if(st.t1)st.t1=null; save();
+  $("nextBtn").classList.toggle("locked",/*NEED*/!isDone(it)); setProgress(); }
+function wireRec(it){
+  const rb=$("recBtn"), stEl=$("recState"), ta=$("recTxt"), interim=$("interim");
+  showTakes(it);
+  if(!SR) recWarn("這台平板的瀏覽器不能把聲音轉成文字（建議用 Chrome 或 iPad 的 Safari）。還是可以錄音，再請老師幫忙打字。");
+  ta.oninput=()=>setRecAns(it,ta.value);
+  let base="";
+  rb.onclick=async()=>{
+    if(recId===it.id){ /* 停止 */
+      stopRec(); rb.classList.remove("on"); rb.querySelector(".t").textContent="再錄一次"; stEl.textContent="錄音結束"; interim.textContent="";
+      if(!ta.value.trim()) setRecAns(it,"（有錄音，電腦沒有轉出文字）"), ta.value=st.ans[it.id];
+      say1("錄音結束。"); return; }
+    if(rb.dataset.busy) return;
+    stopRec(); stopTake(); rb.dataset.busy="1"; stEl.textContent="錄音開始…";
+    await speak([{segs:[["zh","錄音開始。"]]}]);
+    delete rb.dataset.busy; stEl.textContent="準備麥克風…";
+    try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+    catch(e){ stEl.textContent=""; recWarn("沒辦法打開麥克風。請按「允許」使用麥克風，再按一次錄音。"); return; }
+    recId=it.id; keepGoing=true; chunks=[];
+    try{ rec=new MediaRecorder(stream); rec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+      const myId=it.id; rec.onstop=()=>{ if(chunks.length){ (RECS[myId]=RECS[myId]||[]).push(URL.createObjectURL(new Blob(chunks,{type:rec.mimeType||"audio/webm"}))); if(ITEMS[st.i].id===myId) showTakes(it); } };
+      rec.start(); }catch(e){ rec=null; }
+    rb.classList.add("on"); rb.querySelector(".t").textContent="說完了，按這裡停"; stEl.textContent="正在錄音…";
+    if(SR){ base="";
+      const start=()=>{ recog=new SR(); recog.lang="zh-TW"; recog.continuous=true; recog.interimResults=true;
+        recog.onresult=ev=>{ let fin="",tmp=""; for(let r=ev.resultIndex;r<ev.results.length;r++){ const t=ev.results[r][0].transcript; if(ev.results[r].isFinal) fin+=t; else tmp+=t; }
+          if(fin){ base+=fin; ta.value=base; setRecAns(it,base); } interim.textContent=tmp; };
+        recog.onerror=ev=>{ if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){ keepGoing=false; recWarn("語音轉文字被擋住了，只有錄音。請老師幫忙打字。"); } };
+        recog.onend=()=>{ if(keepGoing&&recId===it.id){ try{start();}catch(e){} } };
+        try{recog.start();}catch(e){} };
+      start(); }
+  };
+}
 function zoom(src,alt){ const d=document.createElement("div"); d.className="zoom"; d.innerHTML=`<img src="${src}" alt="${esc(alt)}"><button type="button">關閉 ✕</button>`;
   d.onclick=()=>d.remove(); document.body.appendChild(d); d.querySelector("button").focus(); }
 function setAns(v){ const it=ITEMS[st.i]; if(v===""||v==null) delete st.ans[it.id]; else st.ans[it.id]=v; if(st.t1)st.t1=null; save(); renderQ(true); }
@@ -239,10 +298,10 @@ function jumpBlank(s,k){ const it=s.items.find(x=>x.k===k); if(!it)return; const
   if(n!==st.i){ stopSpeak(); st.i=n; save(); renderQ(true); }
   speak([{segs:it.stemSay,el:$("stem")}]); }
 function reach(){ /*FREE*/const n=ITEMS.findIndex(x=>!isDone(x)); return n<0?ITEMS.length-1:n; }
-function go(n){ stopSpeak(); bindNext(); st.i=Math.max(0,Math.min(reach(),ITEMS.length-1,n)); save(); show("q"); }
+function go(n){ stopRec(); stopTake(); stopSpeak(); bindNext(); st.i=Math.max(0,Math.min(reach(),ITEMS.length-1,n)); save(); show("q"); }
 $("prevBtn").onclick=()=>go(st.i-1);
 bindNext();
-$("tocBtn").onclick=()=>{ stopSpeak(); show("toc"); };
+$("tocBtn").onclick=()=>{ stopRec(); stopTake(); stopSpeak(); show("toc"); };
 document.addEventListener("keydown",e=>{ if(view!=="q"||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
   if(e.key==="ArrowRight")$("nextBtn").click(); if(e.key==="ArrowLeft"&&st.i>0)go(st.i-1); });
 
@@ -261,7 +320,7 @@ function renderToc(){
   say1("考卷目錄。點題號，就能回到寫過的題目。");
 }
 function bindNext(){ $("nextBtn").onclick=()=>{ const it=ITEMS[st.i];
-  if(/*NEED*/!isDone(it)){ say1(it.t==="paper"?"請先在紙上寫好，再按大按鈕。":"請先選一個答案，才能到下一題。"); const b=$("nextBtn"); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); return; }
+  if(/*NEED*/!isDone(it)){ say1(it.t==="rec"?"請先按紅色按鈕錄音，才能到下一題。":it.t==="paper"?"請先在紙上寫好，再按大按鈕。":"請先選一個答案，才能到下一題。"); const b=$("nextBtn"); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); return; }
   if(st.i===ITEMS.length-1){stopSpeak(); show("check");} else go(st.i+1); }; }
 
 /* ---------- check & submit ---------- */
@@ -305,6 +364,7 @@ function valText(it,v){ if(v==null||v==="")return null; const s=SECS[it.si];
   if(it.t==="tf") return symOf(it)[v]; if(it.t==="choice") return NUM[v]+"　"+it.o[v];
   if(it.t==="text"||it.t==="fill") return showVal(it,v);
   if(it.t==="paper") return "寫在紙上";
+  if(it.t==="rec") return String(v);
   if(it.t==="match"&&it.multi) return ansStr(v).split("").map(d=>{const b=s.groups[it.g].bank[+d]; return b[0]+" "+b[1];}).join("、");
   if(it.t==="match"){ const b=s.groups[it.g].bank[v]; return b[0]+"　"+b[1]; }
   return ansStr(v)?"勾 "+ckTxt(v):null; }
@@ -312,7 +372,7 @@ const stuText=it=>valText(it,st.ans[it.id]);
 const keyText=it=>valText(it,it.a);
 function score(it){ if(!isDone(it))return 0; const s=SECS[it.si];
   if(it.t==="check"){ const v=ansStr(st.ans[it.id]); let n=0; for(let k=0;k<it.o.length;k++) if(v.includes(k)===it.a.includes(k)) n++; return n*s.per; }
-  if(it.t==="paper") return 0;
+  if(it.t==="paper"||it.t==="rec") return 0;
   if(it.t==="text"||it.kind==="text"||it.kind==="num"){ const v=String(st.ans[it.id]).replace(/[\s（）()]/g,"").replace(/[xX*＊]/g,"×").replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248)).replace(/．/g,".");
     const acc=it.acc||[it.a]; if(acc.includes(v))return s.per;
     if(/^\d*\.?\d+$/.test(v)&&acc.some(x=>/^\d*\.?\d+$/.test(x)&&parseFloat(x)===parseFloat(v)))return s.per; return 0; }
@@ -322,11 +382,12 @@ function fmt(t){ if(!t)return "—"; const d=new Date(t), p=x=>String(x).padStar
 function sheetBlocks(){
   const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):null;
   const B=[];
-  B.push(`<div><div><h2>115 學年度第一學期 期中學業評量　六年級國語科</h2><p class="sub">作答紀錄（報讀版・學生平板作答；看注音寫國字、改錯字、照樣照句、句型造句寫在紙上）</p></div>
+  B.push(`<div><div><h2>115 學年度第一學期 期中學業評量　六年級國語科</h2><p class="sub">作答紀錄（報讀版・學生平板作答；看注音寫國字、改錯字、照樣照句寫在紙上；句型造句用口說錄音）</p></div>
     <div class="who"><span>六年 <b>丙</b> 班</span><span>姓名 <b>　　　　　</b></span></div>
     <div class="who" style="font-size:12.5px;font-weight:500"><span>交卷時間：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span><span>已作答：${answered()} / ${ITEMS.length} 題</span></div></div>`);
   let auto=0, autoMax=0;
   const rows=SECS.map(s=>{
+    if(s.type==="rec") return `<tr><td>${NO(s)}${M(s.zh)}（口說錄音）</td><td class="c">${s.pct}</td><td class="c">請老師批改</td><td class="c">______ 分</td></tr>`;
     if(s.type==="paper") return `<tr><td>${NO(s)}${M(s.zh)}（寫在紙上）</td><td class="c">${s.pct}</td><td class="c">請老師批改紙本</td><td class="c">______ 分</td></tr>`;
     autoMax+=s.pct; const p=s.items.reduce((t,it)=>t+score(it),0); auto+=p;
     const n=s.items.some(it=>it.t==="check")?null:s.items.filter(it=>score(it)>0).length;
@@ -335,6 +396,11 @@ function sheetBlocks(){
     <tr class="tot"><td>合計</td><td class="c">100</td><td class="c">電腦批改 <b>${auto}</b> / ${autoMax} 分；老師批改 ______ / ${100-autoMax} 分</td><td class="c">總分 ______</td></tr></table>
     <p class="ctx" style="margin:6px 0 0">電腦批改依參考答案計分，請老師對照學校答案卷確認。</p></div>`);
   SECS.forEach(s=>{
+    if(s.type==="rec"){
+      const head=`<tr><th style="width:56px">題號</th><th>題目／學生口說（電腦轉文字）</th><th style="width:220px">參考答案</th><th style="width:64px">得分</th></tr>`;
+      const body=s.items.map(it=>{ const t=st.ans[it.id];
+        return `<tr><td class="c"><b>${esc(it.lab)}</b></td><td><div class="ctx">${M(it.stem)}</div>${t?`<span style="color:#C2410C;font-weight:900">學生說：</span><b style="font-size:15px">${esc(t)}</b>`:'<span class="no">（未作答）</span>'}</td><td class="keyl">${it.key.map(k=>M(k)).join("<br>")}</td><td class="c"><span style="color:#999">___ / ${it.pts}</span></td></tr>`; }).join("");
+      B.push(`<div><h3>${NO(s)}${M(s.zh)}（${s.pct} 分，口說錄音）</h3><table>${head}${body}</table><p class="ctx" style="margin:6px 0 0">口說題的文字由電腦語音辨識產生，可能有同音字誤差，請老師依學生原意批改。錄音檔留在學生的平板上，不包含在 PDF 內。</p></div>`); return; }
     if(s.type==="paper"){
       const head=`<tr><th style="width:56px">題號</th><th>題目</th><th style="width:260px">參考答案</th><th style="width:64px">得分</th></tr>`;
       let lastG=-1;

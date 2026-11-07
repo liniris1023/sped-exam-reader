@@ -68,3 +68,19 @@
 .pg .zyv{border-width:2px;font-size:1.3em}
 .pg .zybig{font-size:1.6em}
 @media (max-width:520px){ .zybig{font-size:3.4rem} }
+/* 五、句型造句：口說錄音 */
+.recrow{display:flex;flex-wrap:wrap;gap:1rem;align-items:center}
+.recbtn{display:inline-flex;align-items:center;justify-content:center;gap:1rem;border:none;border-radius:1.4rem;background:#D9342B;color:#fff;font-weight:900;font-size:2rem;padding:1rem 2rem;min-height:6.5rem;width:min(100%,30rem);box-shadow:0 6px 0 rgba(0,0,0,.3);cursor:pointer}
+.recbtn:active{transform:translateY(3px);box-shadow:none}
+.recbtn .led{width:2rem;height:2rem;border-radius:999px;background:#fff;flex:0 0 auto}
+.recbtn.on{background:#8E1C15}
+.recbtn.on .led{animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+@media (prefers-reduced-motion:reduce){.recbtn.on .led{animation:none}}
+.recstate{font-size:1.5rem;font-weight:900;color:var(--muted)}
+.interim{min-height:1.6rem;font-size:1.3rem;color:var(--muted)}
+.heard{margin:.4rem 0 0;font-size:1.15rem;font-weight:700;color:var(--muted)}
+.rectxt{width:100%;min-height:7rem;font-size:1.9rem;line-height:1.6;border:4px solid var(--line);border-radius:1rem;padding:.6rem .8rem;background:var(--surface);color:var(--fg);resize:vertical;font-family:inherit}
+.takes{display:flex;flex-wrap:wrap;gap:.8rem}
+.playbtn{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:1.2rem;background:var(--accent);color:#fff;font-weight:900;font-size:1.6rem;padding:.8rem 1.6rem;min-height:5rem;cursor:pointer}
+.playbtn.on{background:#FFD84D;color:#000}

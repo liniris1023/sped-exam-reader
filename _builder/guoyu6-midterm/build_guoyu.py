@@ -77,7 +77,7 @@ rep('  <main id="main"></main>', '<div class="testbar" role="note"><b>測試版<
 rep('const KEY="guoyu6-midterm-1151-pub";', 'const KEY="guoyu6-midterm-1151-pub-test";')
 rep('sped-exam-reader/guoyu6-midterm/";', 'sped-exam-reader/guoyu6-midterm-test/";')
 rep('/*FREE*/', 'return ITEMS.length-1; ')
-assert html.count('/*NEED*/!isDone(it)') == 2
+assert html.count('/*NEED*/!isDone(it)') == 3
 html = html.replace('/*NEED*/!isDone(it)', 'false')
 rep('/*SUB*/${miss.length?" disabled":""}>${miss.length?"寫完才能交卷":"交卷"}', '>${miss.length?"還是要交卷（測試）":"交卷"}')
 rep('/*SUB2*/if(ITEMS.some(it=>!isDone(it)))return; ', '')
@@ -86,7 +86,8 @@ rep('const fname="六上國語期中評量.pdf";', 'const fname="六上國語期
 rep("applySettings();\nif(!checkHash())", """$("tFill").onclick=()=>{ ITEMS.forEach(it=>{ const r=n=>Math.floor(Math.random()*n);
   if(it.t==="choice")st.ans[it.id]=r(it.o.length);
   else if(it.t==="paper")st.ans[it.id]=1;
-  else if(it.t==="match")st.ans[it.id]=r(SECS[it.si].groups[it.g].bank.length); });
+  else if(it.t==="match")st.ans[it.id]=r(SECS[it.si].groups[it.g].bank.length);
+  else if(it.t==="rec")st.ans[it.id]=["即便下雨，我也要去倒垃圾。","即便路很遠，我們也要一起守護大自然。"][r(2)]; });
   if(!st.t0)st.t0=Date.now(); save(); show(view==="home"?"home":"q"); };
 $("tSubmit").onclick=()=>{ stopSpeak(); if(!st.t0)st.t0=Date.now(); st.t1=Date.now(); save(); show("done"); };
 $("tClear").onclick=()=>{ stopSpeak(); st.ans={}; st.i=0; st.t0=null; st.t1=null; save(); show("home"); };
