@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>{{TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap">
+<style>
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --fg:#101317; --muted:#424A57; --line:#B8C0CC;
+  --accent:#0A4DA3; --accent-fg:#FFFFFF; --focus:#FF9F00; --reading:#FFF1B8; --box:#2F5BA8;
+  --zh:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Heiti TC",sans-serif;
+  font-size:24px;
+}
+:root[data-contrast="hc"]{
+  --bg:#000; --surface:#000; --fg:#FFEB3B; --muted:#FFEB3B; --line:#FFEB3B;
+  --accent:#FFEB3B; --accent-fg:#000; --focus:#FFF; --reading:#3D3800; --box:#FFEB3B; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--zh);line-height:1.6;margin:0;
+  padding:0 max(16px,env(safe-area-inset-left,0px)) calc(7.5rem + env(safe-area-inset-bottom,0px))}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
+.wrap{max-width:52rem;margin:0 auto}
+svg{flex:none}
+.tools{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:2px solid var(--line);padding-block:.45rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.tool{border:2px solid var(--line);background:var(--surface);border-radius:.5rem;padding:.2rem .6rem;font-size:.75rem;font-weight:700;min-height:2.3rem}
+.tool[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.grow{flex:1}
+.home{display:inline-flex;align-items:center;gap:.3rem;background:var(--fg);color:var(--bg);border:0;border-radius:.6rem;padding:.25rem .8rem .25rem .5rem;font-size:.95rem;font-weight:900;min-height:2.8rem}
+.home svg{width:1.6rem;height:1.6rem}
+.progress{font-size:.75rem;font-weight:700}
+.screen{padding-block:1.2rem;display:flex;flex-direction:column;gap:1rem}
+h1{font-size:2rem;line-height:1.3;margin:0;font-weight:900}
+.eyebrow{font-size:.8rem;font-weight:700;color:var(--muted);margin:0}
+.fact{display:inline-block;border:2px solid var(--line);border-radius:.5rem;padding:.2rem .7rem;font-weight:700;background:var(--surface);font-size:.85rem}
+.help{margin:0;padding-left:1.3rem;color:var(--muted);font-size:.85rem}
+.big{background:var(--accent);color:var(--accent-fg);border:0;border-radius:.8rem;font-size:1.8rem;font-weight:900;padding:.7rem 2.4rem;min-height:5.5rem}
+.qrbox{background:#fff;border:3px solid var(--line);border-radius:1rem;padding:.8rem;display:inline-flex;flex-direction:column;align-items:center;gap:.3rem;color:#000;align-self:flex-start}
+.qrbox small{font-size:.6rem;word-break:break-all;max-width:12rem;text-align:center}
+.sech{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.sech b{font-size:1.2rem;font-weight:900;line-height:1.4;flex:1;min-width:10rem}
+.card{background:var(--surface);border:3px solid var(--line);border-radius:1rem;padding:1rem;display:flex;flex-direction:column;gap:1rem}
+.row{display:flex;align-items:center;gap:.7rem}
+.speaker{flex:none;width:4.2rem;height:4.2rem;border-radius:50%;border:4px solid var(--accent);background:var(--surface);color:var(--accent);display:grid;place-items:center}
+.speaker svg{width:2.4rem;height:2.4rem}
+.speaker.sm{width:3.2rem;height:3.2rem;border-width:3px}.speaker.sm svg{width:1.8rem;height:1.8rem}
+.stem{font-size:1.5rem;font-weight:900;line-height:1.7;flex:1;padding:.2rem .4rem;border-radius:.6rem}
+.lesson{border:2px solid var(--fg);padding:0 .2rem;margin:0 .1rem;border-radius:.2rem}
+.opt{display:flex;align-items:center;gap:.7rem;padding:.3rem .4rem;border-radius:.8rem}
+.num{flex:none;width:3.4rem;height:3.4rem;border-radius:50%;border:4px solid var(--fg);display:grid;place-items:center;font-size:1.6rem;font-weight:900}
+.otext{font-size:1.45rem;font-weight:700;flex:1}
+.reading{background:var(--reading)!important;outline:4px solid var(--accent);outline-offset:3px;border-radius:.6rem}
+.label{font-weight:900;font-size:1rem;color:var(--muted)}
+.phr{font-size:1.6rem;font-weight:900;display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .2rem;flex:1;padding:.2rem .4rem;border-radius:.6rem;line-height:2}
+.q{border:0;border-radius:.3rem}
+.blank{display:inline-block;min-width:4.5em;height:1.7em;border:3px solid var(--fg);border-radius:.4rem;margin:0 .15rem;vertical-align:middle;background:var(--bg)}
+.wbox{border:3px solid var(--box);border-radius:1.2rem;padding:.7rem .9rem;display:flex;flex-direction:column;gap:.5rem}
+.wbox .head{display:flex;align-items:center;gap:.6rem}
+.wbox .head b{font-size:1.15rem;font-weight:900;flex:1}
+.grp{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;padding:.2rem .3rem;border-radius:.6rem}
+.gnum{font-weight:900;font-size:1.2rem;width:2.2rem;height:2.2rem;border-radius:50%;background:var(--fg);color:var(--bg);display:grid;place-items:center}
+.word{border:3px solid var(--line);background:var(--surface);border-radius:.7rem;padding:.2rem .9rem;font-size:1.4rem;font-weight:900;min-height:3.2rem}
+.pics{display:flex;align-items:center;justify-content:center;gap:.6rem;flex-wrap:wrap}
+.pics img{width:min(15rem,42vw);border-radius:.8rem;border:3px solid var(--line);background:#fff}
+.arrow{font-size:2.4rem;color:var(--box);font-weight:900}
+.again{align-self:flex-start;display:inline-flex;align-items:center;gap:.4rem;border:4px solid var(--accent);color:var(--accent);background:var(--surface);border-radius:999px;padding:.3rem 1.2rem .3rem .8rem;font-size:1.1rem;font-weight:900;min-height:3.6rem}
+.again svg{width:2rem;height:2rem}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:3px solid var(--line);padding:.6rem max(16px,env(safe-area-inset-left,0px)) calc(.6rem + env(safe-area-inset-bottom,0px));z-index:6}
+.bar .wrap{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:.6rem}
+.bar button{min-height:4.6rem;border-radius:.9rem;font-size:1.35rem;font-weight:900}
+.prev{background:var(--surface);border:4px solid var(--fg)}
+.next{background:var(--accent);color:var(--accent-fg);border:0}
+.tocbtn{background:#FFD84D;color:#000;border:4px solid #000}
+.bar button:disabled{opacity:.35}
+.toc{display:grid;grid-template-columns:repeat(auto-fill,minmax(7.5rem,1fr));gap:.6rem}
+.toc button{min-height:4.2rem;border:3px solid var(--fg);background:var(--surface);border-radius:.8rem;font-size:1.1rem;font-weight:900}
+.toc button.cur{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.toch{font-weight:900;font-size:1rem;margin:.6rem 0 0}
+</style>
+<script src="lib/qrcode.min.js"></script>
+</head><body>
+<div class="wrap">
+  <div class="tools">
+    <button class="home" id="homeBtn" type="button"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 2 12h3v8h5v-6h4v6h5v-8h3z"/></svg>首頁</button>
+    <span class="progress" id="prog"></span>
+    <span class="grow"></span>
+    <button class="tool" id="fMinus" type="button">字−</button>
+    <button class="tool" id="fPlus" type="button">字＋</button>
+    <button class="tool" id="hc" type="button" aria-pressed="false">黑底黃字</button>
+    <button class="tool" id="rate" type="button">語速 1.0</button>
+  </div>
+  <main id="main"></main>
+</div>
+<nav class="bar" id="bar" hidden><div class="wrap">
+  <button class="prev" id="prevBtn" type="button">← 上一題</button>
+  <button class="tocbtn" id="tocBtn" type="button">📋 題目目錄</button>
+  <button class="next" id="nextBtn" type="button">下一題 →</button>
+</div></nav>
+<script>
+const D=/*DATA*/;
+const KEY="guoyu5-midterm-reader";
+const SPK='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+let st={i:0,fs:24,hc:false,rate:1};
+try{Object.assign(st,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+const RATES=[0.7,0.85,1,1.15];
+function applySettings(){
+  document.documentElement.style.fontSize=st.fs+"px";
+  document.documentElement.dataset.contrast=st.hc?"hc":"";
+  $("hc").setAttribute("aria-pressed",st.hc);
+  $("rate").textContent="語速 "+st.rate.toFixed(2).replace(/0$/,"");
+}
+/* ---------- speech ---------- */
+const audio=new Audio(); let token=0;
+function voice(){const v=speechSynthesis.getVoices();return v.find(x=>/zh[-_]TW/i.test(x.lang)&&/female|Hsiao|Mei|Yating|曉/i.test(x.name))||v.find(x=>/zh[-_]TW/i.test(x.lang))||v.find(x=>/^zh/i.test(x.lang));}
+function play1(text,tk){return new Promise(res=>{
+  if(tk!==token)return res();
+  const src=D.aud[text];
+  const fallback=()=>{ if(!("speechSynthesis" in window))return res();
+    const u=new SpeechSynthesisUtterance(text);u.lang="zh-TW";u.rate=0.85*st.rate;const v=voice();if(v)u.voice=v;
+    u.onend=u.onerror=()=>res(); speechSynthesis.speak(u); };
+  if(!src)return fallback();
+  audio.onended=()=>res(); audio.onerror=()=>fallback();
+  audio.src=src; audio.playbackRate=st.rate;
+  audio.play().catch(()=>fallback());
+});}
+function stopSpeak(){token++;audio.pause();try{speechSynthesis.cancel()}catch(e){}document.querySelectorAll(".reading").forEach(e=>e.classList.remove("reading"));}
+async function readSeq(list){ stopSpeak(); const tk=token;
+  for(const [el,t] of list){ if(tk!==token)return;
+    if(el){el.classList.add("reading");el.scrollIntoView({block:"nearest",behavior:"smooth"});}
+    await play1(t,tk); if(el)el.classList.remove("reading");
+    await new Promise(r=>setTimeout(r,250)); }
+}
+const say=(t,el)=>readSeq([[el||null,t]]);
+/* ---------- views ---------- */
+let view="home";
+const N=D.items.length;
+const label=it=>`${it.sec}-${it.no}`;
+function show(v){view=v;stopSpeak();
+  const m=$("main"); $("bar").hidden=(v==="home");
+  if(v==="home")return home();
+  if(v==="toc")return toc();
+  qview();
+}
+function home(){
+  $("prog").textContent="";
+  $("main").innerHTML=`<section class="screen">
+    <p class="eyebrow">潛能班 ・ 只報讀題目，不用在網站上作答</p>
+    <h1>五上國語期中評量<br>報讀（第二頁）</h1>
+    <div><span class="fact">七、選擇題 6 題</span> <span class="fact">八、照樣寫短語 2 題</span> <span class="fact">九、接寫句子 1 題</span></div>
+    <ul class="help"><li>每換一題，會自動把題目唸一次。</li><li>按 <b>🔊 喇叭</b> 可以再聽一次；詞語箱的每個語詞都可以按來聽。</li><li>答案請寫在考卷上。</li></ul>
+    <div class="row" style="flex-wrap:wrap;gap:1rem;align-items:flex-start">
+      <button class="big" id="startBtn" type="button">${st.i>0?"繼續報讀":"開始報讀"}</button>
+      <div class="qrbox"><div id="qr"></div><small>${D.url}</small></div>
+    </div></section>`;
+  try{new QRCode($("qr"),{text:D.url,width:150,height:150,correctLevel:QRCode.CorrectLevel.M})}catch(e){}
+  $("startBtn").onclick=()=>show("q");
+}
+function toc(){
+  $("prog").textContent="題目目錄";
+  let h='<section class="screen"><h1 style="font-size:1.5rem">題目目錄</h1>'; let last="";
+  D.items.forEach((it,i)=>{ if(it.sec!==last){ if(last)h+='</div>'; h+=`<p class="toch">${esc(D.secs[it.sec].title)}</p><div class="toc">`; last=it.sec;}
+    h+=`<button type="button" data-i="${i}" class="${i===st.i?"cur":""}">${it.sec==="九"?"九、接寫句子":"第 "+it.no+" 題"}</button>`;});
+  h+='</div></section>'; $("main").innerHTML=h;
+  $("main").querySelectorAll(".toc button").forEach(b=>b.onclick=()=>{st.i=+b.dataset.i;save();show("q");});
+  say(D.ui.toc);
+}
+const lessonize=s=>esc(s).replace(/〔(.+?)〕/g,'<span class="lesson">$1</span>');
+const phr=parts=>parts.map(([k,w])=>k==="_"?'<span class="blank"></span>':k==="b"?`「${esc(w)}」`:esc(w)).join("").replace(/<span class="blank"><\/span>。/g,'<span style="white-space:nowrap"><span class="blank"></span>。</span>');
+function qview(){
+  const it=D.items[st.i], sec=D.secs[it.sec];
+  const first=st.i===0||D.items[st.i-1].sec!==it.sec;
+  $("prog").textContent=`${st.i+1} / ${N}`;
+  let h=`<section class="screen"><div class="sech"><b id="secT">${esc(sec.title)}</b><button class="speaker sm" id="secSpk" type="button" aria-label="聽大題說明">${SPK}</button></div><div class="card">`;
+  const seq=[];
+  if(first) seq.push(["secT",sec.say]);
+  if(it.t==="choice"){
+    h+=`<div class="row"><div class="stem" id="stem">${it.no}. ${lessonize(it.stem)}</div><button class="speaker" id="stemSpk" type="button" aria-label="聽題目">${SPK}</button></div>`;
+    seq.push(["stem",it.say]);
+    it.opts.forEach((o,j)=>{h+=`<div class="opt" id="o${j}"><span class="num">${j+1}</span><span class="otext">${esc(o.d)}</span><button class="speaker sm" data-o="${j}" type="button" aria-label="聽選項${j+1}">${SPK}</button></div>`;seq.push(["o"+j,o.s]);});
+  }else if(it.t==="phrase"){
+    h+=`<div class="label">第 ${it.no} 題　例句</div><div class="row"><div class="phr" id="ex">${phr(it.ex)}</div><button class="speaker" id="exSpk" type="button" aria-label="聽例句">${SPK}</button></div>`;
+    h+=`<div class="wbox" id="box"><div class="head"><b>詞語箱</b><button class="speaker sm" id="boxSpk" type="button" aria-label="聽詞語箱">${SPK}</button></div>`;
+    it.box.forEach((g,gi)=>{h+=`<div class="grp" id="g${gi}"><span class="gnum">${gi+1}</span>${g.map(w=>`<button class="word" type="button" data-w="${esc(w)}">${esc(w)}</button>`).join("")}</div>`;});
+    h+=`</div><div class="label">請照樣寫在考卷上</div><div class="row"><div class="phr" id="qq">${phr(it.q)}</div><button class="speaker" id="qSpk" type="button" aria-label="聽題目">${SPK}</button></div>`;
+    seq.push(["ex",it.exSay],["box",it.boxSay],["qq",it.qSay]);
+  }else{
+    h+=`<div class="pics"><img src="${it.imgs[0]}" alt="圖片一"><span class="arrow">➜</span><img src="${it.imgs[1]}" alt="圖片二"></div>`;
+    h+=`<div class="row"><div class="phr" id="qq">${phr(it.q)}</div><button class="speaker" id="qSpk" type="button" aria-label="聽題目">${SPK}</button></div>`;
+    seq.push(["qq",it.qSay]);
+  }
+  h+=`<button class="again" id="again" type="button">${SPK}整題再唸一次</button></div></section>`;
+  $("main").innerHTML=h;
+  const S=s=>s.map(([id,t])=>[$(id),t]);
+  $("secSpk").onclick=()=>say(sec.say,$("secT"));
+  $("again").onclick=()=>readSeq(S(seq));
+  if($("stemSpk"))$("stemSpk").onclick=()=>say(it.say,$("stem"));
+  document.querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>{const j=+b.dataset.o;say(it.opts[j].s,$("o"+j));});
+  if($("exSpk"))$("exSpk").onclick=()=>say(it.exSay,$("ex"));
+  if($("boxSpk"))$("boxSpk").onclick=()=>say(it.boxSay,$("box"));
+  if($("qSpk"))$("qSpk").onclick=()=>say(it.qSay,$("qq"));
+  document.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>say(b.dataset.w,b));
+  $("prevBtn").disabled=st.i===0;
+  $("nextBtn").textContent=st.i===N-1?"最後一題":"下一題 →";
+  window.scrollTo(0,0);
+  setTimeout(()=>readSeq(S(seq)),300);
+}
+$("prevBtn").onclick=()=>{ if(st.i>0){st.i--;save();show("q");} };
+$("nextBtn").onclick=()=>{ if(st.i<N-1){st.i++;save();show("q");} else say(D.ui.end); };
+$("tocBtn").onclick=()=>show(view==="toc"?"q":"toc");
+$("homeBtn").onclick=()=>show("home");
+$("fMinus").onclick=()=>{st.fs=Math.max(18,st.fs-2);save();applySettings();};
+$("fPlus").onclick=()=>{st.fs=Math.min(36,st.fs+2);save();applySettings();};
+$("hc").onclick=()=>{st.hc=!st.hc;save();applySettings();};
+$("rate").onclick=()=>{st.rate=RATES[(RATES.indexOf(st.rate)+1)%RATES.length];save();applySettings();};
+try{speechSynthesis.getVoices()}catch(e){}
+applySettings(); show("home");
+</script>
+</body></html>

@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-07T15:57:45.636Z",
+ "updated": "2026-11-08T17:55:00.000Z",
  "sites": [
   {
    "id": "guoyu6-midterm",
@@ -65,6 +65,19 @@
    "test": "sci5-midterm-test/",
    "note": "",
    "added": 1793900000004
+  },
+  {
+   "id": "guoyu5-midterm",
+   "title": "五上國語期中評量報讀（高組第二頁）",
+   "year": 115,
+   "grade": 5,
+   "term": "上",
+   "subject": "國語",
+   "type": "期中考",
+   "url": "guoyu5-midterm/",
+   "test": "",
+   "note": "只報讀題目，不作答",
+   "added": 1793900000005
   }
  ],
  "ignore": [
