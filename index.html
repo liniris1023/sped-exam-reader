@@ -421,7 +421,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       <h3>報讀方式</h3>
       <label><input type="checkbox" id="optZy"> <span>不唸國字旁邊的注音符號</span></label>
       <p class="note"><b>固定規則：</b>「寫注音」大題只唸大題名稱，小題完全不唸；「改錯字、圈出錯字、找出錯別字」每次只唸一小題，由學生自己按下一題。</p>
-      <label><input type="checkbox" id="optNoShape"> <span>「寫國字／看注音寫國字」的小題不報讀（預設打開）</span></label>
+      <label><input type="checkbox" id="optNoShape"> <span>「寫國字／看注音寫國字」的小題不報讀（預設關閉＝會報讀）</span></label>
       <label><input type="checkbox" id="optNoFill"> <span>「填空題」的小題不報讀</span></label>
       <label><input type="checkbox" id="optNoSound"> <span>問「讀音」的題目不報讀（例如選擇題「下列哪個字的讀音不同」）</span></label>
       <p class="note">不報讀的題目會用紅色虛線框起來，學生點了會聽到「這一題不報讀，請自己看題目」。</p>
@@ -496,7 +496,7 @@ const S = {
   skipZy: store.get('skipZy', true),
   mathWords: store.get('mathWords', true),
   noSound: store.get('noSound', true),
-  noShape: store.get('noShape2', true),
+  noShape: store.get('noShape3', false),
   noFill: store.get('noFill', false),
   rate: [0.75, 0.85, 1].includes(store.get('rate2', 0.85)) ? store.get('rate2', 0.85) : 0.85,
   voiceURI: store.get('voice3', 'auto'),
@@ -518,7 +518,7 @@ const S = {
   if (p.get('zy')) { S.skipZy = p.get('zy')==='1'; store.set('skipZy', S.skipZy); }
   if (p.get('math')) { S.mathWords = p.get('math')==='1'; store.set('mathWords', S.mathWords); }
   if (p.get('ns')) { S.noSound = p.get('ns')==='1'; store.set('noSound', S.noSound); }
-  if (p.get('nsh')) { S.noShape = p.get('nsh')==='1'; store.set('noShape2', S.noShape); }
+  if (p.get('nsh')) { S.noShape = p.get('nsh')==='1'; store.set('noShape3', S.noShape); }
   if (p.get('nf')) { S.noFill = p.get('nf')==='1'; store.set('noFill', S.noFill); }
   S.edit = p.get('edit') === '1';
   if (p.get('key')) {
@@ -582,6 +582,17 @@ const SOUND_ITEM = /(讀|念|唸|發)音|字音|念法|唸法|讀法|破音字|�
 const QNO = /^[\s。，、,.;；:：]*(?:[（(][\s　_＿]*[）)]\s*)?[（(]?\s*([0-9０-９]{1,2})\s*[)）]?\s*[.．、:：]/;
 function qnum(t){ const m = (t || '').normalize('NFKC').match(QNO); return m ? +m[1] : 0; }
 
+// 寫國字題的框裡印的是注音，PDF 常把它存成一個「比旁邊大」的字；寫注音題框裡的國字和旁邊一樣大
+function markBigBox(blocks, items){
+  const cjk = it => /[\u4E00-\u9FFF]/.test(it.str) && !it.junk;
+  for(const b of blocks){
+    if(b.x == null || !b.w) continue;
+    const inb = items.filter(it => cjk(it) && it.x + it.w/2 >= b.x && it.x + it.w/2 <= b.x + b.w && it.y + it.h/2 >= b.y && it.y + it.h/2 <= b.y + b.h);
+    if(inb.length < 2) continue;
+    const fs = inb.map(it => it.fs || Math.min(it.w, it.h)).sort((a, c) => a - c);
+    b.bigBox = fs[fs.length-1] > 1.3 * fs[0];
+  }
+}
 function analyzeStructure(blocks){
   let head = null, n = 0;
   for(const b of blocks){
@@ -605,10 +616,27 @@ function analyzeStructure(blocks){
       b.wordbox = /[「﹁『][^」﹂』]{0,3}[」﹂』]/.test(src || '') && body.length <= 6;
     }
   }
+  let no = 0;
+  for(const h of blocks){
+    if(!h.isHead) continue;
+    const src = h.orig != null ? h.orig : h.text;
+    if(/^\s*[甲乙丙丁戊]\s*[、.．:：]/.test(src)) continue;
+    const m = src.match(new RegExp('^\\s*(?:第\\s*)?[（(]?\\s*([' + CN_NUM + ']{1,3})\\s*[)）]?\\s*(?:大?題|[、.．:：])'));
+    no = m ? cnNum(m[1]) || no + 1 : no + 1;
+    h.headNo = no;
+    h.blurry = /〓/.test(src) && cleanText(src).replace(/〓+/g, '').replace(/[\s0-9,，.、:：;；()（）]+/g, '').length < 2;
+    if(h.blurry && !h.secOv && !h.autoSec){
+      const kids = blocks.filter(k => k.head === h && !k.isHead), wb = kids.filter(k => k.wordbox);
+      if(wb.length && wb.length >= kids.length / 2){
+        h.autoSec = h.sec = wb.filter(k => k.bigBox).length > wb.length / 2 ? 'shape' : 'zhuyin';
+        kids.forEach(k => { k.sec = h.sec; });
+      }
+    }
+  }
   return blocks;
 }
 // 寫注音小題：任何播放方式都不讀（整頁、重播、框選、上一題／下一題）
-function absSilent(b){ return !!b && !b.isHead && (b.sec === 'zhuyin' || (b.wordbox && b.force !== 'read' && (!b.sec || b.sec === 'other' || b.sec === 'shape'))); }
+function absSilent(b){ return !!b && !b.isHead && (b.sec === 'zhuyin' || (b.wordbox && b.force !== 'read' && (!b.sec || b.sec === 'other'))); }
 // 整個大題都不報讀的小題（寫注音，或老師設定不唸的寫國字／填空）：不給按鈕、上一題／下一題直接跳過
 function quietItem(b){ return absSilent(b) || (!!b && !b.isHead && b.force !== 'skip' && teacherOff(b)); }
 // 老師設定不報讀的題目
@@ -627,7 +655,20 @@ function noReadMsg(b){
   return '這一題不報讀，請自己看題目作答。';
 }
 // 「一、寫注音」「第一大題 寫出注音」「壹、改錯字」→「第一大題，寫注音。」
-function headerSpeech(t){
+function cnNum(s){
+  const d = {一:1,二:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,壹:1,貳:2,參:3,肆:4,伍:5,陸:6,柒:7,捌:8,玖:9};
+  if(s === '十' || s === '拾') return 10;
+  const m = s.match(/^([^十拾]?)([十拾]?)([^十拾]?)$/); if(!m) return 0;
+  if(!m[2]) return d[m[1]] || 0;
+  return (m[1] ? d[m[1]] : 1) * 10 + (m[3] ? d[m[3]] : 0);
+}
+const CN_DIGIT = ['', '一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五'];
+const BLURRY_NAME = {zhuyin:'寫注音', shape:'寫國字'};
+function headerSpeech(t, b){
+  if(b && b.blurry){
+    const name = BLURRY_NAME[b.sec];
+    if(name) return '第' + (CN_DIGIT[b.headNo] || b.headNo) + '大題，' + name + '。';
+  }
   if(/〓/.test(t || '')){
     const rest = cleanText(t).replace(/〓+/g, '').replace(/[\s0-9,，.、:：;；]+/g, '');
     if(rest.length < 2) return '這一大題的標題看不清楚，請看考卷。';
@@ -646,7 +687,7 @@ function titleSpeech(t){
   return toSpeech(cleanText(t).replace(/(國小|國民小學)?\s*年\s*班\s*座\s*號\s*姓\s*名.*$/, '').replace(/(座號|姓名|得分|分數)[:：\s]*/g, '')) || '考卷名稱';
 }
 function speechOf(b){
-  if(b.isHead) return headerSpeech(b.text);
+  if(b.isHead) return headerSpeech(b.text, b);
   if(b.isTitle) return titleSpeech(b.text);
   return qnum(b.text) ? '第' + b.qn + '題，' + toSpeech(itemBody(b.text)) : toSpeech(b.text);
 }
@@ -860,6 +901,18 @@ function fixScoreNumbers(blocks){
       out.forEach(x => { if(!looksHead(x.text) || !/[0-9０-９]\s*$/.test(x.text)) return;
         const d = Math.hypot((x.x + x.w/2) - (b.x + b.w/2), (x.y + x.h) - b.y); if(d < bd){ bd = d; hd = x; } });
       if(hd && bd < 6 * Math.max(16, Math.min(hd.w, hd.h))){ hd.text += '分'; continue; }
+    }
+    // 大題配分被拆開：「改錯別字每題2」＋「10」、「造詞每格」＋「1 12警…」→ 接回「每題2分，共10分」
+    const ph = out[out.length-1];
+    if(ph && looksHead(ph.text)){
+      const ht = ph.text.normalize('NFKC');
+      let mm;
+      if(/每\s*[題格字個空]\s*[0-9]{1,2}\s*$/.test(ht) && (mm = t.match(/^([0-9]{1,3})\s*分?\s*$/))){ ph.text = ph.text.replace(/\s*$/, '分，共' + mm[1] + '分'); continue; }
+      if(/每\s*[題格字個空]\s*$/.test(ht) && (mm = t.match(/^([0-9]{1,2})\s*分?\s*[,，、]?\s*共?\s*([0-9]{1,3})\s*分?(?![0-9.．、])\s*(.*)$/))){
+        ph.text = ph.text.replace(/\s*$/, mm[1] + '分，共' + mm[2] + '分');
+        if(!mm[3].replace(/[|｜\s]/g, '')) continue;
+        b.text = mm[3];
+      }
     }
     // 找最近、而且結尾是「共」或「共分」的大題
     let head = null, best = Infinity;
@@ -1339,6 +1392,7 @@ async function analyze(i, token){
       const clean = dropRuby(items.filter(it => !ZY_ONLY.test(it.str)));
       const dirOf = part => TD === 'auto' ? pickDirFromItems(part) : TD;
       blocks = finishBlocks(arrange(clean, (part, dov) => { const d = dov || dirOf(part); return orderAndMerge(itemsToLines(part, d), d, 'full'); }, dirOf, LAY), TD);
+      markBigBox(blocks, clean);
     }
   }
   if(!blocks){
@@ -1427,7 +1481,7 @@ function drawQPanel(){
     const li = document.createElement('li'); if(!b.isHead) li.className = 'qitem';
     const c = document.createElement('button'); c.type = 'button';
     c.className = 'qcard' + (b.isHead ? ' head' : '') + (!b.isHead && b.sec === 'fix' ? ' fix' : '') + (off ? ' off' : '');
-    const title = b.isHead ? headerSpeech(b.text).replace(/。$/, '') : b.isTitle ? '考卷名稱' : '第' + b.qn + '題' + (off ? '（不報讀）' : '');
+    const title = b.isHead ? headerSpeech(b.text, b).replace(/。$/, '') : b.isTitle ? '考卷名稱' : '第' + b.qn + '題' + (off ? '（不報讀）' : '');
     const sub = b.isHead ? '' : b.isTitle ? titleSpeech(b.text) : itemBody(b.text);
     c.innerHTML = '<span class="spk" aria-hidden="true">' + (off ? '🚫' : '🔊') + '</span><span class="lbl"><b></b><span></span></span>';
     const zh = s => s.replace(/:/g, '：').replace(/,/g, '，').replace(/\?/g, '？').replace(/!/g, '！').replace(/\(/g, '（').replace(/\)/g, '）');
@@ -1901,7 +1955,7 @@ function mark(b){
 
 /* ---------- 依題型決定要唸什麼 ---------- */
 function queueFor(b, single){
-  if(b.isHead) return [{b, c: headerSpeech(b.text)}];   // 大題名稱（含配分）一次唸完
+  if(b.isHead) return [{b, c: headerSpeech(b.text, b)}];   // 大題名稱（含配分）一次唸完
   if(absSilent(b)) return [];
   if(teacherOff(b)) return single ? [{b, c: noReadMsg(b)}] : [];
   return chunks(speechOf(b)).map(c => ({b, c}));
@@ -2334,7 +2388,7 @@ $('dlg').addEventListener('close', () => {
   store.set('skipZy', S.skipZy); store.set('mathWords', S.mathWords);
   const nrChanged = S.noSound !== $('optNoSound').checked || S.noShape !== $('optNoShape').checked || S.noFill !== $('optNoFill').checked;
   S.noSound = $('optNoSound').checked; S.noShape = $('optNoShape').checked; S.noFill = $('optNoFill').checked;
-  store.set('noSound', S.noSound); store.set('noShape2', S.noShape); store.set('noFill', S.noFill);
+  store.set('noSound', S.noSound); store.set('noShape3', S.noShape); store.set('noFill', S.noFill);
   if(nrChanged && S.blocks.length) drawBlocks();
   if(oldEngine !== S.engine && S.pages.length) showPage(S.cur);
 });

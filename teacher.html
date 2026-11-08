@@ -419,7 +419,7 @@ function studentUrl(f, withKey){
   const zy = ls.get('erh_skipZy', null); if(zy !== null) p.set('zy', zy ? '1' : '0');
   const mt = ls.get('erh_mathWords', null); if(mt !== null) p.set('math', mt ? '1' : '0');
   const ns = ls.get('erh_noSound', null); if(ns !== null) p.set('ns', ns ? '1' : '0');
-  const nsh = ls.get('erh_noShape2', null); if(nsh !== null) p.set('nsh', nsh ? '1' : '0');
+  const nsh = ls.get('erh_noShape3', null); if(nsh !== null) p.set('nsh', nsh ? '1' : '0');
   const nf = ls.get('erh_noFill', null); if(nf !== null) p.set('nf', nf ? '1' : '0');
   const key = ls.get('erh_key', ''); if(withKey && key) p.set('key', key);
   return studentBase() + '?' + p.toString();
