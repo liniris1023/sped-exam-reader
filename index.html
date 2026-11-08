@@ -460,14 +460,14 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
 <script>
 /* 自動更新：平板開著舊版時，發現網站有新版就自動重新載入一次 */
-const BUILD = '20261109a';
+const BUILD = '20261109b';
 (function(){
   if(!/^https?:/.test(location.protocol)) return;
   async function check(){
     try{
       const r = await fetch(location.pathname + '?_v=' + Date.now(), {cache:'no-store'});
       if(!r.ok) return;
-      const m = (await r.text()).match(/const BUILD = '20261109a']+)'/);
+      const m = (await r.text()).match(/const\s+BUILD\s*=\s*'([^']+)'/);
       if(!m || m[1] === BUILD) return;
       const key = 'erh_reload_' + m[1];
       try{ if(sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); }catch(e){}
