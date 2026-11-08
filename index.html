@@ -2,6 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>評量報讀小幫手</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -458,6 +459,24 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 </dialog>
 
 <script>
+/* 自動更新：平板開著舊版時，發現網站有新版就自動重新載入一次 */
+const BUILD = '20261108a';
+(function(){
+  if(!/^https?:/.test(location.protocol)) return;
+  async function check(){
+    try{
+      const r = await fetch(location.pathname + '?_v=' + Date.now(), {cache:'no-store'});
+      if(!r.ok) return;
+      const m = (await r.text()).match(/const BUILD = '([^']+)'/);
+      if(!m || m[1] === BUILD) return;
+      const key = 'erh_reload_' + m[1];
+      try{ if(sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); }catch(e){}
+      const u = new URL(location.href); u.searchParams.set('_v', m[1]); location.replace(u.toString());
+    }catch(e){}
+  }
+  setTimeout(check, 1500);
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') check(); });
+})();
 "use strict";
 /* ================= 狀態與設定 ================= */
 const $ = id => document.getElementById(id);
@@ -526,7 +545,7 @@ function joinText(a, b){
   const ascii = /[A-Za-z0-9]$/.test(a) && /^[A-Za-z0-9]/.test(b);
   return a + (ascii ? ' ' : '') + b;
 }
-function meaningful(t){ return /[A-Za-z0-9ㄅ-ㄯ㐀-鿿]/.test(t); }
+function meaningful(t){ return /[A-Za-z0-9ㄅ-ㄯ㐀-鿿〓]/.test(t); }
 
 /* ================= 版面分析：行 → 題目 ================= */
 const QNUM = /^[\s。，、,.;；:：]*([（(][\s　_＿]*[）)]\s*)?[（(【\[]?\s*[0-9０-９一二三四五六七八九十]{1,3}\s*[)）】\]、.．:：]/;
@@ -537,8 +556,12 @@ const CN_NUM = '一二三四五六七八九十壹貳參肆伍陸柒捌玖拾';
 const HEAD = new RegExp('^\\s*(第\\s*[' + CN_NUM + ']+\\s*大?題|[（(]?\\s*[' + CN_NUM + ']{1,3}\\s*[)）]?\\s*[、.．:：]|[甲乙丙丁戊]\\s*[、.．:：])');
 // 大題名稱：有「一、」「第一大題」「壹、」，或沒有編號但很短、而且是題型名稱（例如只寫「寫出注音」）
 function looksHead(src){
+  if(((src || '').match(/〓/g) || []).length >= 3) return true;   // 看不懂的粗體標題
   if(HEAD.test(src || '')) return true;
   const t = (src || '').normalize('NFKC').trim();
+  // 數學、自然常見：圓圈數字標題「①填填看。(每個答案2分,共28分)」— 圓圈常常辨識成數字或不見了
+  if(t.length <= 40 && /^[1-9①-⑳❶-❿]\s?(填|比|算|量|看|寫|選|畫|連|圈|回答|想一想|解|做|判斷|計算|應用|閱讀|配合|是非|問答|讀|先|請|依|根據|找|排|移|分辨|觀察)/.test(t)) return true;
+  if(/^[\s0-9①-⑳❶-❿]{0,3}[\u4E00-\u9FFF][^()]{1,30}\(\s*每[^)]{0,8}分\s*[,、]?\s*共\s*\d+\s*分\s*\)/.test(t) && !QNO.test(t)) return true;
   return t.length > 0 && t.length <= 24 && !QNO.test(t) && !/^\s*[（(]?\s*\d/.test(t) && !/[？?]/.test(t) && !!secOf(t);
 }
 const SEC_NAMES = {zhuyin:'寫注音', fix:'改錯字', shape:'看注音寫國字', fill:'填空題', choice:'選擇題', tf:'是非題', reading:'閱讀測驗', sentence:'造句題', other:'其他題型'};
@@ -577,12 +600,15 @@ function analyzeStructure(blocks){
       b.sec = head ? head.sec : (secOf(src) === 'zhuyin' ? 'zhuyin' : null);
       b.qn = qnum(src) || n;
       b.kind = SOUND_ITEM.test(src) ? 'sound' : null;
+      // 短短的語詞、裡面有「」框起來的字（例如 1.「串」聯、1.「彈」性）＝寫注音／寫國字的題目
+      const body = (src || '').replace(QNO, '').replace(/[\s（()）「」﹁﹂『』,，.。、:：]/g, '');
+      b.wordbox = /[「﹁『][^」﹂』]{0,3}[」﹂』]/.test(src || '') && body.length <= 6;
     }
   }
   return blocks;
 }
 // 寫注音小題：任何播放方式都不讀（整頁、重播、框選、上一題／下一題）
-function absSilent(b){ return !!b && !b.isHead && b.sec === 'zhuyin'; }
+function absSilent(b){ return !!b && !b.isHead && (b.sec === 'zhuyin' || (b.wordbox && b.force !== 'read' && (!b.sec || b.sec === 'other' || b.sec === 'shape'))); }
 // 整個大題都不報讀的小題（寫注音，或老師設定不唸的寫國字／填空）：不給按鈕、上一題／下一題直接跳過
 function quietItem(b){ return absSilent(b) || (!!b && !b.isHead && b.force !== 'skip' && teacherOff(b)); }
 // 老師設定不報讀的題目
@@ -602,6 +628,11 @@ function noReadMsg(b){
 }
 // 「一、寫注音」「第一大題 寫出注音」「壹、改錯字」→「第一大題，寫注音。」
 function headerSpeech(t){
+  if(/〓/.test(t || '')){
+    const rest = cleanText(t).replace(/〓+/g, '').replace(/[\s0-9,，.、:：;；]+/g, '');
+    if(rest.length < 2) return '這一大題的標題看不清楚，請看考卷。';
+    t = t.replace(/〓+/g, '');
+  }
   t = cleanText(t);
   const m = t.match(new RegExp('^\\s*第\\s*([' + CN_NUM + ']+)\\s*大?題\\s*[、.．:：,，]?\\s*(.*)$'))
          || t.match(new RegExp('^\\s*[（(]?\\s*([' + CN_NUM + ']{1,3})\\s*[)）]?\\s*[、.．:：]\\s*(.*)$'));
@@ -1018,6 +1049,17 @@ function buildLines(items, dir){
       if(!ln){ ln = {cy, h0:it.h, items:[], x:it.x, y:it.y, w:it.w, h:it.h}; lines.push(ln); }
       ln.items.push(it); Object.assign(ln, union(ln, it));
     }
+    // 同一行被拆成兩段（例如題號「1.」和後面的□方框先後被分到不同行）→ 合回同一行
+    for(let changed = true; changed; ){
+      changed = false;
+      for(let i = 0; i < lines.length && !changed; i++) for(let j = i+1; j < lines.length; j++){
+        const A = lines[i], B = lines[j], hh = Math.min(A.h0, B.h0);
+        const gap = Math.max(A.x, B.x) - Math.min(A.x+A.w, B.x+B.w);
+        if(Math.abs(A.cy - B.cy) < 0.4*Math.max(A.h0, B.h0) && gap < 3*hh){
+          A.items.push(...B.items); Object.assign(A, union(A, B)); lines.splice(j, 1); changed = true; break;
+        }
+      }
+    }
     lines.forEach(l => {
       l.items.sort((a,b)=>a.x-b.x);
       let t=''; l.items.forEach(i => t = joinText(t, i.str)); l.text = cleanText(t);
@@ -1025,10 +1067,29 @@ function buildLines(items, dir){
   }
   return lines.map(l => ({x:l.x,y:l.y,w:l.w,h:l.h,text:l.text}));
 }
+// 判斷直式或橫式：看每個字「最近的鄰居」在上下（直式）還是左右（橫式），多數決
 function pickDirFromItems(items){
   if(!items.length) return 'h';
-  const h = itemsToLines(items,'h'), v = itemsToLines(items,'v');
-  return v.length < h.length*0.75 ? 'v' : 'h';
+  let v = 0, hz = 0;
+  const pts = [];
+  items.forEach(it => {
+    if(ZY_ONLY.test(it.str)) return;
+    const n = [...it.str].length;
+    if(n > 1){ if(it.w > it.h * 1.5) hz += n; else if(it.h > it.w * 1.5) v += n; return; }
+    if(/[㐀-鿿]/.test(it.str)) pts.push(it);
+  });
+  // 單字：找最近的另一個國字
+  const sample = pts.length > 600 ? pts.filter((_, i) => i % Math.ceil(pts.length / 600) === 0) : pts;
+  for(const a of sample){
+    const ax = a.x + a.w/2, ay = a.y + a.h/2; let best = null, bd = Infinity;
+    for(const b of pts){
+      if(b === a) continue;
+      const dx = b.x + b.w/2 - ax, dy = b.y + b.h/2 - ay, d = dx*dx + dy*dy;
+      if(d < bd){ bd = d; best = [dx, dy]; }
+    }
+    if(best && Math.sqrt(bd) < 2.5 * Math.max(a.w, a.h)){ if(Math.abs(best[1]) > Math.abs(best[0])) v++; else hz++; }
+  }
+  return v > hz * 1.2 ? 'v' : 'h';
 }
 
 /* ================= PDF ================= */
@@ -1048,26 +1109,136 @@ async function loadPdf(data, name){
 }
 function pdfScale(page){ const w = page.getViewport({scale:1}).width; return Math.min(3, 1800 / w); }
 
+// PDF 文字層常見問題：
+//  1. 同一個字被畫好幾次（假粗體）→ 位置幾乎一樣的同字只留一個
+//  2. 特殊字型的字被存成亂碼（例如粗體標題變成「䑲ᘹⅡ」）→ 整個字型標成「看不懂」，之後用圖片辨識補回來
+//  3. 字寬資料錯誤 → 單一國字的寬度最多算一個字
+const OK_RANGES = [[0x20,0x7E],[0xB0,0xB1],[0xB7,0xB7],[0xD7,0xD7],[0xF7,0xF7],[0x2C7,0x2C7],[0x2C9,0x2CB],[0x2D9,0x2D9],
+  [0x2010,0x203B],[0x2103,0x2103],[0x2190,0x21FF],[0x2200,0x22FF],[0x2460,0x24FF],[0x2500,0x257F],[0x25A0,0x25FF],[0x2605,0x2606],
+  [0x2E80,0x2FDF],[0x3000,0x303F],[0x3100,0x312F],[0x31A0,0x31BF],[0x4E00,0x9FFF],[0xF900,0xFAFF],[0xFE10,0xFE1F],[0xFE30,0xFE4F],[0xFF00,0xFFEF]];
+function okChar(c){ const u = c.codePointAt(0); return OK_RANGES.some(([a, b]) => u >= a && u <= b); }
+// 白色或「隱形」的字（有些考卷 PDF 把答案用白色字藏在裡面）：從 PDF 的繪圖指令找出每個字的顏色
+async function hiddenChars(page){
+  try{
+    const ol = await page.getOperatorList(), O = pdfjsLib.OPS;
+    const out = []; let mode = 0, white = false; const stack = [];
+    const isWhite = a => a && a.length && [...a].slice(0, 3).every(v => typeof v === 'number' ? (v > 1 ? v >= 245 : v >= 0.96) : false);
+    for(let i = 0; i < ol.fnArray.length; i++){
+      const fn = ol.fnArray[i], a = ol.argsArray[i];
+      if(fn === O.save) stack.push([mode, white]);
+      else if(fn === O.restore){ const s = stack.pop(); if(s){ mode = s[0]; white = s[1]; } }
+      else if(fn === O.setTextRenderingMode) mode = a[0];
+      else if(fn === O.setFillRGBColor) white = isWhite(a);
+      else if(fn === O.setFillGray) white = isWhite([a[0], a[0], a[0]]);
+      else if(fn === O.setFillCMYKColor) white = a && a.slice(0, 4).every(v => v <= 0.03);
+      else if(fn === O.showText || fn === O.showSpacedText){
+        const hidden = white || mode === 3 || mode === 7;
+        (a[0] || []).forEach(g => { if(g && typeof g === 'object' && g.unicode != null) [...String(g.unicode)].forEach(c => { if(c.trim()) out.push({c, hidden}); }); });
+      }
+    }
+    return out;
+  }catch(e){ console.warn('hiddenChars', e); return null; }
+}
 async function pdfTextItems(num){
   const page = await S.pdf.getPage(num);
   const vp = page.getViewport({scale: pdfScale(page)});
   const tc = await page.getTextContent({disableCombineTextItems: true});
-  const items = [];
+  const hid = await hiddenChars(page); let hp = 0;
+  // 依順序把文字對到繪圖指令，判斷這段字是不是白色／隱形
+  const isHiddenItem = s => {
+    if(!hid || !hid.length) return false;
+    const cs = [...s].filter(c => c.trim()); if(!cs.length) return false;
+    let j = -1;
+    for(let k = hp; k < Math.min(hid.length, hp + 400); k++) if(hid[k].c === cs[0]){ j = k; break; }
+    if(j < 0) return false;
+    let hidden = 0;
+    cs.forEach((c, t) => { const o = hid[j + t]; if(o && o.hidden) hidden++; });
+    hp = j + cs.length;
+    return hidden > cs.length / 2;
+  };
+  const raw = [];
   for(const it of tc.items){
-    const str = (it.str||'').replace(/[^①-⑳]+/g, s => s.normalize('NFKC')).trim();
-    if(!str) continue;
+    const s0 = (it.str || '').trim();
+    if(!s0) continue;
+    if(isHiddenItem(s0)) continue;   // 白色的答案字不讀
     const tx = pdfjsLib.Util.transform(vp.transform, it.transform);
     const fs = Math.hypot(tx[2], tx[3]) || 10;
     const vertical = tc.styles[it.fontName] && tc.styles[it.fontName].vertical;
     let x, y, w, h;
     if(vertical){ w = fs; h = Math.max(fs, (it.height||0)*vp.scale); x = tx[4]-fs/2; y = tx[5]; }
-    else { w = Math.max(fs*0.5, (it.width||0)*vp.scale); h = fs; x = tx[4]; y = tx[5]-fs; }
-    items.push({str, x, y, w, h, fs});
+    else {
+      w = Math.max(fs*0.5, (it.width||0)*vp.scale); h = fs; x = tx[4]; y = tx[5]-fs;
+      if([...s0].length === 1 && /[㐀-鿿]/.test(s0)) w = Math.min(w, fs*1.1);   // 單一國字
+    }
+    raw.push({s0, x, y, w, h, fs, font: it.fontName});
   }
-  const all = items.filter(i => !ZY_ONLY.test(i.str)).map(i=>i.str).join('').replace(/[\u3105-\u312F\u02C7\u02CA\u02CB\u02D9\s]/g,'');
+  // 1. 去掉重複畫的字
+  const seen = new Map(), dedup = [];
+  for(const r of raw){
+    const arr = seen.get(r.s0) || [];
+    if(arr.some(o => Math.abs(o.x - r.x) < r.fs*0.4 && Math.abs(o.y - r.y) < r.fs*0.4)) continue;
+    arr.push(r); seen.set(r.s0, arr); dedup.push(r);
+  }
+  // 2. 每個字型的亂碼比例；亂碼字型 → 標成看不懂（〓），之後補辨識
+  const stat = {};
+  dedup.forEach(r => { const st = stat[r.font] = stat[r.font] || {n:0, bad:0}; [...r.s0].forEach(c => { if(c.trim()){ st.n++; if(!okChar(c)) st.bad++; } }); });
+  const items = [];
+  for(const r of dedup){
+    const st = stat[r.font];
+    if(st && st.n >= 3 && st.bad / st.n >= 0.4){ items.push({str:'〓', x:r.x, y:r.y, w:Math.min(r.w, r.fs*1.1), h:r.h, fs:r.fs, junk:true}); continue; }
+    const kept = [...r.s0].filter(okChar).join('');          // 個別亂碼字直接拿掉
+    const str = kept.replace(/[^①-⑳]+/g, s => s.normalize('NFKC')).trim();
+    if(str) items.push({str, x:r.x, y:r.y, w:r.w, h:r.h, fs:r.fs});
+  }
+  const all = items.filter(i => !i.junk && !ZY_ONLY.test(i.str)).map(i=>i.str).join('').replace(/[ㄅ-ㄯˇˊˋ˙\s]/g,'');
   const good = (all.match(/[㐀-鿿ㄅ-ㄯA-Za-z0-9，。？！、：；「」（）()＋－×÷＝+\-=]/g)||[]).length;
   if(all.length < 8 || good/all.length < 0.6) return null;   // 掃描檔或文字是亂碼 → 用辨識
   return items;
+}
+// 把「看不懂」的字（〓）連成一段一段，只對那幾段做圖片辨識，把字補回來
+async function ocrJunk(items){
+  const junk = items.filter(i => i.junk), keep = items.filter(i => !i.junk);
+  if(!junk.length) return items;
+  const runs = [];
+  const near = (r, it) => {
+    const s = Math.max(r.fs || 10, it.fs || 10);
+    const vx = overlap1d(r.x, r.x + r.w, it.x, it.x + it.w) > 0.5*Math.min(r.w, it.w) && it.y < r.y + r.h + 0.9*s && it.y + it.h > r.y - 0.9*s;
+    const hz = overlap1d(r.y, r.y + r.h, it.y, it.y + it.h) > 0.5*Math.min(r.h, it.h) && it.x < r.x + r.w + 0.9*s && it.x + it.w > r.x - 0.9*s;
+    return vx || hz;
+  };
+  [...junk].sort((a, b) => a.x - b.x || a.y - b.y).forEach(it => {
+    const r = runs.find(r => near(r, it));
+    if(r){ Object.assign(r, union(r, it)); r.n++; r.items.push(it); } else runs.push({x:it.x, y:it.y, w:it.w, h:it.h, fs:it.fs, n:1, items:[it]});
+  });
+  let ok = !!(window.Tesseract && Tesseract.createWorker), done = 0;
+  for(const r of runs){
+    if(!ok) break;
+    busy('辨識看不清楚的標題文字 ' + (++done) + '/' + runs.length + '…'); r.done = true;
+    const vert = r.h > r.w * 1.2;
+    const pad = Math.max(4, r.fs * 0.5), k = Math.min(4, Math.max(1, 44 / (r.fs || 12)));
+    const c = document.createElement('canvas');
+    c.width = Math.round((r.w + 2*pad) * k); c.height = Math.round((r.h + 2*pad) * k);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(cv, r.x - pad, r.y - pad, r.w + 2*pad, r.h + 2*pad, 0, 0, c.width, c.height);
+    let text = '';
+    try{
+      text = (await tessRun(c, vert ? 'v' : 'h', vert ? 5 : 7, 10)).map(l => l.text).join('');
+      if(!text.replace(/\s/g, '')) text = (await tessRun(c, vert ? 'v' : 'h', vert ? 6 : 6, 5)).map(l => l.text).join('');
+    }
+    catch(e){ console.warn('OCR', e); ok = false; break; }
+    { const m = text.search(/[一二三四五六七八九十]{1,2}\s*[、.．]/); if(m > 0) text = text.slice(m); else if((text.match(/[A-Za-z#*]/g) || []).length >= 2) text = ''; }
+    text = cleanText(text).replace(/\s+/g, '').replace(/[ㄅ-ㄯˊˇˋ˙]/g, '').replace(/[^一-鿿　-〿＀-￯0-9A-Za-z、，。：；？！（）()]/g, '');
+    if(!text){ r.items.forEach(it => keep.push(it)); continue; }   // 辨識不出來：留〓，老師可以在編輯報讀補字
+    const chars = [...text], n = chars.length;
+    chars.forEach((ch, i) => {
+      const f = i / n, f2 = (i + 1) / n;
+      keep.push(vert ? {str:ch, x:r.x, y:r.y + r.h*f, w:r.w, h:r.h*(f2 - f), fs:r.fs, ocr:true}
+                     : {str:ch, x:r.x + r.w*f, y:r.y, w:r.w*(f2 - f), h:r.h, fs:r.fs, ocr:true});
+    });
+  }
+  if(!ok) runs.forEach(r => { if(!r.done) r.items.forEach(it => keep.push(it)); });
+  if(!ok && runs.length) toast('有些標題字型無法讀取，也無法用圖片辨識補回來。老師可以在「編輯報讀」裡補上文字。', 6000);
+  return keep;
 }
 
 /* ================= 圖片（拍照） ================= */
@@ -1155,7 +1326,9 @@ async function analyze(i, token){
   if(LAY === 'auto' && S.curRule && S.curVRule) S.curVRule = null;
   if(pg.kind === 'pdf'){
     busy('讀取 PDF 文字…');
-    const items = await pdfTextItems(pg.num);
+    let items = await pdfTextItems(pg.num);
+    const spSaved = !S.ignoreSaved.has(i) && S.saved && S.saved.pages && S.saved.pages[pg.num];
+    if(items && items.some(it => it.junk) && !spSaved && S.forceEngine !== 'gemini') items = await ocrJunk(items);
     if(items) pg.items = items;
     const sp = !S.ignoreSaved.has(i) && S.saved && S.saved.pages && S.saved.pages[pg.num];
     if(sp && sp.blocks){
@@ -1428,7 +1601,7 @@ function getWorker(lang){
   }
   return workers[lang];
 }
-function tessLines(data){
+function tessLines(data, minConf){
   let lines = data.lines;
   if(!lines || !lines.length){
     lines = [];
@@ -1437,15 +1610,15 @@ function tessLines(data){
   return lines.map(l => ({
     x:l.bbox.x0, y:l.bbox.y0, w:l.bbox.x1-l.bbox.x0, h:l.bbox.y1-l.bbox.y0,
     text: cleanText(l.text), conf: l.confidence||0
-  })).filter(l => l.conf >= 35 && meaningful(l.text) && l.w > 4 && l.h > 4);
+  })).filter(l => l.conf >= (minConf == null ? 35 : minConf) && meaningful(l.text) && l.w > 4 && l.h > 4);
 }
-async function tessRun(canvas, dir, psm){
+async function tessRun(canvas, dir, psm, minConf){
   const lang = dir==='v' ? 'chi_tra_vert' : 'chi_tra';
   const w = await getWorker(lang);
   progressLabel = dir==='v' ? '辨識直式文字中' : '辨識橫式文字中';
   await w.setParameters({ tessedit_pageseg_mode: String(psm), preserve_interword_spaces: '1' });
   const { data } = await w.recognize(canvas, {}, {text:true, blocks:true});
-  return tessLines(data);
+  return tessLines(data, minConf);
 }
 function score(lines){ return lines.reduce((s,l)=>s + l.conf * l.text.length, 0); }
 async function tessPage(canvas, dsel){
@@ -1638,6 +1811,7 @@ document.addEventListener('pointerdown', unlockSpeech, {once:true, capture:true}
 
 function toSpeech(t){
   t = cleanText(t);
+  t = t.replace(/〓+/g, '');
   if(S.skipZy) t = t.replace(/[ㄅ-ㄯㆠ-ㆿˊˇˋ˙]+/g, '');
   t = t.replace(/[①-⑳]/g, c => '，選項' + (c.charCodeAt(0) - 0x245F) + '，');
   if(S.mathWords){
