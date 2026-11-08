@@ -637,14 +637,14 @@ function renderS3(auto){
 }
 function runS3(){ const b=document.querySelector('.card .sec-head .spk'); if(b) b.click(); }
 
-/* 四、五：口說錄音 + 語音辨識 */
+/* 口說錄音 + 語音辨識（每次錄音一個 session，舊的事件一律忽略） */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-let rec=null, recog=null, recKey=null, stream=null, chunks=[], keepGoing=false;
+let rec=null, recog=null, recKey=null, stream=null, keepGoing=false, recSess=0;
 function stopRec(){
-  keepGoing=false;
-  try{recog&&recog.stop();}catch(e){}
-  try{rec&&rec.state!=='inactive'&&rec.stop();}catch(e){}
-  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  keepGoing=false; recSess++;
+  const g=recog; recog=null; try{g&&g.stop();}catch(e){}
+  const r=rec; rec=null; try{r&&r.state!=='inactive'&&r.stop();}catch(e){}
+  const s=stream; stream=null; if(s){ setTimeout(()=>s.getTracks().forEach(t=>t.stop()),300); }
 }
 function renderSpeak(sec){
   const cfg=SPEAK[sec], list=cfg.list, store=S[cfg.store], i=view.idx[sec], it=list[i], key=sec+'-'+i;
@@ -685,35 +685,48 @@ function renderSpeak(sec){
   if(!SR){warn.hidden=false;warn.textContent='這台裝置的瀏覽器不支援語音轉文字（建議用 Chrome 或 iPad 的 Safari）。還是可以錄音，再請老師幫忙打字。';}
 
   let base="";
-  rb.onclick=async()=>{
+  const setIdle=(label,msg)=>{ rb.classList.remove('on'); rb.querySelector('.t').textContent=label; st.textContent=msg||''; interim.textContent=''; };
+  rb.onclick=()=>{
     if(recKey===key){ // 停止
-      stopRec(); recKey=null; rb.classList.remove('on'); rb.querySelector('.t').textContent='再錄一次'; st.textContent='錄音結束'; interim.textContent=""; speak('錄音結束。'); return;
+      stopRec(); recKey=null; setIdle('再錄一次','錄音結束'); speak('錄音結束。'); return;
     }
-    if(rb.dataset.busy) return;
-    stopRec(); stopReading(); if(player){player.pause();}
-    rb.dataset.busy='1'; st.textContent='錄音開始…';
-    await new Promise(res=>{ if(!synth){res();return;} let ok=false; const fin=()=>{ if(!ok){ok=true;res();} };
-      speak('錄音開始。',null,fin); setTimeout(fin,4000); });
-    delete rb.dataset.busy;
-    st.textContent='準備麥克風…';
-    try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
-    catch(e){ st.textContent=''; warn.hidden=false; warn.textContent='沒辦法打開麥克風。請允許使用麥克風；如果是在預覽畫面中開啟，請改用老師給的網址（QR code）開啟。'; return; }
-    recKey=key; keepGoing=true; chunks=[];
-    try{ rec=new MediaRecorder(stream); rec.ondataavailable=e=>{if(e.data.size) chunks.push(e.data);};
-      rec.onstop=()=>{ if(chunks.length){ if(audioURL[key]) URL.revokeObjectURL(audioURL[key]); audioURL[key]=URL.createObjectURL(new Blob(chunks,{type:rec.mimeType||'audio/webm'})); showAudio(); } };
-      rec.start(); }catch(e){ rec=null; }
-    rb.classList.add('on'); rb.querySelector('.t').textContent='說完了，按這裡停'; st.textContent='正在錄音…';
+    stopRec(); stopReading(); if(player){ try{player.pause();}catch(e){} }
+    const my=++recSess; recKey=key; keepGoing=true;
+    let live=false, srOK=false, chunks=[];
+    rb.classList.add('on'); rb.querySelector('.t').textContent='說完了，按這裡停'; st.textContent='錄音開始…';
+    base=""; ta.value=""; store[i]=""; save(); interim.textContent="";
+    // 1) 麥克風：在按下的當下就要求（iPad 需要）
+    const micP=(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)?navigator.mediaDevices.getUserMedia({audio:true}):Promise.reject(new Error('no mic'));
+    // 2) 語音辨識：也在按下的當下啟動；「錄音開始」念完前的結果不算
     if(SR){
-      base=""; ta.value=""; store[i]=""; save();
-      const start=()=>{ recog=new SR(); recog.lang='zh-TW'; recog.continuous=true; recog.interimResults=true;
-        recog.onresult=ev=>{ let fin="",tmp=""; for(let r=ev.resultIndex;r<ev.results.length;r++){const t=ev.results[r][0].transcript; if(ev.results[r].isFinal) fin+=t; else tmp+=t;}
-          if(fin){ base+=fin; ta.value=base; store[i]=base; save(); main.querySelectorAll('.dot')[i].classList.add('done'); }
+      const startSR=first=>{ if(my!==recSess||!keepGoing) return;
+        const g=new SR(); recog=g; g.lang='zh-TW'; g.continuous=true; g.interimResults=true;
+        g.onstart=()=>{ srOK=true; };
+        g.onresult=ev=>{ if(my!==recSess) return; let fin="",tmp="";
+          for(let r=ev.resultIndex;r<ev.results.length;r++){const t=ev.results[r][0].transcript; if(ev.results[r].isFinal) fin+=t; else tmp+=t;}
+          if(!live) return;
+          if(fin){ base+=fin; ta.value=base; store[i]=base; save(); const d=main.querySelectorAll('.dot')[i]; if(d) d.classList.add('done'); }
           interim.textContent=tmp; };
-        recog.onerror=ev=>{ if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){keepGoing=false;warn.hidden=false;warn.textContent='語音轉文字被擋住了，只有錄音。請老師幫忙打字，或改用老師給的網址開啟。';} };
-        recog.onend=()=>{ if(keepGoing&&recKey===key){ try{start();}catch(e){} } };
-        try{recog.start();}catch(e){} };
-      start();
+        g.onerror=ev=>{ if(my!==recSess) return;
+          if((ev.error==='not-allowed'||ev.error==='service-not-allowed')&&!srOK){ warn.hidden=false; warn.textContent='語音轉文字沒有打開，只有錄音。請老師幫忙打字。'; } };
+        g.onend=()=>{ if(my===recSess&&keepGoing&&recKey===key&&srOK){ setTimeout(()=>{ try{startSR(false);}catch(e){} },150); } };
+        try{ g.start(); }catch(e){} };
+      startSR(true);
     }
+    // 3) 念「錄音開始」，念完才開始真的錄
+    let announced=false;
+    const afterAnnounce=()=>{ if(announced) return; announced=true; if(my!==recSess) return;
+      live=true; st.textContent='正在錄音…';
+      micP.then(s=>{ if(my!==recSess){ s.getTracks().forEach(t=>t.stop()); return; }
+        stream=s;
+        try{ const r=new MediaRecorder(s); rec=r;
+          r.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+          r.onstop=()=>{ if(chunks.length){ if(audioURL[key]) URL.revokeObjectURL(audioURL[key]); audioURL[key]=URL.createObjectURL(new Blob(chunks,{type:r.mimeType||'audio/webm'})); showAudio(); } };
+          r.start(); }catch(e){ rec=null; }
+      }).catch(()=>{ if(my!==recSess) return; stopRec(); recKey=null; setIdle('按這裡開始錄音','');
+        warn.hidden=false; warn.textContent='沒辦法打開麥克風。請允許使用麥克風，並用老師給的網址（QR code）開啟。'; });
+    };
+    speak('錄音開始。',null,afterAnnounce); setTimeout(afterAnnounce,3000);
   };
   main.appendChild(box);
   const [p,n,l]=moveFn(sec,list.length,cfg.next);
