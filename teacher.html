@@ -163,7 +163,13 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     <h2>已上傳的考卷 <span class="pill" id="cnt"></span> <button class="btn sm" id="bRefresh" type="button" style="margin-left:auto">重新整理</button></h2>
     <p class="note" id="listNote">連線後會顯示網站上的考卷。</p>
     <div id="list" class="subj"></div>
-    <label class="row note" style="gap:8px"><input type="checkbox" id="qrKey"> QR Code 連結附上 Gemini API Key（學生不用自己輸入；只給自己的學生，不要公開張貼）</label>
+    <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">
+      <b>🤖 AI 辨識金鑰（學生拍照用）</b>
+      <input type="password" id="tKey" placeholder="貼上 Gemini API Key" autocomplete="off" style="flex:1;min-width:220px">
+      <button class="btn sm" id="bKeySave" type="button">儲存</button>
+    </div>
+    <p class="note">有金鑰時，學生<b>拍照</b>的考卷會先用 AI 辨識，題目和字都比較準（PDF 本來就有文字，不需要）。取得金鑰：到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> 按「Create API key」。建議在 Google Cloud 把這把金鑰限制成只能從 liniris1023.github.io 使用。</p>
+    <label class="row note" style="gap:8px"><input type="checkbox" id="qrKey"> QR Code 連結附上 AI 金鑰（學生平板掃一次就記住，之後拍照都用 AI；只給自己的學生，不要公開張貼）</label>
   </section>
 </div>
 
@@ -425,6 +431,14 @@ function studentUrl(f, withKey){
   return studentBase() + '?' + p.toString();
 }
 let qrFile = null;
+$('tKey').value = ls.get('erh_key', '') || '';
+$('qrKey').checked = !!ls.get('erh_key', '');
+$('bKeySave').addEventListener('click', () => {
+  const k = $('tKey').value.trim();
+  if(k) ls.set('erh_key', k); else ls.del('erh_key');
+  $('qrKey').checked = !!k;
+  toast(k ? '已儲存。之後的 QR Code 會附上 AI 金鑰。' : '已清除 AI 金鑰。');
+});
 function showQr(f){
   qrFile = f;
   const withKey = $('qrKey').checked;

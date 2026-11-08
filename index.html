@@ -350,7 +350,8 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
             <button type="button" class="mini" data-redo="v2">直式・上下兩半</button>
             <button type="button" class="mini" data-redo="v-lr">直式・左右兩半</button>
             <button type="button" class="mini" data-redo="same">🔄 同一種再試</button>
-            <button type="button" class="mini" data-redo="gemini" id="redoGem" hidden>🤖 用 Gemini AI</button>
+            <button type="button" class="mini" data-redo="gemini" id="redoGem" hidden>🤖 用 AI 再辨識</button>
+            <button type="button" class="mini" data-redo="tess" id="redoTess" hidden>📷 改用免費辨識</button>
           </div>
         </div>
         <ol id="qlist"></ol>
@@ -396,6 +397,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     <p class="note" id="qrNote"></p>
     <div id="qrBig"></div>
     <code id="qrLink"></code>
+    <label class="row note" id="qrKeyRow" hidden style="gap:8px;justify-content:center"><input type="checkbox" id="qrWithKey" checked> 連結附上 AI 金鑰（學生平板掃一次，之後拍照都會用 AI 辨識；只給自己的學生）</label>
     <div class="row" style="justify-content:center">
       <button type="button" class="btn" id="bQrCopy">複製連結</button>
       <button type="button" class="btn" id="bQrDl">下載 QR 圖片</button>
@@ -414,7 +416,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       <label><input type="radio" name="eng" value="gemini" id="engGem"> <span><b>Gemini AI 辨識</b>：橫式、直式混排、有注音的考卷都比較準，會自動分好每一題。需要 Gemini API Key。</span></label>
       <input type="password" id="apiKey" placeholder="貼上 Gemini API Key" autocomplete="off">
       <div class="row"><span class="note">模型</span><input type="text" id="model" style="flex:1"></div>
-      <p class="note">取得 API Key：到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> 登入，按「Create API key」後複製貼上。Key 只存在這台裝置的瀏覽器裡。</p>
+      <p class="note">取得 API Key：到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> 登入，按「Create API key」後複製貼上。Key 只存在這台裝置的瀏覽器裡。<b>有 Key 時，學生「拍照」的考卷一律先用 AI 辨識</b>；PDF 照上面選的方式。</p>
     </section>
 
     <section>
@@ -460,7 +462,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
 <script>
 /* 自動更新：平板開著舊版時，發現網站有新版就自動重新載入一次 */
-const BUILD = '20261109b';
+const BUILD = '20261109c';
 (function(){
   if(!/^https?:/.test(location.protocol)) return;
   async function check(){
@@ -1452,11 +1454,14 @@ async function analyze(i, token){
     }
   }
   if(!blocks){
-    if((S.forceEngine || S.engine) === 'gemini' && S.key){
-      try{ blocks = await geminiRead(cv, false); }
-      catch(e){ console.error(e); toast('Gemini 辨識失敗（'+e.message+'），改用免費辨識。', 5000); }
-    } else if(S.engine === 'gemini'){
-      toast('還沒有設定 Gemini API Key，先用免費辨識。');
+    // 拍照的考卷：有 AI 金鑰就一律先用 AI 辨識（比較準），失敗才用平板上的免費辨識
+    const wantAI = S.forceEngine === 'gemini' || (S.forceEngine !== 'tess' && (S.engine === 'gemini' || pg.kind === 'img'));
+    if(wantAI && S.key){
+      try{ blocks = await geminiRead(cv, false); if(blocks && !blocks.length) blocks = null; }
+      catch(e){ console.error(e); toast('AI 辨識失敗（'+e.message+'），改用免費辨識。', 5000); }
+    } else if(wantAI && !S.noKeyWarned){
+      S.noKeyWarned = true;
+      toast(pg.kind === 'img' ? '這台平板還沒有 AI 金鑰，先用免費辨識（請老師用附金鑰的 QR Code 掃一次）。' : '還沒有設定 Gemini API Key，先用免費辨識。', 5000);
     }
     if(!blocks) blocks = finishBlocks(await tessPage(cv, S.dir), tdir(S.dir));
   }
@@ -1515,7 +1520,7 @@ function drawQPanel(){
   $('qpanel').hidden = !showPanel;
   document.querySelector('.workarea').classList.toggle('nopanel', !showPanel);
   if(!showPanel){ S.blocks.forEach(b => b.card = null); return; }
-  $('redoGem').hidden = !S.key;
+  $('redoGem').hidden = !S.key; $('redoTess').hidden = !S.key;
   let muteRun = null;
   S.blocks.forEach((b, k) => {
     b.card = null;
@@ -1854,11 +1859,17 @@ async function geminiRead(canvas, isCrop){
     : gLay === 'tb' && gTd === 'h' ? '這份考卷是橫式排列，分成上下兩半：先讀上半，再讀下半。'
     : S.dir==='v2' ? '這份考卷是直式排列，而且分成上下兩半：先讀上半（由右到左），上半讀完再讀下半（由右到左）。上半和下半同一個位置的直排是不同的題目。'
     : S.dir==='v' ? '這份考卷是直式排列，每一排從頁面最上面寫到最下面，由右到左讀。' : S.dir==='h' ? '這份考卷是橫式排列，整頁由上到下讀。' : '';
-  const prompt = `這是台灣國小考卷${isCrop?'中被框選起來的一小塊區域':'的一頁'}，要用來報讀給有學習障礙的學生聽。${dirHint}
+  let lineHint = '';
+  if(!isCrop && S.curRule) lineHint = `這張圖在大約 ${Math.round(S.curRule.y / canvas.height * 100)}% 高度的地方有一條橫的分隔線，把考卷分成上下兩半：上半全部讀完才讀下半，上下兩半的字絕對不能合成同一題。`;
+  else if(!isCrop && S.curVRule) lineHint = `這張圖在大約 ${Math.round(S.curVRule.x / canvas.width * 100)}% 寬度的地方有一條直的分隔線，把考卷分成左右兩邊：左右兩邊的字絕對不能合成同一題。`;
+  const layoutHint = (!isCrop && !dirHint) ? `請先看整張考卷的版面再決定閱讀順序，常見的有：(1) 直式（國語直排）整頁：每一行由上到下、行與行由右到左；(2) 直式、中間一條橫線分成上下兩半：先把上半由右到左讀完，再讀下半；(3) 橫式、中間一條直線分成左右兩欄：先讀完左欄再讀右欄；(4) 橫式上下兩半：先上後下。一張考卷也可能上半直式、下半橫式。` : '';
+  const prompt = `這是台灣國小考卷${isCrop?'中被框選起來的一小塊區域':'的照片（可能有點歪、有陰影）'}，要用來報讀給有學習障礙的學生聽，文字一定要正確。${dirHint}${layoutHint}${lineHint}
 請找出圖中要唸的文字，依照正確的閱讀順序輸出：
 1. 橫式文字：由左到右、由上到下。直式文字（國語直排）：每一行由上到下，行與行由右到左；若頁面上下分成好幾個區塊，先讀上面的區塊再讀下面的。
 2. ${isCrop ? '這是框選區域，全部文字合成「一個」項目即可。' : '每一小題（題號、題目、選項）是一個項目，同一行有好幾題也要分開；小題換行時要合在同一個項目；大題名稱（例如「一、寫注音」）自成一個項目；頁首的姓名座號欄可以省略。'}
-2-1. 照原樣輸出，錯別字也不能修正（改錯題要保留錯字）。
+2-1. 照原樣輸出，錯別字也不能修正（改錯題要保留錯字）。看不清楚的字依照上下文判斷最可能的字，但不要自己加字。
+2-2. 大題名稱連同配分一起輸出成一個項目，例如「三、改錯字：每題2分，共10分」；數學的 ①②③ 大題寫成「①填填看（每個答案2分，共28分）」。
+2-3. 小題前面的題號要保留（例如「1.」「（　）2.」），選擇題的選項 ①②③④ 跟題目放在同一個項目。題目中用「」框起來的字要保留「」。
 3. 國字旁邊的小注音不要輸出，只輸出國字；如果題目本身就是注音（旁邊沒有國字），就保留注音。
 4. 要學生填寫的空格、括號一律寫成「（　）」，底線寫成「＿＿」。數字與數學符號照原樣。
 5. 只輸出圖上看得到的文字，不要作答、不要解釋。
@@ -2308,7 +2319,7 @@ async function reRecognize(dir, engine){
 $('bRedo').addEventListener('click', () => reRecognize());
 document.querySelectorAll('[data-redo]').forEach(b => b.addEventListener('click', () => {
   const v = b.dataset.redo;
-  if(v === 'gemini') reRecognize(null, 'gemini');
+  if(v === 'gemini' || v === 'tess') reRecognize(null, v);
   else reRecognize(v === 'same' ? null : v);
 }));
 $('bSel').addEventListener('click', () => setSelecting(!S.selecting));
@@ -2605,7 +2616,13 @@ function testQr(path, dir, name){
   return { url: siteBase() + '?' + p.toString(), title: name || '考卷', note: '學生用平板掃描，就會直接打開這份考卷。' };
 }
 let qrNow = null;
+function withKeyUrl(url){
+  if(!S.key || !$('qrWithKey').checked) return url;
+  return url + (url.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(S.key);
+}
 function showQrFor(q){
+  $('qrKeyRow').hidden = !S.key;
+  q = {...q, base: q.base || q.url}; q.url = withKeyUrl(q.base);
   qrNow = q;
   $('qrTitle').textContent = q.title; $('qrNote').textContent = q.note; $('qrLink').textContent = q.url;
   const box = $('qrBig'); box.innerHTML = '';
@@ -2632,6 +2649,7 @@ $('bQR').addEventListener('click', () => {
   catch(e){ box.textContent = 'QR Code 產生失敗，請複製下面的連結。'; }
   $('qrDlg').showModal();
 });
+$('qrWithKey').addEventListener('change', () => { if(qrNow) showQrFor(qrNow); });
 $('bQrCopy').addEventListener('click', async () => {
   try{ await navigator.clipboard.writeText($('qrLink').textContent); toast('已複製連結。'); }
   catch(e){ const r = document.createRange(); r.selectNodeContents($('qrLink')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('請長按或按 Ctrl+C 複製選取的連結。'); }
