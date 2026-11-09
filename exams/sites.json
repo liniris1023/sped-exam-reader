@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-08T17:55:00.000Z",
+ "updated": "2026-11-09T04:20:00.000Z",
  "sites": [
   {
    "id": "guoyu6-midterm",
@@ -52,6 +52,19 @@
    "test": "en6-midterm-test/",
    "note": "",
    "added": 1793900000003
+  },
+  {
+   "id": "sci6-midterm",
+   "title": "六上自然期中評量報讀",
+   "year": 115,
+   "grade": 6,
+   "term": "上",
+   "subject": "自然",
+   "type": "期中考",
+   "url": "sci6-midterm/",
+   "test": "sci6-midterm-test/",
+   "note": "",
+   "added": 1794000000000
   },
   {
    "id": "sci5-midterm",
