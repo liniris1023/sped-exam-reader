@@ -462,7 +462,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
 <script>
 /* 自動更新：平板開著舊版時，發現網站有新版就自動重新載入一次 */
-const BUILD = '20261109c';
+const BUILD = '20261109d';
 (function(){
   if(!/^https?:/.test(location.protocol)) return;
   async function check(){
@@ -963,6 +963,54 @@ function darkThr(d){
   const mean = s / Math.max(1, n);
   return S.photoMode ? Math.max(150, Math.min(560, 0.74 * mean)) : 330;   // PDF 用固定值；照片偏灰偏黃就跟著整張亮度走
 }
+// 照片：考卷拍斜了、有透視，分隔線是「斜的」。在 ±8 度內找一條又長又細的黑線。
+// vert=false 找橫線（上下兩半），vert=true 找直線（左右兩欄）
+function detectTiltRule(canvas, vert){
+  try{
+    const k = Math.min(1, 900 / Math.max(canvas.width, canvas.height));
+    const w0 = Math.round(canvas.width*k), h0 = Math.round(canvas.height*k);
+    const c = document.createElement('canvas'); c.width = w0; c.height = h0;
+    const g = c.getContext('2d', {willReadFrequently:true}); g.drawImage(canvas, 0, 0, w0, h0);
+    const d = g.getImageData(0, 0, w0, h0).data, thr = Math.min(660, darkThr(d) * 1.15);   // 細線比字淡，放寬一點
+    const U = vert ? h0 : w0, V = vert ? w0 : h0;   // u 沿著線、v 垂直於線
+    const dark = new Uint8Array(U*V);
+    for(let y = 0; y < h0; y++) for(let x = 0; x < w0; x++){
+      const i = (y*w0 + x)*4; if(d[i] + d[i+1] + d[i+2] < thr){ const u = vert ? y : x, v = vert ? x : y; dark[v*U + u] = 1; }
+    }
+    const at = (u, v) => (v >= 0 && v < V && u >= 0 && u < U) ? dark[v*U + u] : 0;
+    let best = null;
+    for(let a = -8; a <= 8.001; a += 0.25){
+      const t = Math.tan(a*Math.PI/180);
+      for(let v0 = Math.round(V*0.12); v0 < V*0.88; v0++){
+        let start = -1, last = -10, runBest = 0, rs = 0, re = 0, thick = 0, n = 0, thickBest = 1;
+        for(let u = 0; u < U; u++){
+          const v = Math.round(v0 + t*(u - U/2));
+          if(at(u, v) || at(u, v+1)){
+            if(u - last > 4){ start = u; thick = 0; n = 0; }
+            last = u; n++;
+            if(at(u, v-4) && at(u, v+5)) thick++;
+            if(u - start > runBest){ runBest = u - start; rs = start; re = u; thickBest = thick / n; }
+          }
+        }
+        if(runBest > U*0.35 && thickBest < 0.3 && (!best || runBest > best.len)) best = {len: runBest, v0, t, rs, re};
+      }
+    }
+    if(!best) return null;
+    // 印刷的分隔線：線上很黑、旁邊很白；摺痕、陰影：線上灰灰的、旁邊也灰 → 不算
+    const lumAt = (u, v) => { const x = vert ? v : u, y = vert ? u : v; if(x < 0 || y < 0 || x >= w0 || y >= h0) return 765; const i = (y*w0 + x)*4; return d[i] + d[i+1] + d[i+2]; };
+    let on = 0, off = 0, cnt = 0;
+    for(let u = best.rs; u <= best.re; u += 2){
+      const v = Math.round(best.v0 + best.t*(u - U/2));
+      on += Math.min(lumAt(u, v), lumAt(u, v+1)); off += (lumAt(u, v-5) + lumAt(u, v+6)) / 2; cnt++;
+    }
+    const contrast = (off - on) / Math.max(1, cnt);
+    if(contrast < 150) return null;
+    const vc = best.v0 / k, um = U/2 / k;
+    const lineV = u => vc + best.t*(u - um);
+    if(!vert) return {y: Math.round(lineV(canvas.width/2)), x0: Math.round(best.rs/k), x1: Math.round(best.re/k), t: best.t, at: lineV, tilt: true, contrast};
+    return {x: Math.round(lineV(canvas.height/2)), y0: Math.round(best.rs/k), y1: Math.round(best.re/k), t: best.t, at: lineV, tilt: true, contrast};
+  }catch(e){ console.warn(e); return null; }
+}
 function detectRule(canvas){
   try{
     const W = canvas.width, H = canvas.height;
@@ -1324,8 +1372,105 @@ function fileToCanvas(file){
     img.src = url;
   });
 }
+// 照片：考卷外面的桌面、背景（比紙暗）塗成白色，不然會被當成很多黑字
+function whitenBackground(src){
+  try{
+    const k = Math.min(1, 600 / Math.max(src.width, src.height));
+    const w = Math.round(src.width*k), hh = Math.round(src.height*k);
+    const c = document.createElement('canvas'); c.width = w; c.height = hh;
+    const g = c.getContext('2d', {willReadFrequently:true}); g.drawImage(src, 0, 0, w, hh);
+    const d = g.getImageData(0, 0, w, hh).data;
+    const lum = new Float32Array(w*hh);
+    for(let i = 0; i < w*hh; i++) lum[i] = d[i*4] + d[i*4+1] + d[i*4+2];
+    const sorted = Array.from(lum).sort((a, b) => a - b), paper = sorted[Math.floor(sorted.length*0.8)];
+    // 背景：從照片邊緣開始、一路都比紙暗很多的區域（字被白紙包住，不會被連到）
+    const bgThr = paper * 0.58, bg = new Uint8Array(w*hh), stack = [];
+    const push = i => { if(!bg[i] && lum[i] < bgThr){ bg[i] = 1; stack.push(i); } };
+    for(let x = 0; x < w; x++){ push(x); push((hh-1)*w + x); }
+    for(let y = 0; y < hh; y++){ push(y*w); push(y*w + w - 1); }
+    while(stack.length){
+      const i = stack.pop(), x = i % w, y = (i - x) / w;
+      if(x > 0) push(i-1); if(x < w-1) push(i+1); if(y > 0) push(i-w); if(y < hh-1) push(i+w);
+    }
+    let n = 0; for(let i = 0; i < bg.length; i++) n += bg[i];
+    if(n < w*hh*0.01 || n > w*hh*0.7) return src;   // 幾乎沒有背景，或整張都暗（光線太差）就不處理
+    // 背景往外擴 2 格，避免紙邊的陰影
+    const grow = new Uint8Array(bg);
+    for(let y = 0; y < hh; y++) for(let x = 0; x < w; x++) if(bg[y*w + x]) for(let dy = -2; dy <= 2; dy++) for(let dx = -2; dx <= 2; dx++){ const yy = y+dy, xx = x+dx; if(yy >= 0 && yy < hh && xx >= 0 && xx < w) grow[yy*w + xx] = 1; }
+    const out = document.createElement('canvas'); out.width = src.width; out.height = src.height;
+    const o = out.getContext('2d'); o.drawImage(src, 0, 0);
+    o.fillStyle = '#fff';
+    const sx = src.width / w, sy = src.height / hh;
+    for(let y = 0; y < hh; y++){
+      let x = 0;
+      while(x < w){
+        if(!grow[y*w + x]){ x++; continue; }
+        const s = x; while(x < w && grow[y*w + x]) x++;
+        o.fillRect(Math.floor(s*sx), Math.floor(y*sy), Math.ceil((x - s)*sx) + 1, Math.ceil(sy) + 1);
+      }
+    }
+    return out;
+  }catch(e){ return src; }
+}
+// 照片：光線不均（陰影、反光、偏黃）→ 用「附近的紙有多亮」當基準，把紙調成一樣白、字調成黑（灰階）
+function flattenLighting(src){
+  try{
+    const W = src.width, H = src.height, f = 16;
+    const sw = Math.max(8, Math.round(W/f)), sh = Math.max(8, Math.round(H/f));
+    const s = document.createElement('canvas'); s.width = sw; s.height = sh;
+    const sg = s.getContext('2d', {willReadFrequently:true}); sg.drawImage(src, 0, 0, sw, sh);
+    let d = sg.getImageData(0, 0, sw, sh);
+    // 取附近最亮的值（紙），做兩次，字就被紙蓋過去
+    for(let pass = 0; pass < 2; pass++){
+      const a = d.data, o = new Uint8ClampedArray(a);
+      for(let y = 0; y < sh; y++) for(let x = 0; x < sw; x++){
+        let m = 0;
+        for(let dy = -1; dy <= 1; dy++) for(let dx = -1; dx <= 1; dx++){
+          const yy = Math.min(sh-1, Math.max(0, y+dy)), xx = Math.min(sw-1, Math.max(0, x+dx)), i = (yy*sw + xx)*4;
+          const v = a[i] + a[i+1] + a[i+2]; if(v > m) m = v;
+        }
+        const i = (y*sw + x)*4; o[i] = o[i+1] = o[i+2] = m/3;
+      }
+      d = new ImageData(o, sw, sh);
+    }
+    sg.putImageData(d, 0, 0);
+    const b = document.createElement('canvas'); b.width = W; b.height = H;
+    const bg = b.getContext('2d', {willReadFrequently:true}); bg.imageSmoothingQuality = 'high'; bg.filter = 'blur(' + Math.round(f*1.5) + 'px)'; bg.drawImage(s, 0, 0, W, H);
+    const back = bg.getImageData(0, 0, W, H).data;
+    const out = document.createElement('canvas'); out.width = W; out.height = H;
+    const og = out.getContext('2d', {willReadFrequently:true}); og.drawImage(src, 0, 0);
+    const img = og.getImageData(0, 0, W, H), p = img.data;
+    const norm = new Float32Array(W*H), hist = new Uint32Array(256);
+    for(let i = 0, j = 0; i < p.length; i += 4, j++){
+      const bgv = Math.max(40, back[i]);
+      // 紅筆（老師批改的勾、圈）不是考卷的字 → 當成紙
+      const red = p[i] - Math.max(p[i+1], p[i+2]) > 45 && p[i] > 90;
+      const v = red ? 255 : Math.min(255, (p[i] + p[i+1] + p[i+2]) / 3 / bgv * 255);
+      norm[j] = v; hist[v|0]++;
+    }
+    // 紙的亮度＝最常見的亮度附近（60% 位置），把它拉到全白；字再黑一點
+    let acc = 0, paper = 230; for(let v = 0; v < 256; v++){ acc += hist[v]; if(acc >= W*H*0.6){ paper = Math.max(120, v); break; } }
+    for(let i = 0, j = 0; i < p.length; i += 4, j++){
+      let v = norm[j] / paper * 255;
+      v = v >= 238 ? 255 : v * 0.9;
+      p[i] = p[i+1] = p[i+2] = v > 255 ? 255 : v;
+    }
+    og.putImageData(img, 0, 0);
+    return out;
+  }catch(e){ return src; }
+}
 // 照片拍歪了（平板沒有拿正）：找出文字行／直排最整齊的角度，把照片轉正
 function deskewCanvas(src){
+  const a = skewAngle(src);
+  return Math.abs(a) < 0.3 ? src : rotateBy(src, a);
+}
+function rotateBy(src, deg){
+  const out = document.createElement('canvas'); out.width = src.width; out.height = src.height;
+  const o = out.getContext('2d'); o.fillStyle = '#fff'; o.fillRect(0, 0, out.width, out.height);
+  o.translate(out.width/2, out.height/2); o.rotate(-deg*Math.PI/180); o.drawImage(src, -src.width/2, -src.height/2);
+  return out;
+}
+function skewAngle(src){
   try{
     const k = Math.min(1, 700 / Math.max(src.width, src.height));
     const w = Math.round(src.width*k), hh = Math.round(src.height*k);
@@ -1336,7 +1481,7 @@ function deskewCanvas(src){
     const thr = Math.min(330, 0.6 * sum / (d.length/16));
     const px = [];
     for(let y = 2; y < hh-2; y += 1) for(let x = 2; x < w-2; x += 1){ const i = (y*w + x)*4; if(d[i] + d[i+1] + d[i+2] < thr){ px.push(x, y); } }
-    if(px.length < 2000) return src;
+    if(px.length < 2000) return 0;
     const ssq = (t, vert) => {
       const off = Math.ceil(Math.abs(t) * Math.max(w, hh)) + 2, bins = new Float32Array((vert ? w : hh) + 2*off);
       for(let i = 0; i < px.length; i += 2){ const b = vert ? Math.round(px[i] + t*px[i+1]) : Math.round(px[i+1] - t*px[i]); bins[b + off]++; }
@@ -1352,12 +1497,8 @@ function deskewCanvas(src){
       const t = Math.tan(a*Math.PI/180), s = Math.max(ssq(t, false), ssq(t, true));
       if(s > bestS){ bestS = s; best = a; }
     }
-    if(Math.abs(best) < 0.3) return src;
-    const out = document.createElement('canvas'); out.width = src.width; out.height = src.height;
-    const o = out.getContext('2d'); o.fillStyle = '#fff'; o.fillRect(0, 0, out.width, out.height);
-    o.translate(out.width/2, out.height/2); o.rotate(-best*Math.PI/180); o.drawImage(src, -src.width/2, -src.height/2);
-    return out;
-  }catch(e){ return src; }
+    return best;
+  }catch(e){ return 0; }
 }
 function rotateCanvas(src){
   const c = document.createElement('canvas'); c.width = src.height; c.height = src.width;
@@ -1424,14 +1565,15 @@ async function analyze(i, token){
   let blocks = null;
   const LAY = layoutOf(S.dir), TD = tdir(S.dir);
   S.photoMode = pg.kind === 'img';
-  S.curRule = (LAY === 'tb' || LAY === 'auto') ? detectRule(cv) : null;
-  S.curVRule = (LAY === 'lr' || LAY === 'auto') ? detectVRule(cv) : null;
+  S.curRule = (LAY === 'tb' || LAY === 'auto') ? ((S.photoMode && detectTiltRule(cv, false)) || detectRule(cv)) : null;
+  S.curVRule = (LAY === 'lr' || LAY === 'auto') ? ((S.photoMode && detectTiltRule(cv, true)) || detectVRule(cv)) : null;
   if(LAY === 'auto' && S.curRule && S.curVRule){
     // 兩種線都有：真正的分隔線會「穿過」另一條；只在一欄裡面的短線（圖、表格）不算
     const r = S.curRule, v = S.curVRule;
     const hCross = r.x0 < v.x - 20 && r.x1 > v.x + 20, vCross = v.y0 < r.y - 20 && v.y1 > r.y + 20;
     if(vCross && !hCross) S.curRule = null;
     else if(hCross && !vCross) S.curVRule = null;
+    else if(r.contrast && v.contrast && Math.abs(r.contrast - v.contrast) > 120) { if(r.contrast > v.contrast) S.curVRule = null; else S.curRule = null; }
     else if((v.y1 - v.y0) / cv.height > (r.x1 - r.x0) / cv.width) S.curRule = null;
     else S.curVRule = null;
   }
@@ -1457,7 +1599,7 @@ async function analyze(i, token){
     // 拍照的考卷：有 AI 金鑰就一律先用 AI 辨識（比較準），失敗才用平板上的免費辨識
     const wantAI = S.forceEngine === 'gemini' || (S.forceEngine !== 'tess' && (S.engine === 'gemini' || pg.kind === 'img'));
     if(wantAI && S.key){
-      try{ blocks = await geminiRead(cv, false); if(blocks && !blocks.length) blocks = null; }
+      try{ blocks = await geminiPage(cv); if(blocks && !blocks.length) blocks = null; }
       catch(e){ console.error(e); toast('AI 辨識失敗（'+e.message+'），改用免費辨識。', 5000); }
     } else if(wantAI && !S.noKeyWarned){
       S.noKeyWarned = true;
@@ -1752,68 +1894,184 @@ function inkProfile(c){
   return {col, row, W, H};
 }
 function runs(arr, min){ const out = []; let s = -1; for(let i = 0; i <= arr.length; i++){ const on = i < arr.length && arr[i] > min; if(on && s < 0) s = i; if(!on && s >= 0){ out.push([s, i]); s = -1; } } return out; }
-function gapShare(arr){
-  let a = 0, b = arr.length - 1; while(a < b && arr[a] <= 1) a++; while(b > a && arr[b] <= 1) b--;
-  if(b - a < 20) return 0; let g = 0; for(let i = a; i <= b; i++) if(arr[i] <= 1) g++; return g / (b - a + 1);
+// 「沒有字」的門檻：照片邊緣的陰影、雜點會讓每一排都有一點點黑，所以用整體的低點當基準
+function baseLevel(arr, len){
+  const s = Array.from(arr).sort((a, b) => a - b);
+  return Math.max(1, s[Math.floor(s.length*0.15)] + Math.round(len*0.004));
+}
+function gapShare(arr, len){
+  const base = baseLevel(arr, len || 0);
+  let a = 0, b = arr.length - 1; while(a < b && arr[a] <= base) a++; while(b > a && arr[b] <= base) b--;
+  if(b - a < 20) return 0; let g = 0; for(let i = a; i <= b; i++) if(arr[i] <= base) g++; return g / (b - a + 1);
 }
 function dirByProfile(pr){
-  const gx = gapShare(pr.col), gy = gapShare(pr.row);
+  const gx = gapShare(pr.col, pr.H), gy = gapShare(pr.row, pr.W);
   if(gx > gy*1.4 && gx > 0.15) return 'v';
   if(gy > gx*1.4 && gy > 0.15) return 'h';
   return null;
 }
+// 照片：沿著斜縫數一數有幾排「乾淨的直縫」；直式考卷的直縫多，橫式考卷幾乎沒有
+function slantDir(c){
+  const cols = slantCols(c);
+  const ws = cols.map(s => s.b - s.a).filter(v => v > 4);
+  if(ws.length >= 6) return 'v';
+  if(ws.length <= 2) return 'h';
+  return null;
+}
+// 直式：一排一排切下來各自辨識（旁邊的小注音不會混進來，比整塊辨識準很多）
+// 照片有透視：每一排直排字歪的角度不一樣。對每個位置試 ±7 度，找「一路都沒有字」的斜縫，縫和縫之間就是一排字。
+function slantCols(c){
+  const k = Math.min(1, 900 / c.width), w = Math.round(c.width*k), hh = Math.round(c.height*k);
+  const t0 = document.createElement('canvas'); t0.width = w; t0.height = hh;
+  const g = t0.getContext('2d', {willReadFrequently:true}); g.drawImage(c, 0, 0, w, hh);
+  const d = g.getImageData(0, 0, w, hh).data, thr = darkThr(d), dark = new Uint8Array(w*hh);
+  for(let i = 0; i < w*hh; i++) if(d[i*4] + d[i*4+1] + d[i*4+2] < thr) dark[i] = 1;
+  const yc = hh/2, angles = [];
+  for(let a = -10; a <= 10.001; a += 0.5) angles.push(Math.tan(a*Math.PI/180));
+  angles.sort((p, q) => Math.abs(p) - Math.abs(q));          // 一樣空時，取比較不歪的
+  const minC = new Float32Array(w).fill(1e9), minT = new Float32Array(w);
+  for(const t of angles){
+    for(let x = 0; x < w; x++){
+      let n = 0;
+      for(let y = 0; y < hh; y += 2){ const xx = Math.round(x + t*(y - yc)); if(xx >= 0 && xx < w && dark[y*w + xx]) n++; }
+      if(n < minC[x]){ minC[x] = n; minT[x] = t; }
+    }
+  }
+  const base = baseLevel(minC, hh/2) + Math.round(hh/2*0.02);   // 容許幾筆手寫的線穿過字縫
+  const cols = [];
+  let x = 0;
+  while(x < w){
+    while(x < w && minC[x] <= base) x++;
+    const a = x; while(x < w && minC[x] > base) x++;
+    const b = x;
+    if(b > a) cols.push({a: Math.round(a/k), b: Math.round(b/k), t: (minT[Math.max(0, a-1)] + minT[Math.min(w-1, b)]) / 2, yc: yc/k});
+  }
+  return cols;
+}
+// 把一排斜的字「剪」成直的一條（用錯切，字幾乎不變形）
+function shearStrip(c, x0, sw, t, yc){
+  const u = document.createElement('canvas'); u.width = Math.max(1, Math.round(sw)); u.height = c.height;
+  const g = u.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, u.width, u.height);
+  g.setTransform(1, 0, -t, 1, -x0 + t*yc, 0); g.drawImage(c, 0, 0);
+  return u;
+}
 // 直式：一排一排切下來各自辨識（旁邊的小注音不會混進來，比整塊辨識準很多）
 async function tessVertCols(c, pr){
   pr = pr || inkProfile(c);
-  const segs = runs(pr.col, 2);
-  if(!segs.length) return [];
-  const ws = segs.map(s => s[1] - s[0]).sort((a, b) => a - b), big = ws[Math.floor(ws.length*0.8)];
-  const main = segs.filter(s => s[1] - s[0] > big*0.6).sort((a, b) => b[0] - a[0]);
+  let cols;
+  if(S.photoMode) cols = slantCols(c);
+  else cols = runs(pr.col, Math.max(2, baseLevel(pr.col, pr.H))).map(([a, b]) => ({a, b, t: 0, yc: c.height/2}));
+  if(!cols.length) return [];
+  let main;
+  if(S.photoMode){
+    // 照片：用「一般一排字的寬度」（中位數）當標準；太寬的（好幾排黏在一起）再切一次
+    const ws = cols.map(s => s.b - s.a).filter(v => v > 8).sort((a, b) => a - b);
+    const med = ws.length ? ws[Math.floor(ws.length/2)] : 20;
+    main = [];
+    for(const s of cols){
+      const wd = s.b - s.a;
+      if(wd < med*0.5) continue;
+      if(wd <= med*1.9){ main.push(s); continue; }
+      const sub = cropCanvas(c, s.a, 0, wd, c.height);
+      const inner = sub ? slantCols(sub).filter(o => o.b - o.a >= med*0.5).map(o => ({...o, a: o.a + s.a, b: o.b + s.a})) : [];
+      if(inner.length >= 2 && inner.every(o => o.b - o.a <= med*1.9)) main.push(...inner);
+      else { const n = Math.max(1, Math.round(wd / (med*1.25))); for(let i = 0; i < n; i++) main.push({a: Math.round(s.a + wd*i/n), b: Math.round(s.a + wd*(i+1)/n), t: s.t, yc: s.yc}); }
+    }
+    main.sort((p, q) => q.a - p.a);
+  } else {
+    const ws = cols.map(s => s.b - s.a).sort((a, b) => a - b), big = ws[Math.floor(ws.length*0.8)];
+    main = cols.filter(s => s.b - s.a > big*0.6).sort((p, q) => q.a - p.a);
+  }
   const out = [];
   let k = 0;
-  for(const [a, b] of main){
+  for(const col of main){
     busy('辨識直式文字 ' + (++k) + '/' + main.length + '…');
-    const cw = b - a, x0 = Math.max(0, a - 4), sw = Math.min(c.width - x0, cw + 8);
+    const cw = col.b - col.a, padX = Math.round(cw*0.3) + 4, x0 = col.a - padX, sw = cw + 2*padX;
+    const strip = shearStrip(c, x0, sw, col.t, col.yc);
     // 同一排裡上下分開的幾段（中間空很多）分開辨識
-    const g = c.getContext('2d', {willReadFrequently:true}).getImageData(x0, 0, sw, c.height).data, thr = darkThr(g);
-    const rowInk = new Uint32Array(c.height);
-    for(let y = 0; y < c.height; y++) for(let x = 0; x < sw; x++){ const i = (y*sw + x)*4; if(g[i] + g[i+1] + g[i+2] < thr) rowInk[y]++; }
+    const g = strip.getContext('2d', {willReadFrequently:true}).getImageData(padX - 2, 0, cw + 4, strip.height).data, thr = darkThr(g);
+    const iw = cw + 4, rowInk = new Uint32Array(strip.height);
+    for(let y = 0; y < strip.height; y++) for(let x = 0; x < iw; x++){ const i = (y*iw + x)*4; if(g[i] + g[i+1] + g[i+2] < thr) rowInk[y]++; }
     const parts = [];
-    for(const [s, e] of runs(rowInk, 0)){ const last = parts[parts.length-1]; if(last && s - last[1] < 2.5*cw) last[1] = e; else parts.push([s, e]); }
+    for(const [s, e] of runs(rowInk, S.photoMode ? Math.max(1, Math.round(cw*0.12)) : 0)){ const last = parts[parts.length-1]; if(last && s - last[1] < 2.5*cw) last[1] = e; else parts.push([s, e]); }
     for(const [s, e] of parts){
       if(e - s < cw*0.8) continue;
-      const pad = Math.round(cw*0.6), y0 = Math.max(0, s - pad), hh = Math.min(c.height - y0, e - s + 2*pad);
-      const src = cropCanvas(c, x0 - Math.round(cw*0.3), y0, sw + Math.round(cw*0.6), hh); if(!src) continue;
+      const pad = Math.round(cw*0.6), y0 = Math.max(0, s - pad), hh = Math.min(strip.height - y0, e - s + 2*pad);
+      const src = cropCanvas(strip, 0, y0, strip.width, hh); if(!src) continue;
       const sc = Math.min(3, Math.max(1, 46 / cw));
       const u = document.createElement('canvas'); u.width = Math.round(src.width*sc); u.height = Math.round(src.height*sc);
       const ug = u.getContext('2d'); ug.imageSmoothingQuality = 'high'; ug.drawImage(src, 0, 0, u.width, u.height);
-      const L = await tessRun(u, 'v', 5, 20);
+      const L = await tessRun(u, 'v', 5, S.photoMode ? 8 : 20);
       const text = L.map(l => l.text).join('');
       if(!meaningful(text)) continue;
       const conf = L.reduce((t, l) => t + l.conf*l.text.length, 0) / Math.max(1, text.length);
-      out.push({x: x0, y: s, w: sw, h: e - s, text: cleanText(text), conf});
+      const ym = (s + e)/2;
+      out.push({x: Math.max(0, col.a - 4 + col.t*(ym - col.yc)), y: s, w: cw + 8, h: e - s, text: cleanText(text), conf});
     }
   }
   return out;
 }
 // 辨識一塊區域：先看版面猜直式／橫式，猜不出來就兩種都試，取信心高的；座標換回整頁
 async function tessRegion(src, x, y, w, h, dir){
-  const c = cropCanvas(src, x, y, w, h); if(!c) return {lines: [], d: dir === 'auto' ? 'h' : dir};
+  let c = cropCanvas(src, x, y, w, h); if(!c) return {lines: [], d: dir === 'auto' ? 'h' : dir};
   let d = dir, lines;
   const pr = inkProfile(c);
-  if(d === 'auto') d = dirByProfile(pr) || 'auto';
+  if(d === 'auto') d = dirByProfile(pr) || (S.photoMode ? slantDir(c) : null) || 'auto';
+  // 照片的橫式：整塊再轉正一次（直式已經一排一排順著斜度切，不用轉）
+  let rot = 0;
+  if(S.photoMode && d === 'h'){ rot = skewAngle(c); if(Math.abs(rot) >= 0.3) c = rotateBy(c, rot); else rot = 0; }
   if(d === 'auto'){
     const lh = await tessRun(c, 'h', 3), lv = await tessVertCols(c, pr);
     d = score(lv) > score(lh)*1.1 ? 'v' : 'h'; lines = d === 'v' ? lv : lh;
   } else lines = d === 'v' ? await tessVertCols(c, pr) : await tessRun(c, 'h', 3);
   const ox = Math.max(0, Math.round(x)), oy = Math.max(0, Math.round(y));
+  if(rot){   // 轉回原來的角度，框框才會對在考卷上
+    const cx = c.width/2, cy = c.height/2, r = rot*Math.PI/180, cs = Math.cos(r), sn = Math.sin(r);
+    lines.forEach(l => { const px = l.x + l.w/2 - cx, py = l.y + l.h/2 - cy; l.x = cx + px*cs - py*sn - l.w/2; l.y = cy + px*sn + py*cs - l.h/2; });
+  }
   lines.forEach(l => { l.x += ox; l.y += oy; });
   return {lines, d};
+}
+// 斜的分隔線：把線的另一邊塗白，只留這一半
+function maskByLine(src, r, keepFirst, vert){
+  const out = document.createElement('canvas'); out.width = src.width; out.height = src.height;
+  const o = out.getContext('2d'); o.drawImage(src, 0, 0); o.fillStyle = '#fff'; o.beginPath();
+  const W = src.width, H = src.height, pad = 5;
+  if(!vert){
+    const yl = r.at(0), yr = r.at(W);
+    if(keepFirst){ o.moveTo(0, yl - pad); o.lineTo(W, yr - pad); o.lineTo(W, H); o.lineTo(0, H); }
+    else { o.moveTo(0, 0); o.lineTo(W, 0); o.lineTo(W, yr + pad); o.lineTo(0, yl + pad); }
+  } else {
+    const xt = r.at(0), xb = r.at(H);
+    if(keepFirst){ o.moveTo(xt - pad, 0); o.lineTo(W, 0); o.lineTo(W, H); o.lineTo(xb - pad, H); }
+    else { o.moveTo(0, 0); o.lineTo(xt + pad, 0); o.lineTo(xb + pad, H); o.lineTo(0, H); }
+  }
+  o.closePath(); o.fill();
+  return out;
 }
 async function tessPage(canvas, dsel){
   const dir = tdir(dsel), layout = layoutOf(dsel);
   const W = canvas.width, H = canvas.height;
   // 上下兩半：分隔線上面、下面分開辨識（直排不會穿過分隔線），每一半自己判斷方向
+  if((layout === 'tb' || layout === 'auto') && S.curRule && S.curRule.tilt){
+    const r = S.curRule, yMax = Math.max(r.at(0), r.at(W)), yMin = Math.min(r.at(0), r.at(W));
+    busy('辨識上半部…');
+    const top = await tessRegion(maskByLine(canvas, r, true), 0, 0, W, yMax + 6, dir);
+    busy('辨識下半部…');
+    const bot = await tessRegion(maskByLine(canvas, r, false), 0, yMin - 6, W, H - yMin + 6, dir);
+    const topB = orderAndMerge(top.lines, top.d, 'full'), botB = orderAndMerge(bot.lines, bot.d, 'full');
+    toast('上半是' + (top.d === 'v' ? '直式' : '橫式') + '、下半是' + (bot.d === 'v' ? '直式' : '橫式') + '。');
+    return topB.length && botB.length ? joinHalves(topB, botB, r.y) : topB.concat(botB);
+  }
+  if((layout === 'lr' || layout === 'auto') && S.curVRule && S.curVRule.tilt){
+    const r = S.curVRule, xMax = Math.max(r.at(0), r.at(H)), xMin = Math.min(r.at(0), r.at(H));
+    busy('辨識左半部…');
+    const L = await tessRegion(maskByLine(canvas, r, true, true), 0, 0, xMax + 6, H, dir);
+    busy('辨識右半部…');
+    const R = await tessRegion(maskByLine(canvas, r, false, true), xMin - 6, 0, W - xMin + 6, H, dir);
+    const sides = (L.d === 'v' && R.d === 'v') ? [R, L] : [L, R];
+    return sides.filter(p => p.lines.length).flatMap(p => orderAndMerge(p.lines, p.d, 'full'));
+  }
   if((layout === 'tb' || layout === 'auto') && S.curRule){
     const r = S.curRule, pad = 4;
     busy('辨識上半部…');
@@ -1850,8 +2108,37 @@ async function tessPage(canvas, dsel){
 }
 
 /* ================= Gemini 辨識 ================= */
-async function geminiRead(canvas, isCrop){
-  busy('Gemini 正在看考卷…');
+// 照片有分隔線：上下（或左右）兩半分開請 AI 看，兩半的題目就不可能被合在一起
+function halfCrops(cv){
+  const W = cv.width, H = cv.height, r = S.curRule, v = S.curVRule;
+  const mk = (src, x, y, w, h, part) => { const c = cropCanvas(src, x, y, w, h); return c ? {c, ox: Math.max(0, Math.round(x)), oy: Math.max(0, Math.round(y)), part} : null; };
+  if(r){
+    const at = r.at || (() => r.y), yMax = Math.max(at(0), at(W)), yMin = Math.min(at(0), at(W));
+    const top = r.tilt ? maskByLine(cv, r, true) : cv, bot = r.tilt ? maskByLine(cv, r, false) : cv;
+    return [mk(top, 0, 0, W, yMax + 6, '上半部'), mk(bot, 0, yMin - 6, W, H - yMin + 6, '下半部')].filter(Boolean);
+  }
+  if(v){
+    const at = v.at || (() => v.x), xMax = Math.max(at(0), at(H)), xMin = Math.min(at(0), at(H));
+    const L = v.tilt ? maskByLine(cv, v, true, true) : cv, R = v.tilt ? maskByLine(cv, v, false, true) : cv;
+    return [mk(L, 0, 0, xMax + 6, H, '左半部'), mk(R, xMin - 6, 0, W - xMin + 6, H, '右半部')].filter(Boolean);
+  }
+  return null;
+}
+async function geminiPage(cv){
+  const parts = S.photoMode ? halfCrops(cv) : null;
+  if(!parts || parts.length < 2) return geminiRead(cv, false);
+  const res = [];
+  for(const pt of parts){
+    const bl = await geminiRead(pt.c, false, pt.part);
+    bl.forEach(b => { b.x += pt.ox; b.y += pt.oy; });
+    res.push({part: pt.part, bl, v: bl.filter(b => b.dir === 'v').length > bl.length/2});
+  }
+  // 左右兩半而且是直式：先讀右半
+  if(res[0].part === '左半部' && res[0].v && res[1].v) res.reverse();
+  return res.flatMap(r => r.bl);
+}
+async function geminiRead(canvas, isCrop, part){
+  busy(part ? 'AI 正在看考卷的' + part + '…' : 'AI 正在看考卷…');
   const b64 = canvas.toDataURL('image/jpeg', 0.88).split(',')[1];
   const [gTd, gLay] = parseDir(S.dir) || ['auto','auto'];
   const dirHint = gLay === 'lr' && gTd === 'h' ? '這份考卷是橫式排列，分成左右兩欄：先讀完左欄（由上到下），再讀右欄（由上到下）。左右兩欄同一行的字是不同的題目。'
@@ -1860,10 +2147,11 @@ async function geminiRead(canvas, isCrop){
     : S.dir==='v2' ? '這份考卷是直式排列，而且分成上下兩半：先讀上半（由右到左），上半讀完再讀下半（由右到左）。上半和下半同一個位置的直排是不同的題目。'
     : S.dir==='v' ? '這份考卷是直式排列，每一排從頁面最上面寫到最下面，由右到左讀。' : S.dir==='h' ? '這份考卷是橫式排列，整頁由上到下讀。' : '';
   let lineHint = '';
-  if(!isCrop && S.curRule) lineHint = `這張圖在大約 ${Math.round(S.curRule.y / canvas.height * 100)}% 高度的地方有一條橫的分隔線，把考卷分成上下兩半：上半全部讀完才讀下半，上下兩半的字絕對不能合成同一題。`;
+  if(part){ lineHint = `這張圖只是整張考卷的${part}（另一半另外處理），只要讀這張圖裡的字。這一半可能是直式（每一排由上到下、排與排由右到左）或橫式（由上到下），請自己看清楚再決定順序。`; }
+  else if(!isCrop && S.curRule) lineHint = `這張圖在大約 ${Math.round(S.curRule.y / canvas.height * 100)}% 高度的地方有一條橫的分隔線，把考卷分成上下兩半：上半全部讀完才讀下半，上下兩半的字絕對不能合成同一題。`;
   else if(!isCrop && S.curVRule) lineHint = `這張圖在大約 ${Math.round(S.curVRule.x / canvas.width * 100)}% 寬度的地方有一條直的分隔線，把考卷分成左右兩邊：左右兩邊的字絕對不能合成同一題。`;
-  const layoutHint = (!isCrop && !dirHint) ? `請先看整張考卷的版面再決定閱讀順序，常見的有：(1) 直式（國語直排）整頁：每一行由上到下、行與行由右到左；(2) 直式、中間一條橫線分成上下兩半：先把上半由右到左讀完，再讀下半；(3) 橫式、中間一條直線分成左右兩欄：先讀完左欄再讀右欄；(4) 橫式上下兩半：先上後下。一張考卷也可能上半直式、下半橫式。` : '';
-  const prompt = `這是台灣國小考卷${isCrop?'中被框選起來的一小塊區域':'的照片（可能有點歪、有陰影）'}，要用來報讀給有學習障礙的學生聽，文字一定要正確。${dirHint}${layoutHint}${lineHint}
+  const layoutHint = (!isCrop && !dirHint && !part) ? `請先看整張考卷的版面再決定閱讀順序，常見的有：(1) 直式（國語直排）整頁：每一行由上到下、行與行由右到左；(2) 直式、中間一條橫線分成上下兩半：先把上半由右到左讀完，再讀下半；(3) 橫式、中間一條直線分成左右兩欄：先讀完左欄再讀右欄；(4) 橫式上下兩半：先上後下。一張考卷也可能上半直式、下半橫式。` : '';
+  const prompt = `這是台灣國小考卷${isCrop?'中被框選起來的一小塊區域':'的照片（可能有點歪、有陰影）'}，要用來報讀給有學習障礙的學生聽，文字一定要正確。${part ? '' : dirHint}${layoutHint}${lineHint}
 請找出圖中要唸的文字，依照正確的閱讀順序輸出：
 1. 橫式文字：由左到右、由上到下。直式文字（國語直排）：每一行由上到下，行與行由右到左；若頁面上下分成好幾個區塊，先讀上面的區塊再讀下面的。
 2. ${isCrop ? '這是框選區域，全部文字合成「一個」項目即可。' : '每一小題（題號、題目、選項）是一個項目，同一行有好幾題也要分開；小題換行時要合在同一個項目；大題名稱（例如「一、寫注音」）自成一個項目；頁首的姓名座號欄可以省略。'}
@@ -2279,7 +2567,7 @@ async function addImages(files, replace){
   busy('正在讀取照片…');
   try{
     const canvases = [];
-    for(const f of files) canvases.push(deskewCanvas(await fileToCanvas(f)));
+    for(const f of files) canvases.push(deskewCanvas(flattenLighting(whitenBackground(await fileToCanvas(f)))));
     if(replace){ S.pages = []; S.pdf = null; S.cache.clear(); }
     const start = S.pages.length;
     canvases.forEach(c => S.pages.push({kind:'img', canvas:c, rot:0}));
