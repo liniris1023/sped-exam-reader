@@ -80,6 +80,7 @@ OPT_SAY = {(11, 0): "會用英文字母L來表示"}
 
 def grp(title, ctx, ctxSay, bank=None, img=None, alt="", readEach=True):
     g = {"title": title, "ctx": ctx, "ctxSay": Z(ctxSay), "readEach": readEach}
+    g["once"] = True  # 題幹只在該組第一小題自動唸一次
     if img: g["img"] = img; g["alt"] = alt
     if bank:
         g["bank"] = bank
