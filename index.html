@@ -92,6 +92,13 @@ kbd{font-family:var(--font-display);background:var(--accent-soft);border-radius:
 .qrtxt h2{font-family:var(--font-display);font-weight:400;font-size:1.25rem;margin:0}
 #siteQrLink{word-break:break-all;font-size:.8rem;background:var(--desk);padding:4px 8px;border-radius:8px}
 .qrdlg{justify-items:center;text-align:center}
+#rotDlg{width:min(900px,96vw)}
+.rotdlg{justify-items:center;text-align:center}
+#rotPrev{max-width:100%;max-height:58vh;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.rotbtns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.rotbtns .btn{font-size:1.15rem;padding:12px 18px}
+.rotfine{display:flex;align-items:center;gap:10px;width:min(560px,90%)}
+.rotfine input{flex:1;height:36px}
 #qrBig{background:#fff;padding:14px;border-radius:12px;line-height:0}
 #qrLink{word-break:break-all;font-size:.8rem;background:var(--desk);padding:6px 8px;border-radius:8px;max-width:100%;text-align:left}
 .stepbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 10px;padding:12px 14px;border-radius:12px;background:var(--mark);font-family:var(--font-display);font-size:1.1rem}
@@ -320,7 +327,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         <span class="val" id="zoomVal">100%</span>
         <button class="btn icon" id="bZoomIn" type="button" aria-label="放大">＋</button>
       </span>
-      <button class="btn" id="bRot" type="button" title="照片拍歪了可以轉向">⟳ 轉向</button>
+      <button class="btn" id="bRot" type="button" title="照片方向不對可以重新調整">⟳ 調整方向</button>
       <button class="btn" id="bRedo" type="button" title="重新辨識這一頁的題目">🔄 重新辨識</button>
       <button class="btn" id="bSel" type="button">✋ 框選朗讀</button>
     </div>
@@ -390,6 +397,24 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
 <input type="file" id="fOpen" accept="application/pdf,image/*" multiple hidden>
 <input type="file" id="fCam" accept="image/*" capture="environment" hidden>
+
+<dialog id="rotDlg">
+  <form method="dialog" class="dlg rotdlg">
+    <h2>確認考卷方向</h2>
+    <p class="note">轉到<b>字是正的</b>（像平常看考卷一樣），再按「開始報讀」。</p>
+    <canvas id="rotPrev"></canvas>
+    <div class="rotbtns">
+      <button type="button" class="btn" id="rotL">↺ 向左轉</button>
+      <button type="button" class="btn" id="rotR">↻ 向右轉</button>
+      <button type="button" class="btn" id="rot180">⇅ 上下顛倒</button>
+    </div>
+    <label class="rotfine"><span class="note">有點歪</span><input type="range" id="rotFine" min="-15" max="15" step="0.5" value="0"><span class="note" id="rotFineVal">0°</span></label>
+    <div class="rotbtns">
+      <button type="button" class="btn" id="rotCancel">取消</button>
+      <button type="button" class="btn primary" id="rotOk">✔ 開始報讀</button>
+    </div>
+  </form>
+</dialog>
 
 <dialog id="qrDlg">
   <form method="dialog" class="dlg qrdlg">
@@ -462,7 +487,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
 <script>
 /* 自動更新：平板開著舊版時，發現網站有新版就自動重新載入一次 */
-const BUILD = '20261109d';
+const BUILD = '20261109e';
 (function(){
   if(!/^https?:/.test(location.protocol)) return;
   async function check(){
@@ -1499,6 +1524,52 @@ function skewAngle(src){
     }
     return best;
   }catch(e){ return 0; }
+}
+/* ---------- 拍照後調整方向 ---------- */
+function turnCanvas(src, quarter, fine){
+  let c = src;
+  for(let i = 0; i < ((quarter % 4) + 4) % 4; i++) c = rotateCanvas(c);
+  if(fine){
+    // 微調：放大畫布，轉的時候角落不會被切掉
+    const r = Math.abs(fine)*Math.PI/180, W = c.width, H = c.height;
+    const nw = Math.ceil(W*Math.cos(r) + H*Math.sin(r)), nh = Math.ceil(W*Math.sin(r) + H*Math.cos(r));
+    const o = document.createElement('canvas'); o.width = nw; o.height = nh;
+    const g = o.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, nw, nh);
+    g.translate(nw/2, nh/2); g.rotate(fine*Math.PI/180); g.drawImage(c, -W/2, -H/2);
+    c = o;
+  }
+  return c;
+}
+// 顯示預覽，讓學生（或老師）把考卷轉正；回傳 {quarter, fine}，按取消回傳 null
+function askOrientation(raw, init){
+  return new Promise(resolve => {
+    const st = {quarter: init ? init.quarter : 0, fine: init ? init.fine : 0};
+    const k = Math.min(1, 900 / Math.max(raw.width, raw.height));
+    const small = document.createElement('canvas'); small.width = Math.round(raw.width*k); small.height = Math.round(raw.height*k);
+    small.getContext('2d').drawImage(raw, 0, 0, small.width, small.height);
+    const draw = () => {
+      const t = turnCanvas(small, st.quarter, st.fine), pv = $('rotPrev');
+      pv.width = t.width; pv.height = t.height; pv.getContext('2d').drawImage(t, 0, 0);
+      $('rotFine').value = st.fine; $('rotFineVal').textContent = (st.fine > 0 ? '+' : '') + st.fine + '°';
+    };
+    const ctrl = new AbortController(), on = (id, ev, fn) => $(id).addEventListener(ev, fn, {signal: ctrl.signal});
+    const done = v => { ctrl.abort(); $('rotDlg').close(); resolve(v); };
+    on('rotL', 'click', () => { st.quarter = (st.quarter + 3) % 4; draw(); });
+    on('rotR', 'click', () => { st.quarter = (st.quarter + 1) % 4; draw(); });
+    on('rot180', 'click', () => { st.quarter = (st.quarter + 2) % 4; draw(); });
+    on('rotFine', 'input', () => { st.fine = +$('rotFine').value; draw(); });
+    on('rotOk', 'click', () => done({quarter: st.quarter, fine: st.fine}));
+    on('rotCancel', 'click', () => done(null));
+    on('rotDlg', 'cancel', e => { e.preventDefault(); done(null); });
+    draw(); busy(false);
+    $('rotDlg').showModal();
+  });
+}
+// 照片 → 依學生調整的方向轉好 → 去背景、光線校正 →（沒有手動微調時）自動轉正
+function preparePhoto(raw, o){
+  const t = turnCanvas(raw, o.quarter, o.fine);
+  const c = flattenLighting(whitenBackground(t));
+  return o.fine ? c : deskewCanvas(c);
 }
 function rotateCanvas(src){
   const c = document.createElement('canvas'); c.width = src.height; c.height = src.width;
@@ -2566,19 +2637,36 @@ async function addImages(files, replace){
   if(replace){ S.remotePath = ''; S.saved = null; }
   busy('正在讀取照片…');
   try{
-    const canvases = [];
-    for(const f of files) canvases.push(deskewCanvas(flattenLighting(whitenBackground(await fileToCanvas(f)))));
+    const pages = [];
+    for(const f of files){
+      const raw = await fileToCanvas(f);
+      const o = await askOrientation(raw);
+      if(!o) continue;                       // 按取消：這張不要
+      busy('正在整理照片…');
+      pages.push({kind:'img', canvas: preparePhoto(raw, o), raw, orient: o, rot:0});
+    }
+    if(!pages.length){ busy(false); return; }
     if(replace){ S.pages = []; S.pdf = null; S.cache.clear(); }
     const start = S.pages.length;
-    canvases.forEach(c => S.pages.push({kind:'img', canvas:c, rot:0}));
+    S.pages.push(...pages);
     await showPage(start);
   }catch(e){ busy(false); toast('照片讀不出來，請換一張再試。'); }
 }
 $('bPrev').addEventListener('click', () => { if(S.cur>0) showPage(S.cur-1); });
 $('bNext').addEventListener('click', () => { if(S.cur<S.pages.length-1) showPage(S.cur+1); });
-$('bRot').addEventListener('click', () => {
+$('bRot').addEventListener('click', async () => {
   const pg = S.pages[S.cur]; if(!pg || pg.kind!=='img') return;
-  pg.canvas = rotateCanvas(pg.canvas); pg.rot = ((pg.rot||0)+90)%360; showPage(S.cur);
+  stopSpeak(); endStep();
+  const raw = pg.raw || pg.canvas;
+  const o = await askOrientation(raw, pg.raw ? pg.orient : null);
+  if(!o) return;
+  busy('正在整理照片…');
+  pg.canvas = pg.raw ? preparePhoto(raw, o) : turnCanvas(raw, o.quarter, o.fine);
+  if(!pg.raw){ pg.raw = raw; }
+  pg.orient = o;
+  [...S.cache.keys()].forEach(k => { if(k.startsWith(S.cur + '|')) S.cache.delete(k); });
+  S.pageBlocks.delete(S.cur);
+  showPage(S.cur);
 });
 $('bPlay').addEventListener('click', () => {
   if(!S.blocks.length){ toast('這一頁還沒有可以唸的文字。'); return; }
