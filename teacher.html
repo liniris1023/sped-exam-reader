@@ -325,7 +325,7 @@ async function refreshList(){
     G.files = (tree.tree||[]).filter(n => n.type==='blob' && /^tests\/.+\.pdf$/i.test(n.path)).map(n => {
       const m = metaBy.get(n.path) || {};
       const parts = n.path.replace(/^tests\//,'').split('/'); const base = parts.pop();
-      return { path:n.path, sha:n.sha, name: m.name || base.replace(/\.pdf$/i,''), subject: m.subject || parts.join('/') || '其他', dir: m.dir || (parts[0]==='國語' ? 'v' : 'h'), added: m.added || 0 };
+      return { path:n.path, sha:n.sha, name: m.name || base.replace(/\.pdf$/i,''), subject: m.subject || parts.join('/') || '其他', dir: m.dir || (parts[0]==='國語' ? 'v' : 'h'), rot: m.rot || 0, added: m.added || 0 };
     });
     renderList();
     // 清單和實際檔案不一致（例如直接在 GitHub 上傳過檔案）就自動更新 list.json
@@ -336,7 +336,7 @@ async function refreshList(){
   }
 }
 async function saveListJson(msg){
-  const data = { updated: new Date().toISOString(), files: G.files.map(({path,name,subject,dir,added}) => ({path,name,subject,dir,added})) };
+  const data = { updated: new Date().toISOString(), files: G.files.map(({path,name,subject,dir,rot,added}) => ({path,name,subject,dir,...(rot ? {rot} : {}),added})) };
   const body = { message: msg || '更新考卷清單', content: textToB64(JSON.stringify(data, null, 1)), branch: G.branch };
   if(G.listSha) body.sha = G.listSha;
   try{
@@ -380,6 +380,16 @@ function renderList(){
       catch(e){ f.dir = old; sel.value = old; toast('儲存失敗：'+e.message); }
       sel.disabled = false;
     });
+    // 方向：PDF 本身是橫躺或倒過來時，轉到字是正的
+    const rsel = document.createElement('select'); rsel.setAttribute('aria-label','考卷方向'); rsel.title = '考卷方向（PDF 橫躺或倒過來時調整）';
+    [[0,'方向：正'],[90,'方向：向右轉 90°'],[270,'方向：向左轉 90°'],[180,'方向：上下顛倒']].forEach(([k,v]) => { const o = document.createElement('option'); o.value = k; o.textContent = v; rsel.appendChild(o); });
+    rsel.value = String(f.rot || 0);
+    rsel.addEventListener('change', async () => {
+      const old = f.rot || 0; f.rot = +rsel.value; rsel.disabled = true;
+      try{ await saveListJson('設定「'+f.name+'」方向'); toast('已設定方向，學生端幾分鐘後生效。之前「編輯報讀」存的內容要在新方向重新檢查一次。', 6000); }
+      catch(e){ f.rot = old; rsel.value = String(old); toast('儲存失敗：'+e.message); }
+      rsel.disabled = false;
+    });
     const qr = mk('QR', '', () => showQr(f));
     const view = document.createElement('a'); view.className = 'btn sm'; view.textContent = '預覽'; view.href = studentUrl(f, false); view.target = '_blank'; view.rel = 'noopener';
     const edit = document.createElement('a'); edit.className = 'btn sm primary'; edit.textContent = '✏️ 編輯報讀'; edit.href = studentUrl(f, false) + '&edit=1'; edit.target = '_blank';
@@ -401,7 +411,7 @@ function renderList(){
         renderList(); toast('已刪除「'+f.name+'」。');
       }catch(e){ toast('刪除失敗：'+e.message); del.disabled = false; del.textContent = '刪除'; del.classList.remove('arm'); }
     });
-    li.append(nm, sel, edit, view, qr, del);
+    li.append(nm, sel, rsel, edit, view, qr, del);
     ul.appendChild(li);
   });
 }
@@ -421,6 +431,7 @@ function studentBase(){ return location.href.replace(/[?#].*$/,'').replace(/teac
 function studentUrl(f, withKey){
   const p = new URLSearchParams();
   p.set('pdf', f.path); p.set('dir', f.dir);
+  if(f.rot) p.set('rot', f.rot);
   const eng = ls.get('erh_engine', null); if(eng) p.set('engine', eng);
   const zy = ls.get('erh_skipZy', null); if(zy !== null) p.set('zy', zy ? '1' : '0');
   const mt = ls.get('erh_mathWords', null); if(mt !== null) p.set('math', mt ? '1' : '0');

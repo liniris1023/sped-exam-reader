@@ -408,7 +408,8 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       <button type="button" class="btn" id="rotR">↻ 向右轉</button>
       <button type="button" class="btn" id="rot180">⇅ 上下顛倒</button>
     </div>
-    <label class="rotfine"><span class="note">有點歪</span><input type="range" id="rotFine" min="-15" max="15" step="0.5" value="0"><span class="note" id="rotFineVal">0°</span></label>
+    <label class="row note" id="rotAllRow" hidden style="gap:8px;justify-content:center"><input type="checkbox" id="rotAll" checked> 整份考卷每一頁都一起轉</label>
+    <label class="rotfine" id="rotFineRow"><span class="note">有點歪</span><input type="range" id="rotFine" min="-15" max="15" step="0.5" value="0"><span class="note" id="rotFineVal">0°</span></label>
     <div class="rotbtns">
       <button type="button" class="btn" id="rotCancel">取消</button>
       <button type="button" class="btn primary" id="rotOk">✔ 開始報讀</button>
@@ -487,7 +488,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
 <script>
 /* 自動更新：平板開著舊版時，發現網站有新版就自動重新載入一次 */
-const BUILD = '20261109e';
+const BUILD = '20261109f';
 (function(){
   if(!/^https?:/.test(location.protocol)) return;
   async function check(){
@@ -540,6 +541,7 @@ const S = {
 (function readParams(){
   const p = new URLSearchParams(location.search);
   if (parseDir(p.get('dir'))) S.dir = p.get('dir');
+  S.docRot = [90, 180, 270].includes(+p.get('rot')) ? +p.get('rot') : 0;
   if (['tess','gemini'].includes(p.get('engine'))) { S.engine = p.get('engine'); store.set('engine', S.engine); }
   if (p.get('model')) { S.model = p.get('model'); store.set('model', S.model); }
   if (p.get('zy')) { S.skipZy = p.get('zy')==='1'; store.set('skipZy', S.skipZy); }
@@ -1242,10 +1244,16 @@ async function loadPdf(data, name){
   try{
     S.pdf = await pdfjsLib.getDocument({data: new Uint8Array(data.slice(0)), ...PDF_OPTS}).promise;
     S.fileName = name || 'PDF 考卷';
-    S.pages = Array.from({length:S.pdf.numPages}, (_,i)=>({kind:'pdf', num:i+1}));
+    S.pages = Array.from({length:S.pdf.numPages}, (_,i)=>({kind:'pdf', num:i+1, rot: S.docRot || 0}));
     S.cache.clear(); S.cur = 0;
     await showPage(0);
   }catch(e){ console.error(e); busy(false); toast('這個 PDF 打不開，請確認檔案沒有加密或損壞。'); }
+}
+// 老師或學生把 PDF 轉向（90／180／270 度）：pdf.js 畫圖和文字座標都跟著轉
+function pdfRotation(page, pg){ return ((page.rotate || 0) + ((pg && pg.rot) || 0)) % 360; }
+function pdfVp(page, pg){
+  const rotation = pdfRotation(page, pg), w = page.getViewport({scale:1, rotation}).width;
+  return page.getViewport({scale: Math.min(3, 1800 / w), rotation});
 }
 function pdfScale(page){ const w = page.getViewport({scale:1}).width; return Math.min(3, 1800 / w); }
 
@@ -1281,7 +1289,7 @@ async function hiddenChars(page){
 }
 async function pdfTextItems(num){
   const page = await S.pdf.getPage(num);
-  const vp = page.getViewport({scale: pdfScale(page)});
+  const vp = pdfVp(page, S.pages.find(q => q.kind === 'pdf' && q.num === num));
   const tc = await page.getTextContent({disableCombineTextItems: true});
   const hid = await hiddenChars(page); let hp = 0;
   // 依順序把文字對到繪圖指令，判斷這段字是不是白色／隱形
@@ -1541,7 +1549,10 @@ function turnCanvas(src, quarter, fine){
   return c;
 }
 // 顯示預覽，讓學生（或老師）把考卷轉正；回傳 {quarter, fine}，按取消回傳 null
-function askOrientation(raw, init){
+function askOrientation(raw, init, opt){
+  opt = opt || {};
+  $('rotFineRow').hidden = !!opt.noFine; $('rotAllRow').hidden = !opt.multi;
+  $('rotOk').textContent = opt.okText || '✔ 開始報讀';
   return new Promise(resolve => {
     const st = {quarter: init ? init.quarter : 0, fine: init ? init.fine : 0};
     const k = Math.min(1, 900 / Math.max(raw.width, raw.height));
@@ -1558,7 +1569,7 @@ function askOrientation(raw, init){
     on('rotR', 'click', () => { st.quarter = (st.quarter + 1) % 4; draw(); });
     on('rot180', 'click', () => { st.quarter = (st.quarter + 2) % 4; draw(); });
     on('rotFine', 'input', () => { st.fine = +$('rotFine').value; draw(); });
-    on('rotOk', 'click', () => done({quarter: st.quarter, fine: st.fine}));
+    on('rotOk', 'click', () => done({quarter: st.quarter, fine: opt.noFine ? 0 : st.fine, all: opt.multi ? $('rotAll').checked : false}));
     on('rotCancel', 'click', () => done(null));
     on('rotDlg', 'cancel', e => { e.preventDefault(); done(null); });
     draw(); busy(false);
@@ -1594,7 +1605,7 @@ var DIR_NAMES = {h:'橫式・整頁', h2:'橫式・左右兩欄', 'h-tb':'橫式
 function dirName(code){ if(DIR_NAMES[code]) return DIR_NAMES[code]; const p = parseDir(code); return p ? ({h:'橫式',v:'直式',auto:'自動'}[p[0]] + '・' + {full:'整頁',tb:'上下兩半',lr:'左右兩欄',auto:'自動版面'}[p[1]]) : ''; }
 function tdir(d){ const p = parseDir(d); return p ? p[0] : 'auto'; }
 function layoutOf(d){ const p = parseDir(d); return p ? p[1] : 'auto'; }
-function cacheKey(i){ return i+'|'+S.dir+'|'+S.engine+(S.pages[i].kind==='img' ? '|'+S.pages[i].rot : ''); }
+function cacheKey(i){ return i+'|'+S.dir+'|'+S.engine+'|'+(S.pages[i].rot || 0); }
 
 async function showPage(i){
   stopSpeak();
@@ -1611,7 +1622,7 @@ async function showPage(i){
   try{
     if(pg.kind === 'pdf'){
       const page = await S.pdf.getPage(pg.num);
-      const vp = page.getViewport({scale: pdfScale(page)});
+      const vp = pdfVp(page, pg);
       cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
       const g = cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height);
       await page.render({canvasContext:g, viewport:vp}).promise;
@@ -1651,10 +1662,11 @@ async function analyze(i, token){
   if(pg.kind === 'pdf'){
     busy('讀取 PDF 文字…');
     let items = await pdfTextItems(pg.num);
-    const spSaved = !S.ignoreSaved.has(i) && S.saved && S.saved.pages && S.saved.pages[pg.num];
+    const savedOk = q => q && ((q.rot || 0) === (pg.rot || 0));
+    const spSaved = !S.ignoreSaved.has(i) && S.saved && S.saved.pages && savedOk(S.saved.pages[pg.num]) && S.saved.pages[pg.num];
     if(items && items.some(it => it.junk) && !spSaved && S.forceEngine !== 'gemini') items = await ocrJunk(items);
     if(items) pg.items = items;
-    const sp = !S.ignoreSaved.has(i) && S.saved && S.saved.pages && S.saved.pages[pg.num];
+    const sp = spSaved;
     if(sp && sp.blocks){
       // 老師儲存過的報讀設定
       const fx = cv.width / (sp.W || cv.width), fy = cv.height / (sp.H || cv.height);
@@ -1864,7 +1876,7 @@ async function saveEdits(){
   const data = S.saved ? JSON.parse(JSON.stringify(S.saved)) : {version:1, pages:{}};
   S.dirty.forEach(i => {
     const bl = S.pageBlocks.get(i); if(!bl) return;
-    data.pages[i + 1] = { W: bl.W, H: bl.H, blocks: bl.blocks.map(b => ({
+    data.pages[i + 1] = { W: bl.W, H: bl.H, rot: (S.pages[i] && S.pages[i].rot) || 0, blocks: bl.blocks.map(b => ({
       x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.w), h: Math.round(b.h), dir: b.dir,
       text: b.text, orig: b.orig, parts: b.parts && b.parts.length ? b.parts.map(q => ({x:Math.round(q.x), y:Math.round(q.y), w:Math.round(q.w), h:Math.round(q.h)})) : undefined, force: b.force || undefined, headOv: b.headOv == null ? undefined : b.headOv, secOv: b.secOv || undefined
     })) };
@@ -1900,7 +1912,7 @@ function updateNav(){
   $('pg').textContent = n ? ('第 '+(S.cur+1)+' / '+n+' 頁') : '－';
   $('bPrev').disabled = !n || S.cur===0;
   $('bNext').disabled = !n || S.cur>=n-1;
-  $('bRot').hidden = !(n && S.pages[S.cur].kind==='img');
+  $('bRot').hidden = !n;
   $('bPlay').disabled = $('bSel').disabled = $('bQPrev').disabled = $('bQNext').disabled = !n || $('viewer').hidden;
   $('bPrev').disabled = $('bPrev').disabled || $('viewer').hidden;
   $('bNext').disabled = $('bNext').disabled || $('viewer').hidden;
@@ -2655,8 +2667,29 @@ async function addImages(files, replace){
 $('bPrev').addEventListener('click', () => { if(S.cur>0) showPage(S.cur-1); });
 $('bNext').addEventListener('click', () => { if(S.cur<S.pages.length-1) showPage(S.cur+1); });
 $('bRot').addEventListener('click', async () => {
-  const pg = S.pages[S.cur]; if(!pg || pg.kind!=='img') return;
+  const pg = S.pages[S.cur]; if(!pg) return;
   stopSpeak(); endStep();
+  if(pg.kind === 'pdf'){
+    // PDF：畫一張「沒轉過」的預覽，讓使用者轉到字是正的
+    const page = await S.pdf.getPage(pg.num), base = {rot: 0};
+    const vp0 = page.getViewport({scale: Math.min(1.2, 900 / page.getViewport({scale:1, rotation: pdfRotation(page, base)}).width), rotation: pdfRotation(page, base)});
+    const c = document.createElement('canvas'); c.width = Math.round(vp0.width); c.height = Math.round(vp0.height);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    await page.render({canvasContext: g, viewport: vp0}).promise;
+    const o = await askOrientation(c, {quarter: (pg.rot || 0) / 90, fine: 0}, {noFine: true, multi: S.pages.length > 1, okText: '✔ 確定'});
+    if(!o) return;
+    const rot = o.quarter * 90;
+    S.pages.forEach((q, k) => {
+      if(q.kind !== 'pdf' || (!o.all && k !== S.cur) || (q.rot || 0) === rot) return;
+      q.rot = rot;
+      [...S.cache.keys()].forEach(key => { if(key.startsWith(k + '|')) S.cache.delete(key); });
+      S.pageBlocks.delete(k);
+    });
+    if(o.all) S.docRot = rot;
+    showPage(S.cur);
+    if(S.edit && S.remotePath && rot) toast('已轉向。要讓學生打開時也是這個方向，請到老師端把這份考卷的「方向」設成相同。', 7000);
+    return;
+  }
   const raw = pg.raw || pg.canvas;
   const o = await askOrientation(raw, pg.raw ? pg.orient : null);
   if(!o) return;
@@ -2764,7 +2797,7 @@ async function fetchRepoList(force){
       const j = await r.json();
       files = (Array.isArray(j) ? j : (j.files||[])).map(f => typeof f==='string'
         ? {path: /^(tests\/|https?:)/.test(f) ? f : 'tests/'+f}
-        : {path: f.path || f.file, name: f.name, dir: f.dir, subject: f.subject});
+        : {path: f.path || f.file, name: f.name, dir: f.dir, rot: f.rot || 0, subject: f.subject});
     }
   }catch(e){}
   if(!files){
@@ -2811,8 +2844,9 @@ async function loadSaved(path){
     if(r.ok) S.saved = await r.json();
   }catch(e){}
 }
-async function openRemote(path, name, dir){
+async function openRemote(path, name, dir, rot){
   if(parseDir(dir)) setDir(dir);
+  S.docRot = [90, 180, 270].includes(+rot) ? +rot : 0;
   busy('正在載入「'+name+'」…');
   try{
     const [r] = await Promise.all([fetch(encodePath(path)), loadSaved(path)]);
@@ -2859,7 +2893,7 @@ async function renderRepo(force){
     const li = document.createElement('li');
     const n = document.createElement('span'); n.className = 'fname'; n.textContent = '📄 '+f.name;
     if(f.dir){ const m = document.createElement('span'); m.className = 'fmeta'; m.textContent = dirName(f.dir); n.appendChild(m); }
-    li.append(n, mkBtn('打開', 'go', () => openRemote(f.path, f.name, f.dir)), mkBtn('📱 QR', '', () => showQrFor(testQr(f.path, f.dir, f.name))));
+    li.append(n, mkBtn('打開', 'go', () => openRemote(f.path, f.name, f.dir, f.rot)), mkBtn('📱 QR', '', () => showQrFor(testQr(f.path, f.dir, f.name, f.rot))));
     ul.appendChild(li);
   });
   const li = document.createElement('li'); li.className = 'grp';
@@ -2974,6 +3008,7 @@ function currentQr(){
   if(onTest && S.remotePath){
     const p = new URLSearchParams();
     p.set('pdf', S.remotePath); p.set('dir', S.dir);
+    if(S.pages[0] && S.pages[0].rot) p.set('rot', S.pages[0].rot);
     if(S.engine === 'gemini') p.set('engine', 'gemini');
     p.set('zy', S.skipZy ? '1' : '0'); p.set('math', S.mathWords ? '1' : '0');
     p.set('ns', S.noSound ? '1' : '0'); p.set('nsh', S.noShape ? '1' : '0'); p.set('nf', S.noFill ? '1' : '0');
@@ -2983,9 +3018,10 @@ function currentQr(){
     note: onTest ? '這份考卷是從這台裝置打開的，不在網站上，所以 QR Code 只會打開網站。要讓學生掃了直接看到這份考卷，請從老師端上傳。'
                  : '學生用平板掃描，就會打開評量報讀小幫手，再從考卷櫃選考卷或拍照。' };
 }
-function testQr(path, dir, name){
+function testQr(path, dir, name, rot){
   const p = new URLSearchParams();
   p.set('pdf', path); p.set('dir', dir || S.dir);
+  if(+rot) p.set('rot', +rot);
   if(S.engine === 'gemini') p.set('engine', 'gemini');
   p.set('zy', S.skipZy ? '1' : '0'); p.set('math', S.mathWords ? '1' : '0');
   p.set('ns', S.noSound ? '1' : '0'); p.set('nsh', S.noShape ? '1' : '0'); p.set('nf', S.noFill ? '1' : '0');
