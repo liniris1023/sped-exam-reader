@@ -95,7 +95,7 @@ kbd{font-family:var(--font-display);background:var(--accent-soft);border-radius:
 /* 列印 QR Code 總表 */
 #printDlg{width:min(720px,96vw)}
 .pqlist{max-height:42vh;overflow:auto;border:1px solid var(--line,#ddd);border-radius:10px;padding:8px 12px;background:#fff}
-.pqlist h4{margin:10px 0 4px;font-size:1rem}
+.pqlist h4{margin:10px 0 4px;font-size:1.05rem;display:flex;gap:6px;align-items:center}
 .pqlist label{display:flex;gap:8px;align-items:center;padding:4px 0;font-size:1.05rem}
 .pqopts{display:grid;gap:6px}
 #printSheet{display:none}
@@ -110,6 +110,7 @@ kbd{font-family:var(--font-display);background:var(--accent-soft);border-radius:
   #printSheet .pgrid{display:grid;gap:5mm}
   #printSheet .pgrid.big{grid-template-columns:repeat(2,1fr)}
   #printSheet .pgrid.small{grid-template-columns:repeat(3,1fr)}
+  #printSheet h2.pbreak{break-before:page}
   #printSheet .pcard{border:1pt dashed #888;border-radius:3mm;padding:4mm;text-align:center;break-inside:avoid}
   #printSheet .pcard .qr img,#printSheet .pcard .qr canvas{margin:0 auto;display:block}
   #printSheet .pcard .pname{font-size:13pt;font-weight:700;margin-top:3mm;line-height:1.3}
@@ -425,13 +426,14 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 <dialog id="printDlg">
   <form method="dialog" class="dlg">
     <h2>🖨 列印考卷 QR Code 總表</h2>
-    <p class="note">勾選要印的考卷，會依科目排好，每份考卷一個 QR Code。學生用平板掃描，就會直接打開那份考卷。</p>
+    <p class="note">勾選要印的考卷，會依<b>年段</b>分區（同年段再依科目排），每份考卷一個 QR Code。學生用平板掃描，就會直接打開那份考卷。</p>
     <div class="row" style="gap:8px"><button type="button" class="btn sm" id="pqAll">全選</button><button type="button" class="btn sm" id="pqNone">全不選</button><span class="note" id="pqCnt"></span></div>
     <div class="pqlist" id="pqList">讀取中…</div>
     <div class="pqopts">
       <label class="row note" style="gap:8px"><span>大小：</span>
         <label style="display:inline-flex;gap:4px"><input type="radio" name="pqSize" value="big" checked> 大（一頁 6 個）</label>
         <label style="display:inline-flex;gap:4px"><input type="radio" name="pqSize" value="small"> 小（一頁 12 個）</label></label>
+      <label class="row note" style="gap:8px"><input type="checkbox" id="pqBreak" checked> 每個年段從新的一頁開始（方便分給各年段）</label>
       <label class="row note" style="gap:8px"><input type="checkbox" id="pqSite" checked> 最前面加上「評量報讀小幫手」網站 QR Code</label>
       <label class="row note" style="gap:8px" id="pqKeyRow" hidden><input type="checkbox" id="pqKey"> QR Code 附上 AI 金鑰（拍照用 AI 辨識；這張紙不要公開張貼）</label>
       <label class="row note" style="gap:8px">標題：<input type="text" id="pqTitle" value="評量報讀小幫手｜考卷 QR Code" style="flex:1"></label>
@@ -534,7 +536,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
 <script>
 /* 自動更新：平板開著舊版時，發現網站有新版就自動重新載入一次 */
-const BUILD = '20261110a';
+const BUILD = '20261110b';
 (function(){
   if(!/^https?:/.test(location.protocol)) return;
   async function check(){
@@ -2843,7 +2845,7 @@ async function fetchRepoList(force){
       const j = await r.json();
       files = (Array.isArray(j) ? j : (j.files||[])).map(f => typeof f==='string'
         ? {path: /^(tests\/|https?:)/.test(f) ? f : 'tests/'+f}
-        : {path: f.path || f.file, name: f.name, dir: f.dir, rot: f.rot || 0, subject: f.subject});
+        : {path: f.path || f.file, name: f.name, dir: f.dir, rot: f.rot || 0, subject: f.subject, grade: f.grade || 0});
     }
   }catch(e){}
   if(!files){
@@ -3074,6 +3076,20 @@ function testQr(path, dir, name, rot){
   return { url: siteBase() + '?' + p.toString(), title: name || '考卷', note: '學生用平板掃描，就會直接打開這份考卷。' };
 }
 /* ---------- 列印 QR Code 總表 ---------- */
+// 年段：老師端有設定就用；沒有就從考卷名稱、路徑猜（四上、小四、4年級、四年級…）
+const GRADE_CN = ['', '一', '二', '三', '四', '五', '六'];
+function gradeOf(f){
+  if(f.grade >= 1 && f.grade <= 6) return +f.grade;
+  const s = (f.name || '') + ' ' + (f.path || '');
+  let m = s.match(/([一二三四五六])\s*[上下]/) || s.match(/小\s*([一二三四五六1-6])/) || s.match(/([一二三四五六1-6])\s*年/);
+  if(!m) return 0;
+  const v = m[1]; return /[1-6]/.test(v) ? +v : GRADE_CN.indexOf(v);
+}
+function gradeName(g){ return g ? GRADE_CN[g] + '年級' : '其他'; }
+function pqSorted(files){
+  return files.map(f => ({...f, g: gradeOf(f)})).sort((a, b) =>
+    (a.g || 9) - (b.g || 9) || (a.group || '').localeCompare(b.group || '', 'zh-Hant') || a.name.localeCompare(b.name, 'zh-Hant', {numeric: true}));
+}
 let pqFiles = [];
 async function openPrintQr(){
   $('pqList').textContent = '讀取中…';
@@ -3081,19 +3097,25 @@ async function openPrintQr(){
   $('printDlg').showModal();
   try{ pqFiles = await fetchRepoList(true); }
   catch(e){ try{ pqFiles = await fetchRepoList(false); }catch(e2){ pqFiles = []; } }
+  pqFiles = pqSorted(pqFiles);
   const box = $('pqList'); box.innerHTML = '';
   if(!pqFiles.length){ box.textContent = '網站上還沒有考卷。請老師先在老師端上傳。'; pqCount(); return; }
   let cur = null;
   pqFiles.forEach((f, i) => {
-    if(f.group !== cur){ cur = f.group; const h4 = document.createElement('h4'); h4.textContent = '📁 ' + (cur || '其他'); box.appendChild(h4); }
+    if(f.g !== cur){
+      cur = f.g; const h4 = document.createElement('h4');
+      const all = document.createElement('input'); all.type = 'checkbox'; all.checked = true; all.title = '整個年段全選／全不選';
+      all.addEventListener('change', () => { box.querySelectorAll('input[data-g="' + f.g + '"]').forEach(cb => cb.checked = all.checked); pqCount(); });
+      h4.append(all, ' 🎒 ' + gradeName(cur)); box.appendChild(h4);
+    }
     const l = document.createElement('label');
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true; cb.dataset.i = i; cb.addEventListener('change', pqCount);
-    l.append(cb, document.createTextNode(f.name + (f.dir ? '（' + dirName(f.dir) + '）' : '')));
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true; cb.dataset.i = i; cb.dataset.g = f.g; cb.addEventListener('change', pqCount);
+    l.append(cb, document.createTextNode((f.group ? '【' + f.group + '】' : '') + f.name));
     box.appendChild(l);
   });
   pqCount();
 }
-function pqChecked(){ return [...$('pqList').querySelectorAll('input[type=checkbox]:checked')].map(cb => pqFiles[+cb.dataset.i]); }
+function pqChecked(){ return [...$('pqList').querySelectorAll('input[data-i]:checked')].map(cb => pqFiles[+cb.dataset.i]); }
 function pqCount(){ $('pqCnt').textContent = '已選 ' + pqChecked().length + ' 份'; }
 function addKey(url){ return $('pqKey').checked && S.key ? url + (url.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(S.key) : url; }
 async function doPrintQr(){
@@ -3119,9 +3141,16 @@ async function doPrintQr(){
     const g = grid(); g.appendChild(card(addKey(siteBase()), '評量報讀小幫手', '打開後從考卷櫃選考卷，或直接拍照'));
     const h2 = document.createElement('h2'); h2.textContent = '網站'; sheet.append(h2, g);
   }
-  let cur = null, g = null;
+  // 依年段分區；同一年段裡依科目排
+  let cur = null, g = null, first = true;
   list.forEach(f => {
-    if(f.group !== cur){ cur = f.group; const h2 = document.createElement('h2'); h2.textContent = cur || '其他'; g = grid(); sheet.append(h2, g); }
+    if(f.g !== cur){
+      cur = f.g;
+      const h2 = document.createElement('h2'); h2.textContent = '🎒 ' + gradeName(cur);
+      if(!first && $('pqBreak').checked) h2.classList.add('pbreak');
+      first = false;
+      g = grid(); sheet.append(h2, g);
+    }
     g.appendChild(card(addKey(testQr(f.path, f.dir, f.name, f.rot).url), f.name, (f.group ? f.group + '・' : '') + (f.dir ? dirName(f.dir) : '')));
   });
   if($('pqKey').checked && S.key){ const k = document.createElement('p'); k.className = 'pkey'; k.textContent = '※ 這張 QR Code 附有 AI 金鑰，只給自己班上的學生使用，請不要公開張貼。'; sheet.appendChild(k); }
