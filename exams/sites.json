@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-09T04:20:00.000Z",
+ "updated": "2026-11-10T23:52:02.000Z",
  "sites": [
   {
    "id": "guoyu6-midterm",
@@ -117,6 +117,19 @@
    "test": "",
    "note": "只報讀題目，不作答",
    "added": 1793900000005
+  },
+  {
+   "id": "math5-midterm",
+   "title": "五上數學期中評量報讀",
+   "year": 115,
+   "grade": 5,
+   "term": "上",
+   "subject": "數學",
+   "type": "期中考",
+   "url": "math5-midterm/",
+   "test": "math5-midterm-test/",
+   "note": "",
+   "added": 1794354722889
   }
  ],
  "ignore": [
