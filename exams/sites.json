@@ -93,6 +93,19 @@
    "added": 1794323056580
   },
   {
+   "id": "sci3-midterm",
+   "title": "三上自然期中評量報讀",
+   "year": 115,
+   "grade": 3,
+   "term": "上",
+   "subject": "自然",
+   "type": "期中考",
+   "url": "sci3-midterm/",
+   "test": "sci3-midterm-test/",
+   "note": "",
+   "added": 1794324588325
+  },
+  {
    "id": "guoyu5-midterm",
    "title": "五上國語期中評量報讀（高組第二頁）",
    "year": 115,
