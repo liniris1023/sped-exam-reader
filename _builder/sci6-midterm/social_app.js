@@ -248,35 +248,33 @@ const stuText=it=>valText(it,st.ans[it.id]);
 const keyText=it=>valText(it,it.a);
 function score(it){ if(!isDone(it))return 0; const s=SECS[it.si];
   if(it.t==="check"){ const v=ansStr(st.ans[it.id]); let n=0; for(let k=0;k<it.o.length;k++) if(v.includes(k)===it.a.includes(k)) n++; return n*s.per; }
-  if(it.t==="text"){ const v=String(st.ans[it.id]).replace(/[\s（）()]/g,""); return (it.acc||[it.a]).includes(v)?s.per:0; }
+  if(it.t==="text"){ const v=String(st.ans[it.id]).replace(/[\s（）()、，,／/。]/g,""); return (it.acc||[it.a]).includes(v)?s.per:0; }
   return String(st.ans[it.id])===String(it.a)?s.per:0; }
 const maxOf=it=>it.t==="check"?it.o.length*SECS[it.si].per:SECS[it.si].per;
 function fmt(t){ if(!t)return "—"; const d=new Date(t), p=x=>String(x).padStart(2,"0"); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function shortAns(it,v){ if(v==null||v==="")return null; const s=SECS[it.si];
+  if(it.t==="tf") return SECS[it.si].sym?["✓","✗"][v]:["◯","✕"][v]; if(it.t==="choice") return it.o.length<=2?it.o[v]:CIR[v];
+  if(it.t==="text") return String(v); if(it.t==="match"&&it.multi) return mTxt(it,v);
+  if(it.t==="match"){ const b=s.groups[it.g].bank[v]; return /^[0-9]$/.test(b[0])?b[0]+" "+b[1]:b[0]; }
+  return ansStr(v)?ansStr(v).split("").map(d=>CIR[+d]).join("、"):null; }
 function sheetBlocks(){
   const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):null;
-  const B=[];
-  B.push(`<div><div><h2>115 學年度第一學期 期中學業評量　六年級自然科</h2><p class="sub">作答紀錄（報讀版・學生平板作答）</p></div>
-    <div class="who"><span>六年 <b>　</b> 班</span><span>姓名 <b>　　　　　</b></span></div>
-    <div class="who" style="font-size:12.5px;font-weight:500"><span>交卷時間：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span><span>已作答：${answered()} / ${ITEMS.length} 題</span></div></div>`);
-  let auto=0;
-  const rows=SECS.map(s=>{ const p=s.items.reduce((t,it)=>t+score(it),0); auto+=p;
-    const n=s.items.some(it=>it.t==="check")?null:s.items.filter(it=>score(it)>0).length;
-    return `<tr><td>${s.no}、${M(s.zh)}</td><td class="c">${s.pct}</td><td class="c">${n==null?"":`對 ${n} / ${s.items.length} 題　`}<b>${p}</b> 分</td><td class="c">______ 分</td></tr>`; }).join("");
-  B.push(`<div><h3>成績</h3><table><tr><th>大題</th><th style="width:60px">配分</th><th>電腦批改</th><th style="width:120px">老師確認得分</th></tr>${rows}
-    <tr class="tot"><td>合計</td><td class="c">100</td><td class="c">電腦批改 <b>${auto}</b> / 100 分</td><td class="c">總分 ______</td></tr></table>
-    <p class="ctx" style="margin:6px 0 0">電腦批改依參考答案計分，請老師對照學校答案卷確認。</p></div>`);
+  const B=[]; let auto=0; SECS.forEach(s=>s.items.forEach(it=>auto+=score(it)));
+  const RED="#D11A1A";
+  B.push(`<div><h2>115 學年度第一學期 期中學業評量　六年級自然科　作答結果</h2>
+    <div class="who" style="margin-top:8px"><span>六年 ＿＿ 班</span><span>交卷：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span></div>
+    <div style="display:flex;justify-content:center;align-items:baseline;gap:10px;margin-top:10px"><span style="font-size:18px;font-weight:900">分數</span><span style="font-size:46px;font-weight:900;line-height:1">${auto}</span><span style="font-size:18px;font-weight:700">/ 100</span></div>
+    <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;font-size:14px;font-weight:700;margin-top:6px">${SECS.map(s=>`<span>${s.no}、${s.zh} ${s.items.reduce((t,it)=>t+score(it),0)}/${s.pct}</span>`).join("")}</div>
+    <p style="margin:6px 0 0;text-align:center;font-size:12.5px">黑字＝答對　<b style="color:${RED}">紅字＝答錯（→後面是正確答案）</b>　打✓✗題每格分開計分</p></div>`);
   SECS.forEach(s=>{
-    const head=`<tr><th style="width:56px">題號</th><th>題目／學生作答</th><th style="width:150px">參考答案</th><th style="width:60px">批改</th></tr>`;
-    let lastG=-1;
-    const body=s.items.map(it=>{ const t=stuText(it); let pre="";
-      if(it.t==="match"&&it.g!==lastG){ lastG=it.g; const g=s.groups[it.g];
-        pre=`<tr><td colspan="4" class="ctx" style="background:#F6F7F9"><b>${esc(g.title)}</b>　${M(g.ctx)}<br>代號：${g.bank.map(b=>b[0]+" "+esc(b[1])).join("、")}</td></tr>`; }
-      const ansCell = t==null ? `<span class="no">（未作答）</span>` : `<span style="color:#C2410C;font-weight:900">學生作答：</span><b>${esc(t)}</b>`;
-      if(it.g!=null&&s.groups&&it.t!=="match"&&it.gj===0){ const g=s.groups[it.g]; pre+=`<tr><td colspan="4" class="ctx" style="background:#F6F7F9"><b>${esc(g.title)}</b>　${g.readEach===false?"（文章略）":M(g.ctx)}</td></tr>`; }
-      const ctx = it.t==="check" ? M(it.stem)+"<br>"+it.o.map((o,k)=>CIR[k]+esc(o)).join("<br>") : M(it.stem);
-      const mark = it.t==="check" ? `<b>${score(it)}</b> / ${maxOf(it)}` : (score(it)>0?'<span class="ok">○</span>':'<span class="no">✕</span>');
-      return pre+`<tr><td class="c"><b>${esc(it.lab)}</b></td><td><div class="ctx">${ctx}</div>${ansCell}</td><td>${esc(keyText(it))}</td><td class="c">${mark}</td></tr>`; }).join("");
-    B.push(`<div><h3>${s.no}、${M(s.zh)}（${s.perNote||"每題 "+s.per+" 分"}）</h3><table>${head}${body}</table></div>`);
+    const cells=s.items.map(it=>{ const v=shortAns(it,st.ans[it.id]), got=score(it), full=got===maxOf(it);
+      const col=full?"#111":RED, bd=full?"#BFC5CC":RED, bg=full?"#FFF":"#FDECEC";
+      const key=full?"":`<span style="font-size:14px;font-weight:700;white-space:nowrap">→正確 ${esc(shortAns(it,it.a))}</span>`;
+      const pts=it.t==="check"?`<span style="font-size:12px;font-weight:700">${got}/${maxOf(it)}分</span>`:"";
+      const w=it.t==="check"?"width:100%":"min-width:118px", big="19px";
+      return `<div style="${w};box-sizing:border-box;border:2px solid ${bd};background:${bg};color:${col};border-radius:6px;padding:4px 8px;display:flex;align-items:center;gap:8px;font-weight:900">
+        <span style="font-size:13px;min-width:34px">${esc(it.lab)}</span><span style="font-size:${v==null?"17px":big};white-space:nowrap">${v==null?"未答":esc(v)}</span>${key}${pts}</div>`; }).join("");
+    B.push(`<div><h3>${s.no}、${s.zh}（${s.perNote||"每題 "+s.per+" 分"}）</h3><div style="display:flex;flex-wrap:wrap;gap:6px">${cells}</div></div>`);
   });
   return B;
 }
