@@ -124,6 +124,7 @@ def build():
         os_ = os_ or o
         s["items"].append({"t": "choice", "lab": f"2-({j+1})", "g": 1, "stem": t, "stemSay": Z(f"第2題，第{j+1}小題。{sy}"),
                            "o": o, "optSay": [Z(f"{k+1}，{os_[k]}") for k in range(4)], "a": a})
+    for g in s["groups"]: g["readFirst"] = True
     secs.append(s)
     # 四、勾選題
     s = {"id": "s4", "no": "四", "zh": "勾選題", "type": "check", "pct": 24, "per": 2, "perNote": "每格 2 分",

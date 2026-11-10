@@ -159,7 +159,7 @@ function renderQ(keepScroll){
   // wire
   $("secSpk").onclick=()=>speak([{segs:s.introSay}]);
   const readStem=(auto)=>{ const parts=[{segs:it.stemSay,el:$("stem")}];
-    if(G&&(G.readEach!==false||(auto&&it.gj===0))) parts.unshift({segs:G.ctxSay,el:$("ctx")});
+    if(G&&(G.readFirst?(auto&&it.gj===0):(G.readEach!==false||(auto&&it.gj===0)))) parts.unshift({segs:G.ctxSay,el:$("ctx")});
     if(it.t==="match"){ const bs=[...document.querySelectorAll("[data-m]")]; G.bankSay.forEach((seg,k)=>parts.push({segs:[seg],el:bs[k]})); }
     if(it.optSay){ const bs=[...document.querySelectorAll("[data-k],[data-ck]")]; it.optSay.forEach((seg,k)=>parts.push({segs:seg,el:bs[k]})); }
     speak(parts); };
