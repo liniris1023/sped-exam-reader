@@ -88,7 +88,7 @@ rep('<button class="prev" id="prevBtn" type="button">← 上一題</button>', '<
 rep("</style>\n<div class=\"wrap\">", ".bar .wrap{grid-template-columns:1fr 1.15fr 1fr}\n</style>\n<div class=\"wrap\">")
 rep('點題號就能回到寫過的題目。', '點題號就能跳到那一題（測試版）。')
 rep('say1("考卷目錄。點題號，就能回到寫過的題目。");', 'say1("考卷目錄。點題號，就能跳到那一題。");')
-rep('const fname="六上國語期中評量.pdf";', 'const fname="六上國語期中評量_測試版.pdf";')
+rep('const PDF_BASE="六上國語期中評量";', 'const PDF_BASE="六上國語期中評量_測試版";')
 rep("applySettings();\nif(!checkHash())", """$("tFill").onclick=()=>{ ITEMS.forEach(it=>{ const r=n=>Math.floor(Math.random()*n);
   if(it.t==="choice")st.ans[it.id]=r(it.o.length);
   else if(it.t==="paper")st.ans[it.id]=1;

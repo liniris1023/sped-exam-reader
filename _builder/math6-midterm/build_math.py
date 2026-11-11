@@ -77,7 +77,7 @@ rep("</style>\n<div class=\"wrap\">", ".testbar{margin-top:.6rem;border:3px dash
 rep('  <main id="main"></main>', '<div class="testbar" role="note"><b>測試版</b>　可以自由跳題，不用每題都寫；作答不會影響學生的正式版。\n  <span class="row" style="gap:.4rem"><button type="button" class="tool" id="tFill">一鍵隨機填答</button><button type="button" class="tool" id="tSubmit">直接交卷看 PDF</button><button type="button" class="tool" id="tClear">清除全部答案</button></span></div>\n  <main id="main"></main>')
 rep('const KEY="math6-midterm-1151-pub";', 'const KEY="math6-midterm-1151-pub-test";')
 rep('sped-exam-reader/math6-midterm/";', 'sped-exam-reader/math6-midterm-test/";')
-rep('const fname="六上數學期中評量.pdf";', 'const fname="六上數學期中評量_測試版.pdf";')
+rep('const PDF_BASE="六上數學期中評量";', 'const PDF_BASE="六上數學期中評量_測試版";')
 rep("applySettings();\nif(!checkHash())", """$("tFill").onclick=()=>{ ITEMS.forEach(it=>{ const r=n=>Math.floor(Math.random()*n);
   if(it.t==="choice")st.ans[it.id]=r(it.o.length);
   else if(it.t==="paper")st.ans[it.id]=1;

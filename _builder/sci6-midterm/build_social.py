@@ -80,7 +80,7 @@ rep("function reach(){ const n", "function reach(){ return ITEMS.length-1; const
 rep("  if(!isDone(it)){ say1(", "  if(false){ say1(")
 rep('${miss.length?" disabled":""}>${miss.length?"寫完才能交卷":"交卷"}', '>${miss.length?"還是要交卷（測試）":"交卷"}')
 rep('$("submitBtn").onclick=()=>{ if(ITEMS.some(it=>!isDone(it)))return; st.t1', '$("submitBtn").onclick=()=>{ st.t1')
-rep('const fname="六上自然期中評量.pdf";', 'const fname="六上自然期中評量_測試版.pdf";')
+rep('const PDF_BASE="六上自然期中評量";', 'const PDF_BASE="六上自然期中評量_測試版";')
 rep("applySettings();\nif(!checkHash())", """$("tFill").onclick=()=>{ ITEMS.forEach(it=>{ const r=n=>Math.floor(Math.random()*n);
   if(it.t==="tf")st.ans[it.id]=r(2); else if(it.t==="choice")st.ans[it.id]=r(it.o.length);
   else if(it.t==="text")st.ans[it.id]=["細胞","器官","組織","個體"][r(4)];

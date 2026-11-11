@@ -631,24 +631,23 @@ function renderCheck(){
   $("backBtn").onclick=()=>go(st.i); $("tocBtn2").onclick=()=>show("toc");
   $("submitBtn").onclick=()=>{ st.t1=Date.now(); save(); show("done"); };
 }
-let pdfBlob=null, pages=[];
 function renderDone(){
   $("main").innerHTML=`<section class="screen">
     <div class="done-mark" aria-hidden="true">✓</div>
     <h1>${TEACHER?"老師批改：作答紀錄":"交卷完成"}</h1>
     <p style="margin:0;font-weight:700">六年丙班　已答 ${answered()} / ${ITEMS.length} 題　交卷 ${fmt(st.t1)}</p>
-    <div class="row"><button class="big" id="pdfBtn" type="button" disabled>正在製作作答 PDF…</button>
+    <div class="row"><button class="big" id="pdf_brief" type="button" disabled>簡要版 PDF 製作中…</button><button class="big" id="pdf_full" type="button" disabled>精細版 PDF 製作中…</button>
       ${TEACHER?'<button class="ghost" id="leaveBtn" type="button">離開批改畫面</button>':'<button class="ghost" id="reviewBtn" type="button">回去修改答案</button>'}</div>
     <p class="status" id="pdfStatus" role="status"></p>
     ${TEACHER?"":`<div class="qrbox"><div id="resQR"></div><p>老師用手機掃描，就能看到作答並下載 PDF</p></div>`}
-    <details class="nav"${TEACHER?" open":""}><summary>看作答紀錄（PDF 內容）</summary><div class="sheetprev" id="sheetPrev"></div></details>
+    <p class="pdfnote" style="margin:0;font-size:.95rem;line-height:1.6"><b>簡要版</b>：分數＋每題對錯一覽，答錯的題目標紅色並附參考答案（約 1–2 頁）。<br><b>精細版</b>：每一題的題目、學生作答、參考答案與批改，適合存檔或檢討。</p>
+    <details class="nav"${TEACHER?" open":""}><summary>看簡要版（分數＋對錯一覽）</summary><div class="sheetprev" id="prev_brief"></div></details>
+    <details class="nav"><summary>看精細版（每題題目與作答）</summary><div class="sheetprev" id="prev_full"></div></details>
   </section>`;
   if(!TEACHER){ say1("已經交卷，請把作答紀錄交給老師。"); drawQR($("resQR"),SITE_URL+"#"+encodeRes(),260);
     $("reviewBtn").onclick=()=>{ st.t1=null; save(); go(st.i); }; }
   else $("leaveBtn").onclick=()=>{ try{history.replaceState(null,"",location.pathname+location.search);}catch(e){} location.hash=""; leaveTeacher(); };
-  buildPDF().then(ok=>{ const b=$("pdfBtn"); if(!b)return;
-    if(ok){ b.disabled=false; b.textContent="下載作答 PDF 給老師"; b.onclick=downloadPDF; }
-    else { b.textContent="PDF 製作失敗"; $("pdfStatus").className="status bad"; $("pdfStatus").textContent="PDF 沒有做出來。請老師打開下方「看作答紀錄」直接批改，或重新整理頁面再試一次。"; renderSheetFallback(); } });
+  makePDFs();
 }
 
 /* ---------- answer sheet (PDF) ---------- */
@@ -708,50 +707,108 @@ function sheetBlocks(){
   });
   return B;
 }
-function layoutPages(){
-  const host=$("report"); host.innerHTML=""; const blocks=sheetBlocks(); const out=[];
+const BR={title:"115 學年度第一學期 期中學業評量　六年級數學科", cls:"六年丙班", note:"",
+  manual:s=>(s.type==="paper"||s.type==="rec")?s.type:null,
+  score:it=>score(it), max:it=>maxOf(it), known:it=>it.a!=null&&it.a!=="",
+  short:(it,v)=>{ if(v==null||v==="")return null; const s=SECS[it.si];
+    if(it.t==="tf") return esc((typeof symOf==="function"?symOf(it):TF)[v]);
+    if(it.t==="choice") return esc(it.o.length<=2?it.o[v]:CIR[v]);
+    if(it.t==="text"||it.t==="fill") return M(typeof showVal==="function"?showVal(it,v):String(v));
+    if(it.t==="match"&&it.multi) return esc(mTxt(it,v));
+    if(it.t==="match"){ const b=s.groups[it.g].bank[v]; return esc(/^[0-9]$/.test(b[0])?b[0]+" "+b[1]:b[0]); }
+    if(it.t==="check") return esc(ansStr(v)?ansStr(v).split("").map(d=>CIR[+d]).join("、"):"");
+    return esc(String(v)); }};
+const PDF_BASE="六上數學期中評量";
+/* ---------- 老師版：簡要版（分數＋對錯一覽）／精細版（每題題目、作答、參考答案） ---------- */
+const _no=s=>typeof NO==="function"?NO(s):s.no+"、";
+const PDFMODES={brief:"簡要版",full:"精細版"};
+function briefBlocks(){
+  const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):null;
+  const RED="#D11A1A"; let auto=0, autoMax=0;
+  SECS.forEach(s=>{ if(BR.manual(s))return; autoMax+=s.pct; s.items.forEach(it=>auto+=BR.score(it)); });
+  const secScore=s=>{ const m=BR.manual(s); if(m==="paper")return "紙本＿＿/"+s.pct; if(m==="rec")return "錄音＿＿/"+s.pct; if(m==="listen")return "聽力＿＿/"+s.pct;
+    return s.items.reduce((t,it)=>t+BR.score(it),0)+"/"+s.pct; };
+  const B=[];
+  B.push(`<div><h2>${BR.title}　作答結果（簡要版）</h2>
+    <div class="who" style="margin-top:8px"><span>${BR.cls}</span><span>交卷：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span><span>已作答：${answered()} / ${ITEMS.length} 題</span></div>
+    <div style="display:flex;justify-content:center;align-items:baseline;gap:10px;margin-top:10px"><span style="font-size:18px;font-weight:900">${autoMax<100?"電腦批改":"分數"}</span><span style="font-size:46px;font-weight:900;line-height:1">${auto}</span><span style="font-size:18px;font-weight:700">/ ${autoMax}</span>${autoMax<100?`<span style="font-size:16px;font-weight:700;margin-left:14px">＋老師批改 ＿＿ / ${100-autoMax}　＝ 總分 ＿＿＿</span>`:""}</div>
+    <div style="display:flex;justify-content:center;gap:6px 16px;flex-wrap:wrap;font-size:14px;font-weight:700;margin-top:6px">${SECS.map(s=>`<span>${_no(s)}${s.zh} ${secScore(s)}</span>`).join("")}</div>
+    <p style="margin:6px 0 0;text-align:center;font-size:12.5px">黑字＝答對　<b style="color:${RED}">紅字＝答錯（→後面是參考答案）</b>　灰框＝請老師批改${BR.note?"　"+BR.note:""}</p></div>`);
+  SECS.forEach(s=>{
+    const m=BR.manual(s); const head=`<h3>${_no(s)}${s.zh}（${s.perNote||(s.per?"每題 "+s.per+" 分":s.pct+" 分")}）</h3>`;
+    if(m==="paper"){
+      B.push(`<div>${head}<p style="margin:0;font-size:15px;font-weight:700;display:flex;flex-wrap:wrap;gap:2px 12px"><span>寫在紙上，請老師批改紙本。</span>${s.items.map(it=>`<span style="white-space:nowrap">${esc(it.lab)} ${isDone(it)?"✓":"（未按完成）"}</span>`).join("")}</p></div>`); return; }
+    if(m==="rec"){
+      B.push(`<div>${head}<table>${s.items.map(it=>{ const t=st.ans[it.id];
+        return `<tr><td class="c" style="width:56px"><b>${esc(it.lab)}</b></td><td>${t?`<b style="font-size:15px">${esc(t)}</b>`:'<span class="no">（未作答）</span>'}</td><td class="c" style="width:80px;color:#999">___ / ${it.pts||""}</td></tr>`; }).join("")}</table>
+        <p style="margin:4px 0 0;font-size:12px">口說文字由電腦語音辨識產生，請依學生原意批改。</p></div>`); return; }
+    const cells=s.items.map(it=>{ const v=BR.short(it,st.ans[it.id]);
+      if(m==="listen"||!BR.known(it)) return `<div style="min-width:118px;box-sizing:border-box;border:2px dashed #9AA3AC;background:#F4F5F7;color:#111;border-radius:6px;padding:4px 8px;display:flex;align-items:center;gap:8px;font-weight:900"><span style="font-size:13px;min-width:34px">${esc(it.lab)}</span><span style="font-size:19px;white-space:nowrap">${v==null?"未答":v}</span><span style="font-size:13px;color:#777">○ ✕</span></div>`;
+      const got=BR.score(it), full=got===BR.max(it);
+      const col=full?"#111":RED, bd=full?"#BFC5CC":RED, bg=full?"#FFF":"#FDECEC";
+      const key=full?"":`<span style="font-size:14px;font-weight:700;white-space:nowrap">→${BR.short(it,it.a)}</span>`;
+      const pts=it.t==="check"?`<span style="font-size:12px;font-weight:700">${got}/${BR.max(it)}分</span>`:"";
+      const w=it.t==="check"?"width:100%":"min-width:118px";
+      return `<div style="${w};box-sizing:border-box;border:2px solid ${bd};background:${bg};color:${col};border-radius:6px;padding:4px 8px;display:flex;align-items:center;gap:8px;font-weight:900">
+        <span style="font-size:13px;min-width:34px">${esc(it.lab)}</span><span style="font-size:${v==null?"17px":"19px"};white-space:nowrap">${v==null?"未答":v}</span>${key}${pts}</div>`; }).join("");
+    B.push(`<div>${head}${m==="listen"?'<p style="margin:0 0 4px;font-size:12.5px">聽力題：學生在平板上的作答，請老師依聽力題本對答案。</p>':""}<div style="display:flex;flex-wrap:wrap;gap:6px">${cells}</div></div>`);
+  });
+  return B;
+}
+function layoutPages(mode){
+  const host=$("report"); host.innerHTML=""; const blocks=(mode==="brief"?briefBlocks:sheetBlocks)(); const out=[];
   let pg=null; const newPage=()=>{ pg=document.createElement("div"); pg.className="pg"; host.appendChild(pg); out.push(pg); };
   newPage();
-  blocks.forEach(html=>{ const d=document.createElement("div"); d.innerHTML=html; const blk=d.firstElementChild;
-    pg.appendChild(blk);
+  const place=blk=>{ pg.appendChild(blk);
     if(pg.scrollHeight>1123 && pg.children.length>1){ pg.removeChild(blk);
-      const tb=blk.querySelector("table");
+      const tb=blk.querySelector&&blk.querySelector("table");
       if(tb&&tb.rows.length>3){
         const h3=blk.querySelector("h3"), rows=[...tb.rows], hd=rows.shift();
         let cur=null; const start=(first)=>{ const b=document.createElement("div"); if(first&&h3)b.appendChild(h3.cloneNode(true)); const t=document.createElement("table"); t.appendChild(hd.cloneNode(true)); b.appendChild(t); pg.appendChild(b); cur=t; };
         start(true);
         rows.forEach(r=>{ cur.appendChild(r); if(pg.scrollHeight>1123&&cur.rows.length>2){ cur.removeChild(r); newPage(); start(false); cur.appendChild(r);} });
-      } else { newPage(); pg.appendChild(blk); } } });
-  out.forEach((p,i)=>{ const f=document.createElement("div"); f.className="foot"; f.textContent=`第 ${i+1} / ${out.length} 頁`; p.appendChild(f); });
+      } else { newPage(); pg.appendChild(blk); } } };
+  blocks.forEach(html=>{ const d=document.createElement("div"); d.innerHTML=html; [...d.children].forEach(place); });
+  out.forEach((p,i)=>{ const f=document.createElement("div"); f.className="foot"; f.textContent=`${PDFMODES[mode]}　第 ${i+1} / ${out.length} 頁`; p.appendChild(f); });
   return out;
 }
-async function buildPDF(){
+let pdfBlobs={};
+async function buildPDF(mode){
   try{
     if(!window.html2canvas||!window.jspdf) return false;
     try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,3000))]); }catch(e){}
-    pages=layoutPages();
-    const doc=new window.jspdf.jsPDF({unit:"pt",format:"a4",compress:true}); const prev=$("sheetPrev");
+    const pages=layoutPages(mode);
+    await Promise.all([...$("report").querySelectorAll("img")].map(im=>im.complete?0:new Promise(r=>{im.onload=im.onerror=r;})));
+    const doc=new window.jspdf.jsPDF({unit:"pt",format:"a4",compress:true}); const prev=$("prev_"+mode);
     for(let i=0;i<pages.length;i++){
       const c=await html2canvas(pages[i],{scale:2,backgroundColor:"#FFFFFF",useCORS:true,logging:false});
       const url=c.toDataURL("image/jpeg",0.9);
       if(i)doc.addPage(); doc.addImage(url,"JPEG",0,0,595.28,841.89);
-      if(prev){ const im=new Image(); im.src=url; im.alt=`作答紀錄第 ${i+1} 頁`; prev.appendChild(im); }
+      if(prev){ const im=new Image(); im.src=url; im.alt=`${PDFMODES[mode]}第 ${i+1} 頁`; prev.appendChild(im); }
     }
-    pdfBlob=doc.output("blob"); return true;
+    pdfBlobs[mode]=doc.output("blob"); return true;
   }catch(e){ console.error(e); return false; }
 }
-function renderSheetFallback(){ const prev=$("sheetPrev"); if(!prev)return; prev.innerHTML=""; layoutPages().forEach(p=>{ const c=p.cloneNode(true); c.style.height="auto"; const w=document.createElement("div"); w.style.overflowX="auto"; w.appendChild(c); prev.appendChild(w); }); }
-async function downloadPDF(){
+async function makePDFs(){
+  pdfBlobs={};
+  for(const mode of ["brief","full"]){
+    const ok=await buildPDF(mode); const b=$("pdf_"+mode); if(!b)return;
+    if(ok){ b.disabled=false; b.textContent=`下載${PDFMODES[mode]} PDF`; b.onclick=()=>downloadPDF(mode); }
+    else { b.textContent=`${PDFMODES[mode]} PDF 製作失敗`; $("pdfStatus").className="status bad"; $("pdfStatus").textContent="PDF 沒有做出來。請老師打開下方預覽直接批改，或重新整理頁面再試一次。"; renderSheetFallback(mode); }
+  }
+}
+function renderSheetFallback(mode){ const prev=$("prev_"+mode); if(!prev)return; prev.innerHTML=""; layoutPages(mode).forEach(p=>{ const c=p.cloneNode(true); c.style.height="auto"; const w=document.createElement("div"); w.style.overflowX="auto"; w.appendChild(c); prev.appendChild(w); }); }
+async function downloadPDF(mode){
   const s=$("pdfStatus"); s.className="status"; s.textContent="";
-  const fname="六上數學期中評量.pdf";
+  const fname=PDF_BASE+"_"+PDFMODES[mode]+".pdf", blob=pdfBlobs[mode];
   try{
-    const file=new File([pdfBlob],fname,{type:"application/pdf"});
+    const file=new File([blob],fname,{type:"application/pdf"});
     if(navigator.canShare&&navigator.canShare({files:[file]})&&/iPad|iPhone|Android/i.test(navigator.userAgent)){
       try{ await navigator.share({files:[file],title:fname}); s.className="status ok"; s.textContent="已送出："+fname; return; }catch(e){ if(e&&e.name==="AbortError"){ s.textContent="沒有下載。想下載時再按一次按鈕。"; return; } }
     }
-    const url=URL.createObjectURL(pdfBlob), a=document.createElement("a"); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),60000); s.className="status ok"; s.textContent="已下載："+fname+"，請交給老師。"; return;
-  }catch(e){ s.className="status bad"; s.textContent="這個畫面不能下載檔案。請老師打開下方「看作答紀錄」直接批改。"; }
+    const url=URL.createObjectURL(blob), a=document.createElement("a"); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000); s.className="status ok"; s.textContent="已下載："+fname; return;
+  }catch(e){ s.className="status bad"; s.textContent="這個畫面不能下載檔案。請老師打開下方預覽直接批改。"; }
 }
 
 let saved=null;
