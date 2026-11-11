@@ -352,10 +352,10 @@ function M(t){ let h=esc(t).replace(/~([^~]+)~/g,'<u class="em">$1</u>');
 const ansStr=v=>v==null?"":String(v);
 
 /* result code for the teacher's QR */
-function encodeRes(){ const a=ITEMS.map(it=>{const v=st.ans[it.id]; if(v==null||v==="")return "x"; if(it.t==="text") return "t"+[...String(v)].map(c=>c.codePointAt(0).toString(36)).join("_"); return String(v);}).join(".");
+function encodeRes0(){ const a=ITEMS.map(it=>{const v=st.ans[it.id]; if(v==null||v==="")return "x"; if(it.t==="text") return "t"+[...String(v)].map(c=>c.codePointAt(0).toString(36)).join("_"); return String(v);}).join(".");
   const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):0;
   return "r-"+a+"-"+Math.floor((st.t1||Date.now())/60000).toString(36)+"-"+mins.toString(36); }
-function decodeRes(h){ const m=/^r-([0-9a-z_.]+)-([0-9a-z]+)-([0-9a-z]+)$/.exec(h); if(!m)return null; const parts=m[1].split(".");
+function decodeRes0(h){ const m=/^r-([0-9a-z_.]+)-([0-9a-z]+)-([0-9a-z]+)$/.exec(h); if(!m)return null; const parts=m[1].split(".");
   if(parts.length!==ITEMS.length)return null;
   const ans={}; ITEMS.forEach((it,i)=>{ const c=parts[i]; if(c==="x")return; if(it.t==="text"&&c[0]==="t"){ ans[it.id]=c.slice(1).split("_").map(x=>String.fromCodePoint(parseInt(x,36))).join(""); return; }
     ans[it.id]=(it.t==="check"||it.multi)?c:+c; });
@@ -422,6 +422,7 @@ function renderHome(){
     <h1>六年級 自然科<br>報讀作答</h1>
     <div class="facts"><span class="fact">${SECS.length} 大題</span><span class="fact">${ITEMS.length} 小題</span><span class="fact">滿分 100 分</span><span class="fact">全部在平板上作答</span></div>
     <p style="margin:0;font-size:1.6rem;font-weight:900">六年級　自然科</p>
+    ${nameHTML()}
     <div class="row">
       <button class="big" id="startBtn" type="button" style="font-size:1.8rem;min-height:5.5rem;padding-inline:2.4rem">${started?"繼續作答":"開始作答"}</button>
       ${started?'<button class="ghost" id="resetBtn" type="button">清除答案，重新作答</button>':""}
@@ -431,17 +432,18 @@ function renderHome(){
       <li>是非題：對的按 <b>○</b>，錯的按 <b>✕</b>；打✓／╳ 的題目：對的按 <b>✓</b>，錯的按 <b>╳</b>。</li>
       <li>選擇題、配合題：點大按鈕選答案。勾選題：對的都要勾，可以勾很多個。</li>
       <li>有圖片的題目，點圖片可以放大。配合題的圖片也可以點一下放大。</li>
-      <li>寫完按「交卷」，再按「下載作答 PDF」交給老師。</li>
+      <li>寫完按「交卷」，作答紀錄會自動上傳給老師。</li>
     </ol>
     <div id="resetBox"></div>
     <div class="qrbox"><div id="homeQR"></div><p>掃描 QR Code 打開這個報讀網站</p></div>
   </section>`;
   drawQR($("homeQR"),SITE_URL,220);
-  $("startBtn").onclick=()=>{ if(!st.t0){st.t0=Date.now();save();} show(st.t1?"done":"q"); window.scrollTo(0,0);};
+  wireName();
+  $("startBtn").onclick=()=>{ if(!takeName())return; if(!st.t0){st.t0=Date.now();save();} show(st.t1?"done":"q"); window.scrollTo(0,0);};
   if($("resetBtn")) $("resetBtn").onclick=()=>{ $("resetBox").innerHTML=`<div class="warnbox"><p>確定要清除全部答案嗎？清除後不能復原。</p>
       <div class="row"><button class="big" id="yesReset" type="button" style="background:var(--bad);color:#fff">確定清除</button><button class="ghost" id="noReset" type="button">不要清除</button></div></div>`;
     $("noReset").onclick=()=>{$("resetBox").innerHTML="";};
-    $("yesReset").onclick=()=>{ st.ans={}; st.i=0; st.t0=null; st.t1=null; save(); renderHome(); setProgress(); }; };
+    $("yesReset").onclick=()=>{ st.ans={}; st.i=0; st.t0=null; st.t1=null; st.name=""; st.up=null; save(); renderHome(); setProgress(); }; };
 }
 
 /* ---------- question ---------- */
@@ -552,10 +554,12 @@ function renderDone(){
   $("main").innerHTML=`<section class="screen">
     <div class="done-mark" aria-hidden="true">✓</div>
     <h1>${TEACHER?"老師批改：作答紀錄":"交卷完成"}</h1>
+    <p class="donename">姓名：${esc(st.name||"（沒有填）")}</p>
     <p style="margin:0;font-weight:700">六年級　已答 ${answered()} / ${ITEMS.length} 題　交卷 ${fmt(st.t1)}</p>
     <div class="row"><button class="big" id="pdf_brief" type="button" disabled>簡要版 PDF 製作中…</button><button class="big" id="pdf_full" type="button" disabled>精細版 PDF 製作中…</button>
       ${TEACHER?'<button class="ghost" id="leaveBtn" type="button">離開批改畫面</button>':'<button class="ghost" id="reviewBtn" type="button">回去修改答案</button>'}</div>
     <p class="status" id="pdfStatus" role="status"></p>
+    ${TEACHER?"":'<p class="status" id="cloudStatus" role="status"></p><div class="row" id="cloudRow"></div>'}
     ${TEACHER?"":`<div class="qrbox"><div id="resQR"></div><p>老師用手機掃描，就能看到作答並下載 PDF</p></div>`}
     <p class="pdfnote" style="margin:0;font-size:.95rem;line-height:1.6"><b>簡要版</b>：分數＋每題對錯一覽，答錯的題目標紅色並附參考答案（約 1–2 頁）。<br><b>精細版</b>：每一題的題目、學生作答、參考答案與批改，適合存檔或檢討。</p>
     <details class="nav"${TEACHER?" open":""}><summary>看簡要版（分數＋對錯一覽）</summary><div class="sheetprev" id="prev_brief"></div></details>
@@ -612,7 +616,7 @@ function sheetBlocks(){
   const mins=st.t0&&st.t1?Math.max(1,Math.round((st.t1-st.t0)/60000)):null;
   const B=[];
   B.push(`<div><div><h2>115 學年度第一學期 期中學業評量　六年級自然科</h2><p class="sub">作答紀錄（精細版・報讀版・學生平板作答）</p></div>
-    <div class="who"><span>六年 ＿＿ 班</span><span>姓名 <b>　　　　　</b></span></div>
+    <div class="who"><span>六年 ＿＿ 班</span><span>姓名 <b>${esc(st.name||"　　　　　")}</b></span></div>
     <div class="who" style="font-size:12.5px;font-weight:500"><span>交卷時間：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span><span>已作答：${answered()} / ${ITEMS.length} 題</span></div></div>`);
   let auto=0;
   const rows=SECS.map(s=>{ const p=s.items.reduce((t,it)=>t+score(it),0); auto+=p;
@@ -658,7 +662,7 @@ function briefBlocks(){
     return s.items.reduce((t,it)=>t+BR.score(it),0)+"/"+s.pct; };
   const B=[];
   B.push(`<div><h2>${BR.title}　作答結果（簡要版）</h2>
-    <div class="who" style="margin-top:8px"><span>${BR.cls}</span><span>交卷：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span><span>已作答：${answered()} / ${ITEMS.length} 題</span></div>
+    <div class="who" style="margin-top:8px"><span>${BR.cls}</span><span>姓名：<b>${esc(st.name||"＿＿＿＿")}</b></span><span>交卷：${fmt(st.t1)}</span><span>作答時間：約 ${mins??"—"} 分鐘</span><span>已作答：${answered()} / ${ITEMS.length} 題</span></div>
     <div style="display:flex;justify-content:center;align-items:baseline;gap:10px;margin-top:10px"><span style="font-size:18px;font-weight:900">${autoMax<100?"電腦批改":"分數"}</span><span style="font-size:46px;font-weight:900;line-height:1">${auto}</span><span style="font-size:18px;font-weight:700">/ ${autoMax}</span>${autoMax<100?`<span style="font-size:16px;font-weight:700;margin-left:14px">＋老師批改 ＿＿ / ${100-autoMax}　＝ 總分 ＿＿＿</span>`:""}</div>
     <div style="display:flex;justify-content:center;gap:6px 16px;flex-wrap:wrap;font-size:14px;font-weight:700;margin-top:6px">${SECS.map(s=>`<span>${_no(s)}${s.zh} ${secScore(s)}</span>`).join("")}</div>
     <p style="margin:6px 0 0;text-align:center;font-size:12.5px">黑字＝答對　<b style="color:${RED}">紅字＝答錯（→後面是參考答案）</b>　灰框＝請老師批改${BR.note?"　"+BR.note:""}</p></div>`);
@@ -717,7 +721,58 @@ async function buildPDF(mode){
     pdfBlobs[mode]=doc.output("blob"); return true;
   }catch(e){ console.error(e); return false; }
 }
-async function makePDFs(){
+/* ---------- 姓名＋雲端上傳（共用 ../cloud.js） ---------- */
+const IS_TEST=/-test$/.test(KEY);
+(function(){ try{
+  document.head.insertAdjacentHTML("beforeend",`<style>
+.namebox{display:flex;flex-direction:column;align-items:center;gap:.4rem;margin:.2rem 0}
+.namebox label{font-size:1.5rem;font-weight:900}
+.namebox input{font:inherit;font-size:1.9rem;font-weight:900;text-align:center;width:min(16em,90vw);max-width:100%;padding:.5rem .8rem;border:4px solid currentColor;border-radius:.8rem;background:#fff;color:#111}
+.namebox input:focus{outline:4px solid #F5B700;outline-offset:2px}
+.namewarn{margin:0;min-height:1.4em;color:var(--bad,#C00);font-weight:900;font-size:1.2rem}
+.donename{margin:0;font-size:1.5rem;font-weight:900}
+</style>`);
+  if(!window.cloudUpload){ const sc=document.createElement("script"); sc.src="../cloud.js?t="+Math.floor(Date.now()/60000); document.head.appendChild(sc); }
+}catch(e){} })();
+function nameHTML(){ return `<div class="namebox"><label for="nameIn">請輸入你的名字</label>
+      <input id="nameIn" type="text" maxlength="12" autocomplete="off" enterkeyhint="go" value="${esc(st.name||"")}" placeholder="例如：王小明">
+      <p id="nameWarn" class="namewarn" role="alert"></p></div>`; }
+function wireName(){ const el=$("nameIn"); if(!el)return;
+  el.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); const b=$("startBtn"); if(b)b.click(); } });
+  el.addEventListener("input",()=>{ const w=$("nameWarn"); if(w)w.textContent=""; }); }
+function takeName(){ const el=$("nameIn"); const nm=((el&&el.value)||"").replace(/\s+/g,"").slice(0,12);
+  if(!nm){ const w=$("nameWarn"); if(w)w.textContent="請先輸入你的名字，才能開始作答。";
+    if(el){ el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake"); el.focus(); }
+    try{ say1("請先輸入你的名字，才能開始作答。"); }catch(e){} return false; }
+  st.name=nm; save(); return true; }
+function stamp(t){ const d=new Date(t||Date.now()), p=x=>String(x).padStart(2,"0"); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; }
+let cloudBusy=false;
+async function cloudSend(force){
+  const s=$("cloudStatus"); if(!s||TEACHER) return;
+  const t1=st.t1, row=$("cloudRow");
+  if(!force && st.up===t1){ s.className="status ok"; s.textContent="☁ 作答 PDF（簡要版、精細版）已上傳到老師的雲端資料夾。"; return; }
+  if(cloudBusy) return;
+  for(let k=0;k<20&&!window.cloudUpload;k++) await new Promise(r=>setTimeout(r,250));
+  if(!window.cloudUpload||!window.CLOUD_URL){ s.className="status"; s.textContent="（雲端上傳還沒設定好，請用下載按鈕把 PDF 交給老師。）"; return; }
+  if(!pdfBlobs.brief||!pdfBlobs.full){ s.className="status bad"; s.textContent="PDF 沒有做出來，不能上傳雲端。"; return; }
+  cloudBusy=true; if(row) row.innerHTML="";
+  s.className="status"; s.textContent="☁ 正在把作答 PDF 上傳到老師的雲端…請不要關掉這個畫面。";
+  const nm=st.name||"未填姓名", base=(IS_TEST&&!/測試/.test(PDF_BASE)?"【測試】":"")+nm+"_"+PDF_BASE, ts=stamp(t1);
+  try{
+    await window.cloudUpload({exam:PDF_BASE.split("_")[0], title:BR.title, name:nm, test:IS_TEST, site:SITE_URL, submitted:fmt(t1),
+      files:[{name:`${base}_簡要版_${ts}.pdf`,blob:pdfBlobs.brief},{name:`${base}_精細版_${ts}.pdf`,blob:pdfBlobs.full}]});
+    if(st.t1===t1){ st.up=t1; save(); }
+    const s2=$("cloudStatus"); if(s2){ s2.className="status ok"; s2.textContent="☁ 上傳完成！簡要版、精細版都已存到老師的雲端資料夾。"; }
+  }catch(e){ console.error(e); const s2=$("cloudStatus"), r2=$("cloudRow");
+    if(s2){ s2.className="status bad"; s2.textContent="☁ 上傳雲端沒有成功（可能是網路不穩）。請按「重新上傳雲端」，或用下載按鈕交給老師。"; }
+    if(r2){ r2.innerHTML='<button class="big" id="cloudRetry" type="button">重新上傳雲端</button>'; $("cloudRetry").onclick=()=>cloudSend(true); } }
+  cloudBusy=false;
+}
+async function makePDFs(){ await makePDFs0(); if(!TEACHER&&view==="done") cloudSend(false); }
+function encodeRes(){ return encodeRes0()+(st.name?"~"+encodeURIComponent(st.name):""); }
+function decodeRes(h){ let nm=""; const k=h.indexOf("~"); if(k>=0){ try{nm=decodeURIComponent(h.slice(k+1));}catch(e){nm=h.slice(k+1);} h=h.slice(0,k); }
+  const r=decodeRes0(h); if(r) r.name=nm; return r; }
+async function makePDFs0(){
   pdfBlobs={};
   for(const mode of ["brief","full"]){
     const ok=await buildPDF(mode); const b=$("pdf_"+mode); if(!b)return;
@@ -741,7 +796,7 @@ async function downloadPDF(mode){
 
 let saved=null;
 function checkHash(){ const h=(location.hash||"").slice(1); const r=decodeRes(h);
-  if(r){ if(!TEACHER){ saved=st; } TEACHER=true; st=Object.assign({},saved||st,{ans:r.ans,t0:r.t0,t1:r.t1,i:0}); stopSpeak(); show("done"); return true; }
+  if(r){ if(!TEACHER){ saved=st; } TEACHER=true; st=Object.assign({},saved||st,{ans:r.ans,t0:r.t0,t1:r.t1,i:0,name:r.name||""}); stopSpeak(); show("done"); return true; }
   return false; }
 function leaveTeacher(){ if(!TEACHER)return; TEACHER=false; if(saved)st=saved; saved=null; show(st.t1?"done":"home"); }
 window.addEventListener("hashchange",()=>{ if(!checkHash()) leaveTeacher(); });
