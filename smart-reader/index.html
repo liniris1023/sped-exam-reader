@@ -1,0 +1,3233 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧考卷語音報讀系統 v2.0（特教防破題與原卷點讀版）</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 PDF.js 用於前端免費解析 PDF 轉高畫質圖片 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- 引入 Mammoth.js 用於前端解析 Word (.docx) 檔案 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <!-- 引入 Google Fonts: Noto Sans TC 與 Noto Serif TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        /* 右側朗讀中卡片的高亮動畫 */
+        .reading-active {
+            border-color: #2563eb !important;
+            background-color: #eff6ff !important;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25) !important;
+            transform: translateY(-2px);
+        }
+        /* 原卷點讀疊加框樣式 */
+        .hotspot-box {
+            position: absolute;
+            cursor: pointer;
+            transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        .hotspot-visible {
+            border: 2px dashed rgba(37, 99, 235, 0.6);
+            background-color: rgba(59, 130, 246, 0.06);
+        }
+        .hotspot-visible:hover {
+            border: 2px solid #2563eb;
+            background-color: rgba(59, 130, 246, 0.2);
+            z-index: 15;
+        }
+        .hotspot-hidden {
+            border: 2px solid transparent;
+            background-color: transparent;
+        }
+        .hotspot-hidden:hover {
+            border: 2px dashed rgba(245, 158, 11, 0.75);
+            background-color: rgba(245, 158, 11, 0.12);
+            z-index: 15;
+        }
+        .hotspot-active {
+            border: 3px solid #f59e0b !important;
+            background-color: rgba(245, 158, 11, 0.24) !important;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.32), 0 4px 12px rgba(0,0,0,0.18) !important;
+            z-index: 20 !important;
+        }
+        /* 左側考卷同步逐行追蹤標示條 */
+        #sync-active-line-bar {
+            position: absolute;
+            pointer-events: none;
+            border: 3px solid #f59e0b;
+            background: linear-gradient(90deg, rgba(251, 191, 36, 0.28) 0%, rgba(245, 158, 11, 0.16) 100%);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.28), 0 6px 16px rgba(15, 23, 42, 0.22);
+            border-radius: 8px;
+            transition: top 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+                        left 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+                        width 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+                        height 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 25;
+        }
+        /* 框線微調模式手柄 */
+        .calibration-mode .hotspot-box {
+            border: 2px solid #ec4899 !important;
+            background-color: rgba(236, 72, 153, 0.14) !important;
+            cursor: move !important;
+        }
+        .resize-handle {
+            position: absolute;
+            right: -6px;
+            bottom: -6px;
+            width: 14px;
+            height: 14px;
+            background-color: #db2777;
+            border: 2px solid #ffffff;
+            border-radius: 3px;
+            cursor: nwse-resize;
+            z-index: 30;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+        }
+        /* 點擊位置視覺回饋波紋 */
+        .click-ripple {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            margin-left: -12px;
+            margin-top: -12px;
+            border-radius: 9999px;
+            border: 3px solid #ef4444;
+            background-color: rgba(239, 68, 68, 0.25);
+            pointer-events: none;
+            z-index: 35;
+            animation: rippleFade 0.55s ease-out forwards;
+        }
+        @keyframes rippleFade {
+            0% { transform: scale(0.4); opacity: 1; }
+            100% { transform: scale(2.1); opacity: 0; }
+        }
+        /* 字體大小切換類別 */
+        .text-scale-normal { font-size: 1.0625rem; line-height: 1.7rem; }
+        .text-scale-large { font-size: 1.3125rem; line-height: 2.05rem; }
+        .text-scale-xlarge { font-size: 1.6rem; line-height: 2.45rem; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- 頂部導覽列 (無障礙高對比設計) -->
+    <header class="bg-slate-950 text-white shadow-lg sticky top-0 z-40 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-400 text-slate-950 p-2 rounded-xl font-black text-xl shadow flex items-center gap-1">
+                    <span>🔊</span>
+                    <span class="hidden sm:inline">報讀助手</span>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h1 class="text-base sm:text-xl font-black tracking-wide">智慧考卷語音報讀系統</h1>
+                        <span class="text-xs bg-emerald-500 text-slate-950 font-black px-2.5 py-0.5 rounded-full">v2.0 特教防破題 &amp; 原卷點讀版</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden md:block">精準定位標記部分，支援注音防破題遮罩、原卷互動點讀與逐行追蹤</p>
+                </div>
+            </div>
+
+            <!-- 輔助設定控制區：防破題替代詞、字體大小、語速 -->
+            <div class="flex flex-wrap items-center gap-2.5 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700">
+                <!-- 防破題讀音替代設定 -->
+                <div class="flex items-center gap-1.5">
+                    <label for="mask-replacement" class="text-xs text-amber-300 font-bold whitespace-nowrap" title="遇到寫國字/注音或讀音選擇題時，要如何代替目標字音">🔇 讀音替代：</label>
+                    <select id="mask-replacement" onchange="updateReplacementMode()" class="bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 text-xs font-bold text-white focus:border-amber-400 focus:outline-none">
+                        <option value="什麼" selected>唸「什麼」（例：什麼心 / 什麼國）</option>
+                        <option value="框框">唸「框框」（例：框框心 / 框框國）</option>
+                        <option value="beep">提示音「嗶」（停頓作答）</option>
+                    </select>
+                </div>
+                <div class="h-5 w-px bg-slate-700 hidden sm:block"></div>
+                <!-- 字體大小切換 -->
+                <div class="flex items-center gap-1">
+                    <span class="text-xs text-slate-400 font-medium hidden sm:inline">字級：</span>
+                    <button type="button" onclick="setFontSize('normal')" id="btn-font-normal" class="px-2 py-1 text-xs font-bold rounded-lg bg-blue-600 text-white transition">標準</button>
+                    <button type="button" onclick="setFontSize('large')" id="btn-font-large" class="px-2 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">大字</button>
+                    <button type="button" onclick="setFontSize('xlarge')" id="btn-font-xlarge" class="px-2 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">特大</button>
+                </div>
+                <div class="h-5 w-px bg-slate-700 hidden sm:block"></div>
+                <!-- 語速調整 -->
+                <div class="flex items-center gap-1.5">
+                    <label for="speech-rate" class="text-xs text-slate-300 font-medium whitespace-nowrap">語速：<span id="rate-display" class="text-amber-400 font-bold">1.0x</span></label>
+                    <input type="range" id="speech-rate" min="0.6" max="1.4" step="0.1" value="1.0" oninput="updateSpeechRateDisplay(this.value)" onchange="updateSpeechRateDisplay(this.value)" class="w-16 sm:w-20 accent-amber-400 cursor-pointer">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 全域提示訊息框 -->
+    <div id="toast-box" class="fixed bottom-5 right-5 z-50 hidden max-w-md bg-slate-950 text-white px-5 py-3.5 rounded-2xl shadow-2xl border-2 border-amber-400 flex items-center gap-3 transition-all">
+        <span id="toast-icon" class="text-2xl">ℹ️</span>
+        <p id="toast-message" class="text-sm font-medium leading-snug"></p>
+    </div>
+
+    <!-- 主內容區 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-4 flex flex-col gap-4">
+
+        <!-- 步驟一與步驟二：考卷匯入與版面設定面板 -->
+        <section class="bg-white rounded-2xl shadow-sm border-2 border-slate-200 p-4">
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                
+                <!-- 檔案輸入按鈕群 -->
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <span class="bg-blue-100 text-blue-900 font-black px-3 py-1.5 rounded-xl text-sm">1. 匯入考卷</span>
+                    
+                    <!-- 內建範例考卷按鈕 (免上傳立即體驗) -->
+                    <button type="button" onclick="loadSampleExam()" class="bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-black px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5 text-sm transition">
+                        <span>✨ 載入範例考卷（引號標記消音測試）</span>
+                    </button>
+
+                    <!-- 上傳圖片 -->
+                    <label class="cursor-pointer bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5 text-sm transition">
+                        <span>🖼️ 圖片</span>
+                        <input type="file" id="image-upload" accept="image/jpeg,image/png,image/webp" multiple class="hidden">
+                    </label>
+
+                    <!-- 上傳 PDF -->
+                    <label class="cursor-pointer bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5 text-sm transition">
+                        <span>📄 PDF</span>
+                        <input type="file" id="pdf-upload" accept="application/pdf" multiple class="hidden">
+                    </label>
+
+                    <!-- 上傳 Word (.docx) -->
+                    <label class="cursor-pointer bg-sky-600 hover:bg-sky-700 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5 text-sm transition">
+                        <span>📝 Word (.docx)</span>
+                        <input type="file" id="docx-upload" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple class="hidden">
+                    </label>
+
+                    <!-- 開啟相機拍照 -->
+                    <button type="button" onclick="openCameraModal()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-black px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5 text-sm transition">
+                        <span>📷 拍照</span>
+                    </button>
+
+                    <!-- 讀取已儲存的考卷檔 (.json) -->
+                    <label class="cursor-pointer bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5 text-sm transition" title="開啟先前儲存在本機或雲端硬碟的考卷檔 (.json)">
+                        <span>📂 讀取已存考卷</span>
+                        <input type="file" id="saved-exam-upload" accept=".json,application/json" class="hidden">
+                    </label>
+                </div>
+
+                <!-- PDF 多頁選擇器 -->
+                <div id="pdf-page-controls" class="hidden items-center gap-2 bg-emerald-50 border border-emerald-300 px-3 py-1.5 rounded-xl">
+                    <span class="text-xs font-bold text-emerald-900">PDF 頁碼：</span>
+                    <button type="button" onclick="changePdfPage(-1)" class="px-2 py-1 bg-white border border-emerald-400 rounded-lg text-xs font-bold text-emerald-800 hover:bg-emerald-100">◀ 上一頁</button>
+                    <span id="pdf-page-info" class="text-xs font-black text-emerald-950 px-1.5">1 / 1</span>
+                    <button type="button" onclick="changePdfPage(1)" class="px-2 py-1 bg-white border border-emerald-400 rounded-lg text-xs font-bold text-emerald-800 hover:bg-emerald-100">下一頁 ▶</button>
+                </div>
+            </div>
+
+            <!-- 已加入多頁預覽管理條 -->
+            <div id="imported-pages-bar" class="hidden mt-2.5 pt-2.5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50 px-3 py-2 rounded-xl">
+                <div id="imported-pages-list" class="flex flex-wrap items-center gap-1.5 text-xs"></div>
+                <button type="button" onclick="clearAllImportedPages()" class="shrink-0 bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 font-bold px-2.5 py-1 rounded-lg text-xs transition">
+                    🗑️ 清空全部頁面
+                </button>
+            </div>
+
+            <!-- 版面提示與開始辨識按鈕 -->
+            <div class="mt-3 pt-3 border-t border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <span class="bg-indigo-100 text-indigo-900 font-black px-3 py-1.5 rounded-xl text-sm">2. 版面與科目設定</span>
+                    
+                    <!-- 分欄模式選擇 -->
+                    <div class="flex items-center gap-1.5">
+                        <label for="layout-mode" class="text-xs font-bold text-slate-700">分欄結構：</label>
+                        <select id="layout-mode" class="bg-slate-50 border-2 border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:border-blue-600 focus:outline-none">
+                            <option value="auto">✨ 自動偵測分欄（依黑線）</option>
+                            <option value="single">📄 整頁單區（不分欄）</option>
+                            <option value="top-bottom">⬍ 上下分欄（國語常用，水平黑線）</option>
+                            <option value="left-right">⬌ 左右分欄（數社自常用，垂直黑線）</option>
+                        </select>
+                    </div>
+
+                    <!-- 文字方向選擇 -->
+                    <div class="flex items-center gap-1.5">
+                        <label for="text-direction" class="text-xs font-bold text-slate-700">文字方向：</label>
+                        <select id="text-direction" class="bg-slate-50 border-2 border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:border-blue-600 focus:outline-none">
+                            <option value="auto">✨ 自動偵測直/橫書</option>
+                            <option value="vertical">⬇️ 直書（由右至左、由上至下）</option>
+                            <option value="horizontal">➡️ 橫書（由左至右、由上至下）</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 操作按鈕群：AI 解析 + 儲存考卷 -->
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <button type="button" id="btn-pdf-text" onclick="runPdfTextParse()" disabled class="bg-slate-300 text-slate-500 cursor-not-allowed font-black text-sm px-4 py-2.5 rounded-xl shadow flex items-center justify-center gap-2 transition" title="電腦打字轉成的 PDF 可直接讀出文字與位置，不需 AI">
+                        <span>📄 PDF 文字直讀（免 AI）</span>
+                    </button>
+                    <button type="button" id="btn-analyze" onclick="openGeminiPasteModal()" disabled class="bg-slate-300 text-slate-500 cursor-not-allowed font-black text-sm px-4 py-2.5 rounded-xl shadow flex items-center justify-center gap-2 transition" title="複製提示詞到 Gemini 免費版，再貼回結果">
+                        <span>🤖 Gemini 解析（複製貼上，免金鑰）</span>
+                    </button>
+                    <button type="button" id="btn-open-save" onclick="openSaveExamModal()" disabled class="bg-slate-300 text-slate-500 cursor-not-allowed font-black text-sm px-4 py-2.5 rounded-xl shadow flex items-center justify-center gap-1.5 transition" title="儲存目前考卷至 Google 雲端硬碟或本機">
+                        <span>💾 儲存考卷</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 語音報讀全域控制列 + 雙模式切換器 -->
+        <section class="bg-slate-900 text-white rounded-2xl p-3 sm:px-5 shadow-md flex flex-wrap items-center justify-between gap-3">
+            <!-- 左側：播放控制鍵 -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="playAllQuestions()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-3.5 py-2 rounded-xl text-sm flex items-center gap-1.5 shadow transition active:scale-95">
+                    <span>▶️ 依大題連續報讀</span>
+                </button>
+                <button type="button" onclick="stepQuestion(-1)" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-3 py-2 rounded-xl text-sm transition active:scale-95" title="上一題">
+                    <span>⏮️ 上一題</span>
+                </button>
+                <button type="button" onclick="togglePauseResume()" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-3.5 py-2 rounded-xl text-sm flex items-center gap-1 transition active:scale-95">
+                    <span>⏸️ 暫停/繼續</span>
+                </button>
+                <button type="button" onclick="stepQuestion(1)" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-3 py-2 rounded-xl text-sm transition active:scale-95" title="下一題">
+                    <span>⏭️ 下一題</span>
+                </button>
+                <button type="button" onclick="stopSpeech()" class="bg-rose-600 hover:bg-rose-500 text-white font-black px-3.5 py-2 rounded-xl text-sm flex items-center gap-1 shadow transition active:scale-95">
+                    <span>⏹️ 停止</span>
+                </button>
+            </div>
+
+            <!-- 右側：語音包選擇與狀態 -->
+            <div class="flex flex-wrap items-center gap-2.5 text-xs">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-slate-400">語音：</span>
+                    <select id="voice-select" class="bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 text-white max-w-[160px] truncate">
+                        <option value="">載入中文語音...</option>
+                    </select>
+                </div>
+                <div id="reading-status" class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-amber-300 font-bold">
+                    待機中
+                </div>
+            </div>
+        </section>
+
+        <!-- 雙模式切換分頁列 (v2.0 核心切換) -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-2 rounded-2xl border-2 border-slate-200 shadow-sm">
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button type="button" id="tab-mode-structured" onclick="switchViewMode('structured')" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-black text-sm bg-blue-600 text-white shadow transition flex items-center justify-center gap-2">
+                    <span>📋 模式一：左右對照同步報讀（含逐行追蹤）</span>
+                </button>
+                <button type="button" id="tab-mode-interactive" onclick="switchViewMode('interactive')" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-black text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center gap-2">
+                    <span>👆 模式二：原卷直接點讀模式（保留考卷原貌）</span>
+                </button>
+            </div>
+
+            <!-- 偵測結果摘要標籤 -->
+            <div id="detected-meta-tags" class="flex flex-wrap items-center gap-1.5 text-xs px-2">
+                <span class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold">尚未解析考卷</span>
+            </div>
+        </div>
+
+        <!-- 全域載入中遮罩 -->
+        <div id="loading-panel" class="hidden bg-white rounded-2xl border-2 border-blue-200 p-10 flex flex-col items-center justify-center text-center shadow-sm">
+            <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+            <h3 class="text-xl font-black text-blue-950 mb-2">Gemini AI 正在進行特教考卷深度解析...</h3>
+            <p id="loading-model-status" class="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full mb-2">準備連線免費模型...</p>
+            <p class="text-sm text-slate-600 max-w-lg leading-relaxed">
+                正在精準辨識圖片文字與注音（禁止腦補），定位引號「」標記的目標字並執行消音遮罩，以確保「什麼心、什麼活、加什麼」正確報讀。
+            </p>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- 視圖 A：模式一「左右對照同步報讀模式」 -->
+        <!-- ========================================================= -->
+        <div id="view-structured" class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+            
+            <!-- 左側視窗 (5欄)：原始考卷與即時同步行標示 -->
+            <div class="lg:col-span-5 bg-white rounded-2xl shadow-sm border-2 border-slate-200 flex flex-col overflow-hidden h-[480px] lg:h-[660px]">
+                <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between gap-2">
+                    <h2 class="font-black text-sm text-slate-800 flex items-center gap-1.5">
+                        <span>🖼️ 左側考卷同步標示（點擊題目追蹤）</span>
+                    </h2>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button type="button" onclick="panViewportHorizontal('struct-img-scroll-container', -140)" class="w-7 h-7 bg-white border border-slate-300 rounded-lg font-black text-slate-700 hover:bg-slate-200 text-xs" title="向左移動檢視">◀</button>
+                        <button type="button" onclick="zoomStructuredImg(-0.2)" class="w-7 h-7 bg-white border border-slate-300 rounded-lg font-black text-slate-700 hover:bg-slate-200 text-xs">－</button>
+                        <span id="struct-zoom-level" class="text-xs font-bold text-slate-600 w-10 text-center">100%</span>
+                        <button type="button" onclick="zoomStructuredImg(0.2)" class="w-7 h-7 bg-white border border-slate-300 rounded-lg font-black text-slate-700 hover:bg-slate-200 text-xs">＋</button>
+                        <button type="button" onclick="resetStructuredZoom()" class="px-2 h-7 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200">重置</button>
+                        <button type="button" onclick="panViewportHorizontal('struct-img-scroll-container', 140)" class="w-7 h-7 bg-white border border-slate-300 rounded-lg font-black text-slate-700 hover:bg-slate-200 text-xs" title="向右移動檢視">▶</button>
+                    </div>
+                </div>
+                
+                <div id="struct-img-scroll-container" class="flex-1 bg-slate-800 relative overflow-auto flex items-start justify-center p-3">
+                    <div id="empty-image-placeholder" class="text-center text-slate-300 p-6 my-auto">
+                        <div class="text-5xl mb-3">📄</div>
+                        <p class="font-bold text-base mb-1">尚未匯入考卷</p>
+                        <p class="text-xs text-slate-400">可點擊上方紫色的「✨ 載入範例考卷」立即測試「什麼心/什麼活」標記消音！</p>
+                    </div>
+
+                    <!-- 左側考卷與同步追蹤外框容器 -->
+                    <div id="struct-stage-wrapper" class="hidden relative inline-block shadow-xl bg-white select-none">
+                        <img id="exam-preview-img" src="" alt="考卷原始圖片" class="block max-w-none rounded pointer-events-none">
+                        <!-- 左側考卷可點擊題目熱區 -->
+                        <div id="struct-hotspots-overlay" class="absolute inset-0"></div>
+                        <!-- 正在唸的該行螢光追蹤光棒 -->
+                        <div id="sync-active-line-bar" class="hidden">
+                            <span class="absolute -top-6 left-0 bg-amber-400 text-slate-950 text-[11px] font-black px-2 py-0.5 rounded-md shadow whitespace-nowrap">
+                                🔊 正在唸這題
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側視窗 (7欄)：依大題排列之結構化報讀清單 -->
+            <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border-2 border-slate-200 flex flex-col overflow-hidden h-[580px] lg:h-[660px]">
+                <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+                    <h2 class="font-black text-sm text-slate-800 flex items-center gap-1.5">
+                        <span>📋 右側報讀清單（套用標記目標字消音）</span>
+                    </h2>
+                    <span class="text-xs text-slate-500 font-bold">點擊任一卡片即同步朗讀</span>
+                </div>
+
+                <div id="questions-container" class="flex-1 overflow-y-auto p-4 space-y-4 text-scale-normal">
+                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 p-6">
+                        <div class="text-5xl mb-3">🎧</div>
+                        <p class="font-bold text-lg text-slate-600">引號標記字消音引擎準備就緒</p>
+                        <ul class="text-sm text-slate-500 mt-3 space-y-1.5 text-left list-disc list-inside max-w-md">
+                            <li><strong class="text-slate-700">OCR防腦補機制</strong>：精準還原圖片文字，例如「泰」國絕對不會被誤認為國家。</li>
+                            <li><strong class="text-slate-700">引號標記字遮罩</strong>：被「」標記的目標字將自動替換為「什麼」（如：「背」心 -&gt; 什麼心；加「倍」 -&gt; 加什麼）。</li>
+                            <li><strong class="text-slate-700">注音是...關鍵字消音</strong>：遇到「的注音是」句型，自動隱藏前方的考點字音。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- 視圖 B：模式二「原卷直接點讀模式」 -->
+        <!-- ========================================================= -->
+        <div id="view-interactive" class="hidden bg-white rounded-2xl shadow-sm border-2 border-slate-200 flex flex-col overflow-hidden min-h-[660px]">
+            <!-- 原卷點讀工具列 -->
+            <div class="bg-slate-100 px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <span class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+                        <span>👆 原卷直接點讀模式</span>
+                    </span>
+                    <span class="text-xs bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1 rounded-lg font-bold">
+                        提示：直接點擊考卷上的任何題目或大題，即可唸出防破題語音！
+                    </span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- 切換顯示/隱藏互動熱區框線 -->
+                    <label class="flex items-center gap-1.5 cursor-pointer bg-white border border-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50">
+                        <input type="checkbox" id="toggle-hotspots-visible" checked onchange="toggleHotspotVisibility()" class="accent-blue-600 w-4 h-4">
+                        <span>顯示可點讀題目框線</span>
+                    </label>
+
+                    <!-- 微調框線模式開關 -->
+                    <button type="button" id="toggle-calibration-mode" onclick="toggleCalibrationMode()" class="bg-white border border-slate-300 hover:bg-pink-50 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                        <span>🎯 微調框線</span>
+                    </button>
+
+                    <!-- 原卷縮放控制 -->
+                    <div class="flex items-center gap-1 bg-white border border-slate-300 px-2 py-1 rounded-xl">
+                        <button type="button" onclick="panViewportHorizontal('interactive-scroll-container', -140)" class="w-7 h-7 bg-white border border-slate-300 rounded-lg font-black text-slate-700 hover:bg-slate-200 text-xs" title="向左移動檢視">◀</button>
+                        <button type="button" onclick="zoomInteractiveBoard(-0.15)" class="w-7 h-7 rounded-lg font-black text-slate-700 hover:bg-slate-100 text-xs">－</button>
+                        <span id="inter-zoom-level" class="text-xs font-bold text-slate-700 w-11 text-center">100%</span>
+                        <button type="button" onclick="zoomInteractiveBoard(0.15)" class="w-7 h-7 rounded-lg font-black text-slate-700 hover:bg-slate-100 text-xs">＋</button>
+                        <button type="button" onclick="resetInteractiveZoom()" class="px-2 h-7 rounded-lg text-xs font-bold text-blue-700 hover:bg-blue-50">適應寬度</button>
+                        <button type="button" onclick="panViewportHorizontal('interactive-scroll-container', 140)" class="w-7 h-7 bg-white border border-slate-300 rounded-lg font-black text-slate-700 hover:bg-slate-200 text-xs" title="向右移動檢視">▶</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 目前點讀字幕條 -->
+            <div id="interactive-subtitle-bar" class="bg-blue-950 text-white px-5 py-3 flex items-center justify-between gap-4 border-b border-blue-900">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <span class="bg-amber-400 text-slate-950 text-xs font-black px-2.5 py-1 rounded-lg shrink-0">目前點讀</span>
+                    <p id="interactive-subtitle-text" class="text-sm sm:text-base font-bold text-blue-100 truncate">
+                        請直接點選下方考卷圖片中的任一題目區塊...
+                    </p>
+                </div>
+                <button type="button" onclick="replayLastInteractive()" class="shrink-0 bg-blue-800 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-blue-600">
+                    🔁 重聽本題
+                </button>
+            </div>
+
+            <!-- 原卷互動畫布容器 -->
+            <div id="interactive-scroll-container" class="flex-1 bg-slate-800 overflow-auto p-4 sm:p-6 flex justify-center items-start">
+                <div id="interactive-empty-msg" class="text-center text-slate-300 py-20">
+                    <div class="text-5xl mb-3">👆</div>
+                    <p class="font-bold text-lg">尚未解析考卷圖片</p>
+                    <p class="text-sm text-slate-400 mt-1">請先匯入考卷並完成 AI 解析，即可在原卷上直接點擊報讀。</p>
+                </div>
+
+                <!-- 圖片與座標熱區疊加層容器 -->
+                <div id="interactive-stage-wrapper" class="hidden relative inline-block shadow-2xl bg-white select-none">
+                    <img id="interactive-exam-img" src="" alt="互動點讀考卷" class="block max-w-none select-none pointer-events-none">
+                    <div id="hotspots-overlay" class="absolute inset-0"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 圖片放大檢視 Modal (點擊題目裁切圖時開啟) -->
+    <div id="image-zoom-modal" onclick="closeCropModal()" class="fixed inset-0 bg-slate-950/85 z-50 hidden flex items-center justify-center p-4 cursor-zoom-out">
+        <div class="bg-white rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl border-2 border-slate-600" onclick="event.stopPropagation()">
+            <div class="bg-slate-900 text-white px-5 py-3 flex items-center justify-between">
+                <h3 id="crop-modal-title" class="font-black text-base">🖼️ 題組附圖放大檢視</h3>
+                <button type="button" onclick="closeCropModal()" class="text-slate-300 hover:text-white font-bold text-xl px-2">✕</button>
+            </div>
+            <div class="p-6 bg-slate-100 flex items-center justify-center max-h-[75vh] overflow-auto">
+                <img id="crop-modal-img" src="" alt="題組放大圖" class="max-w-full max-h-[65vh] object-contain rounded-lg shadow-md bg-white p-2">
+            </div>
+        </div>
+    </div>
+
+    <!-- 儲存考卷設定 Modal（僅保留 Google 雲端硬碟與本機儲存功能） -->
+    <div id="save-exam-modal" class="fixed inset-0 bg-slate-950/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xl w-full overflow-hidden shadow-2xl border-2 border-slate-700 max-h-[92vh] flex flex-col">
+            <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
+                <h3 class="font-black text-lg flex items-center gap-2">
+                    <span>💾 儲存考卷與單元設定</span>
+                </h3>
+                <button type="button" onclick="closeSaveExamModal()" class="text-slate-300 hover:text-white font-bold text-xl px-2">✕</button>
+            </div>
+
+            <div class="p-5 space-y-4 overflow-y-auto flex-1">
+                <!-- 1. 考卷 / 作業簿單元檔名確認 -->
+                <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-3.5">
+                    <label for="save-exam-filename" class="block text-sm font-black text-slate-900 mb-1.5">
+                        1. 確認考卷／作業簿單元檔名（可手動修改）：
+                    </label>
+                    <input type="text" id="save-exam-filename" placeholder="請輸入考卷或作業簿單元名稱..." class="w-full bg-white border-2 border-amber-400 focus:border-blue-600 rounded-xl px-3.5 py-2.5 text-base font-bold text-slate-900 focus:outline-none shadow-sm">
+                    <div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+                        <span class="text-slate-600 font-bold">快速帶入：</span>
+                        <button type="button" onclick="applySuggestedFileName('upload')" class="bg-white hover:bg-amber-100 border border-amber-300 text-slate-800 font-bold px-2.5 py-1 rounded-lg transition">📄 原上傳檔名</button>
+                        <button type="button" onclick="applySuggestedFileName('subject')" class="bg-white hover:bg-amber-100 border border-amber-300 text-slate-800 font-bold px-2.5 py-1 rounded-lg transition">📚 科目＋日期</button>
+                    </div>
+                </div>
+
+                <!-- 2. 選擇儲存方式 -->
+                <div>
+                    <label class="block text-sm font-black text-slate-900 mb-2">
+                        2. 選擇儲存位置與方式：
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <label id="save-target-card-drive" class="cursor-pointer border-2 border-blue-600 bg-blue-50 rounded-xl p-3 flex items-start gap-2.5 transition">
+                            <input type="radio" name="save-target-type" value="drive" checked onchange="toggleSaveTargetUI()" class="mt-1 accent-blue-600 w-4 h-4">
+                            <div>
+                                <div class="font-black text-sm text-blue-950">☁️ Google 雲端硬碟</div>
+                                <div class="text-xs text-blue-800 mt-0.5">自動開啟 Google 雲端硬碟並匯出考卷檔</div>
+                            </div>
+                        </label>
+
+                        <label id="save-target-card-local" class="cursor-pointer border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 rounded-xl p-3 flex items-start gap-2.5 transition">
+                            <input type="radio" name="save-target-type" value="local" onchange="toggleSaveTargetUI()" class="mt-1 accent-emerald-600 w-4 h-4">
+                            <div>
+                                <div class="font-black text-sm text-slate-900">💻 本機儲存（下載檔案）</div>
+                                <div class="text-xs text-slate-600 mt-0.5">下載考卷報讀檔 (.json) 至電腦或平板</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 雲端硬碟帳號選擇與資料夾設定面板 -->
+                <div id="drive-options-panel" class="bg-slate-50 border-2 border-slate-200 rounded-xl p-3.5 space-y-3">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <span class="text-xs font-black text-blue-900 bg-blue-100 px-2.5 py-1 rounded-lg">
+                            📁 目標資料夾：智慧考卷報讀
+                        </span>
+                        <button type="button" onclick="openGoogleAccountChooser()" class="text-xs bg-white hover:bg-blue-50 text-blue-700 border border-blue-300 font-black px-2.5 py-1 rounded-lg shadow-sm transition flex items-center gap-1">
+                            <span>🔄 切換 / 授權 Google 帳號</span>
+                        </button>
+                    </div>
+
+                    <!-- Google 帳號選擇 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                            <label for="drive-account-slot" class="block text-xs font-bold text-slate-700 mb-1">瀏覽器登入帳號序位：</label>
+                            <select id="drive-account-slot" onchange="saveDrivePrefs()" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:border-blue-600 focus:outline-none">
+                                <option value="0">預設第 1 個 Google 帳號 (u/0)</option>
+                                <option value="1">第 2 個 Google 帳號 (u/1)</option>
+                                <option value="2">第 3 個 Google 帳號 (u/2)</option>
+                                <option value="3">第 4 個 Google 帳號 (u/3)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="drive-account-email" class="block text-xs font-bold text-slate-700 mb-1">指定雲端硬碟 Email（選填）：</label>
+                            <input type="email" id="drive-account-email" onchange="saveDrivePrefs()" placeholder="例：teacher@gmail.com" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:border-blue-600 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-slate-500 leading-relaxed">
+                        💡 若您有多個 Google 帳號，可先點右上角「切換 / 授權 Google 帳號」確認登入目標雲端硬碟，系統會匯出考卷檔並開啟該帳號的 Google 雲端硬碟供您存入「<strong>智慧考卷報讀</strong>」資料夾。
+                    </p>
+                </div>
+
+                <!-- 本機儲存說明面板 -->
+                <div id="local-options-panel" class="hidden bg-emerald-50 border-2 border-emerald-200 rounded-xl p-3.5 text-xs text-emerald-950 space-y-1.5">
+                    <div class="font-black text-sm">💻 本機儲存說明</div>
+                    <p>系統將把考卷圖片、AI 解析出的題目座標、防破題消音設定完整打包為 <code class="bg-white px-1.5 py-0.5 rounded border border-emerald-300 font-bold">[單元檔名].json</code> 並下載至您的裝置。</p>
+                    <p>日後只要點擊上方「<strong>📂 讀取已存考卷</strong>」，即可免重新辨識、立即進行語音報讀與原卷點讀！</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
+                <button type="button" onclick="closeSaveExamModal()" class="px-4 py-2 rounded-xl font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 text-sm">取消</button>
+                <button type="button" id="btn-confirm-save" onclick="executeSaveExam()" class="px-5 py-2 rounded-xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow text-sm flex items-center gap-1.5">
+                    <span>✅ 確認儲存</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gemini 免金鑰「複製貼上」解析 Modal -->
+    <div id="gemini-paste-modal" class="fixed inset-0 bg-slate-950/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border-2 border-slate-700 max-h-[94vh] flex flex-col">
+            <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
+                <h3 class="font-black text-lg">🤖 用 Gemini 免費解析（不需 API 金鑰）</h3>
+                <button type="button" onclick="closeGeminiPasteModal()" class="text-slate-300 hover:text-white font-bold text-xl px-2">✕</button>
+            </div>
+            <div class="p-5 space-y-3.5 overflow-y-auto flex-1 text-sm">
+                <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-3.5">
+                    <div class="font-black text-blue-950 mb-2">步驟 1：把考卷圖片給 Gemini</div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="copyExamImageToClipboard()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-2 rounded-xl text-sm">📋 複製考卷圖片</button>
+                        <button type="button" onclick="downloadExamImage()" class="bg-white hover:bg-blue-100 border border-blue-400 text-blue-900 font-bold px-3.5 py-2 rounded-xl text-sm">⬇️ 下載考卷圖片</button>
+                    </div>
+                    <p class="text-xs text-blue-900 mt-2 leading-relaxed">請使用<strong>這裡複製或下載的圖片</strong>（已合併成一張），題目框線位置才會對準。頁數多時建議一次 1～2 頁，辨識較準確。</p>
+                </div>
+
+                <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-3.5">
+                    <div class="font-black text-amber-950 mb-2">步驟 2：複製提示詞，到 Gemini 貼上圖片＋提示詞送出</div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="copyGeminiPrompt()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-3.5 py-2 rounded-xl text-sm">📋 複製提示詞</button>
+                        <a href="https://gemini.google.com/app" target="_blank" rel="noopener" class="bg-white hover:bg-amber-100 border border-amber-400 text-amber-950 font-bold px-3.5 py-2 rounded-xl text-sm">↗ 開啟 Gemini</a>
+                    </div>
+                    <details class="mt-2">
+                        <summary class="text-xs font-bold text-amber-900 cursor-pointer">查看提示詞內容（無法自動複製時可手動全選複製）</summary>
+                        <textarea id="gemini-prompt-text" readonly class="mt-2 w-full h-32 text-xs bg-white border border-amber-300 rounded-lg p-2 font-mono"></textarea>
+                    </details>
+                </div>
+
+                <div class="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-3.5">
+                    <div class="font-black text-emerald-950 mb-1">步驟 3：Gemini 回覆後，複製整段回覆貼到下面</div>
+                    <p class="text-xs text-emerald-900 mb-2">可按 Gemini 回覆下方的「複製」或程式碼框右上角的複製鍵，整段貼上即可（含 ```json 也沒關係）。</p>
+                    <textarea id="gemini-paste-result" placeholder="在這裡貼上 Gemini 的回覆…" class="w-full h-36 text-sm bg-white border-2 border-emerald-300 focus:border-emerald-600 focus:outline-none rounded-xl p-2.5 font-mono"></textarea>
+                </div>
+            </div>
+            <div class="p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
+                <button type="button" onclick="closeGeminiPasteModal()" class="px-4 py-2 rounded-xl font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 text-sm">取消</button>
+                <button type="button" onclick="applyGeminiPastedResult()" class="px-5 py-2 rounded-xl font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow text-sm">✅ 套用解析結果</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 相機拍照 Modal -->
+    <div id="camera-modal" class="fixed inset-0 bg-slate-950/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border-2 border-slate-700">
+            <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+                <h3 class="font-black text-lg">📷 拍攝考卷畫面</h3>
+                <button type="button" onclick="closeCameraModal()" class="text-slate-300 hover:text-white font-bold text-xl px-2">✕</button>
+            </div>
+            <div class="p-4 bg-black flex flex-col items-center">
+                <video id="camera-video" autoplay playsinline class="w-full max-h-[60vh] object-contain rounded-lg"></video>
+                <canvas id="camera-canvas" class="hidden"></canvas>
+            </div>
+            <div class="p-4 bg-slate-100 flex items-center justify-between gap-3">
+                <p class="text-xs text-slate-600">建議將考卷放平並保持光線充足，讓中間分欄黑線清晰可見。</p>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeCameraModal()" class="px-4 py-2 rounded-xl font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 text-sm">取消</button>
+                    <button type="button" onclick="capturePhoto(true)" class="px-4 py-2 rounded-xl font-bold text-blue-900 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-sm">➕ 拍完繼續下一張</button>
+                    <button type="button" onclick="capturePhoto(false)" class="px-5 py-2 rounded-xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow text-sm">📸 擷取並完成</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. 全域變數與環境設定
+        // ==========================================
+        const apiKey = "";
+        const GEMINI_MODEL = "gemini-3.8-flash";
+        const GEMINI_FREE_MODELS = [
+            { id: "gemini-3.8-flash", name: "Gemini 3.8 Flash" },
+            { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash" },
+            { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash-Lite" },
+            { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash-Lite" },
+            { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
+            { id: "gemini-2.5-flash-lite", name: "Gemini 2.5 Flash-Lite" }
+        ];
+        let lastUsedGeminiModelLabel = "";
+
+        // 考卷圖片與檔案狀態
+        const TARGET_DRIVE_FOLDER_NAME = "智慧考卷報讀";
+        let uploadedOriginalFileName = "";
+        let currentExamTitle = "";
+        let currentImageBase64 = null;
+        let currentImageMimeType = "image/jpeg";
+        let currentImageDataUrl = "";
+        let pdfDoc = null;
+        let currentPdfPage = 1;
+        let totalPdfPages = 1;
+        let cameraStream = null;
+
+        // 縮放比例狀態
+        let structZoom = 1.0;
+        let interZoom = 1.0;
+        let isCalibrationMode = false;
+
+        // 辨識結果與播放控管狀態
+        let parsedExamData = null;
+        let flattenedQuestions = [];
+        let currentReadingIndex = -1;
+        let lastInteractiveIndex = -1;
+        let isContinuousReading = false;
+        let playSessionId = 0;
+        let sharedAudioCtx = null;
+
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // ==========================================
+        // 2. UI 輔助工具 (提示框、字體大小、語速顯示、檢視切換)
+        // ==========================================
+        let toastTimer = null;
+        function showToast(message, icon = "ℹ️") {
+            const box = document.getElementById('toast-box');
+            const iconEl = document.getElementById('toast-icon');
+            const msgEl = document.getElementById('toast-message');
+            if (!box || !iconEl || !msgEl) return;
+
+            iconEl.textContent = icon;
+            msgEl.textContent = message;
+            box.classList.remove('hidden');
+
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                box.classList.add('hidden');
+            }, 4200);
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function updateSpeechRateDisplay(val) {
+            const display = document.getElementById('rate-display');
+            if (display) {
+                const num = parseFloat(val);
+                display.textContent = `${(Number.isNaN(num) ? 1.0 : num).toFixed(1)}x`;
+            }
+        }
+
+        function setFontSize(size) {
+            const container = document.getElementById('questions-container');
+            if (!container) return;
+            container.classList.remove('text-scale-normal', 'text-scale-large', 'text-scale-xlarge');
+            container.classList.add(`text-scale-${size}`);
+
+            ['normal', 'large', 'xlarge'].forEach(s => {
+                const btn = document.getElementById(`btn-font-${s}`);
+                if (!btn) return;
+                if (s === size) {
+                    btn.className = "px-2 py-1 text-xs font-bold rounded-lg bg-blue-600 text-white transition";
+                } else {
+                    btn.className = "px-2 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition";
+                }
+            });
+        }
+
+        function switchViewMode(mode) {
+            const viewStruct = document.getElementById('view-structured');
+            const viewInter = document.getElementById('view-interactive');
+            const tabStruct = document.getElementById('tab-mode-structured');
+            const tabInter = document.getElementById('tab-mode-interactive');
+
+            if (mode === 'structured') {
+                viewStruct.classList.remove('hidden');
+                viewInter.classList.add('hidden');
+                tabStruct.className = "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-black text-sm bg-blue-600 text-white shadow transition flex items-center justify-center gap-2";
+                tabInter.className = "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-black text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center gap-2";
+                applyStructStageDimensions();
+                if (currentReadingIndex >= 0) {
+                    syncHighlightAllViews(currentReadingIndex, true);
+                }
+            } else {
+                viewStruct.classList.add('hidden');
+                viewInter.classList.remove('hidden');
+                tabInter.className = "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-black text-sm bg-blue-600 text-white shadow transition flex items-center justify-center gap-2";
+                tabStruct.className = "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-black text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center gap-2";
+                if (currentImageDataUrl) {
+                    resetInteractiveZoom();
+                }
+                if (currentReadingIndex >= 0) {
+                    syncHighlightAllViews(currentReadingIndex, true);
+                }
+            }
+        }
+
+        // ==========================================
+        // 3. 考卷圖片舞台縮放與座標同步引擎
+        // ==========================================
+        let examPages = [];
+        let pdfTextLayer = null;
+
+        function panViewportHorizontal(containerId, deltaX) {
+            const el = document.getElementById(containerId);
+            if (el) el.scrollBy({ left: deltaX, behavior: 'smooth' });
+        }
+
+        function bindDragToPan(scrollEl, isBlockedFn = () => false) {
+            if (!scrollEl || scrollEl.dataset.dragPanBound) return;
+            scrollEl.dataset.dragPanBound = '1';
+            let isDown = false, hasMoved = false, startX = 0, startY = 0, sLeft = 0, sTop = 0;
+            scrollEl.addEventListener('mousedown', (e) => {
+                if (e.button !== 0 || isBlockedFn()) return;
+                isDown = true; hasMoved = false; startX = e.clientX; startY = e.clientY;
+                sLeft = scrollEl.scrollLeft; sTop = scrollEl.scrollTop; scrollEl.style.cursor = 'grabbing';
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                const dx = e.clientX - startX, dy = e.clientY - startY;
+                if (Math.hypot(dx, dy) > 6) hasMoved = true;
+                if (hasMoved) { scrollEl.scrollLeft = sLeft - dx; scrollEl.scrollTop = sTop - dy; }
+            });
+            window.addEventListener('mouseup', () => { isDown = false; scrollEl.style.cursor = ''; });
+            scrollEl.addEventListener('click', (e) => { if (hasMoved) { e.stopPropagation(); e.preventDefault(); hasMoved = false; } }, true);
+        }
+
+        function syncScrollContainerAlignment(scrollBox, targetWidth) {
+            if (!scrollBox) return;
+            if (targetWidth > scrollBox.clientWidth - 24) {
+                scrollBox.classList.remove('justify-center');
+                scrollBox.classList.add('justify-start');
+            } else {
+                scrollBox.classList.remove('justify-start');
+                scrollBox.classList.add('justify-center');
+            }
+        }
+
+        function renderImportedPagesBar() {
+            const bar = document.getElementById('imported-pages-bar');
+            const list = document.getElementById('imported-pages-list');
+            if (!bar || !list) return;
+            if (examPages.length === 0) {
+                bar.classList.add('hidden');
+                return;
+            }
+            bar.classList.remove('hidden');
+            list.innerHTML = `<span class="font-black text-slate-700">📑 已加入 ${examPages.length} 頁：</span>` +
+                examPages.map((p, i) => `<span class="inline-flex items-center gap-1 bg-white border border-slate-300 px-2 py-0.5 rounded-lg font-bold text-slate-800"><span>第${i + 1}頁(${escapeHtml(p.name)})</span><button type="button" onclick="removeImportedPage(${i})" class="text-rose-600 hover:text-rose-800 font-black ml-0.5">✕</button></span>`).join('');
+        }
+
+        async function rebuildStitchedExamFromPages(toastMsg = "") {
+            if (examPages.length === 0) return;
+            const normWidth = 1400, dividerH = 28;
+            let totalHeight = 0;
+            const scaled = examPages.map((p, idx) => {
+                const h = Math.round(p.canvas.height * (normWidth / p.canvas.width));
+                totalHeight += h + (idx > 0 ? dividerH : 0);
+                return { canvas: p.canvas, width: normWidth, height: h, name: p.name };
+            });
+            const stitched = document.createElement('canvas');
+            stitched.width = normWidth;
+            stitched.height = Math.max(100, totalHeight);
+            const ctx = stitched.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, stitched.width, stitched.height);
+            let curY = 0;
+            pdfTextLayer = { items: [], W: normWidth, H: stitched.height, pageRects: [], pagesWithText: 0, totalPages: scaled.length };
+            scaled.forEach((item, idx) => {
+                if (idx > 0) {
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.fillRect(0, curY, normWidth, dividerH);
+                    ctx.fillStyle = '#334155';
+                    ctx.font = 'bold 16px "Noto Sans TC", sans-serif';
+                    ctx.fillText(`▼ 第 ${idx + 1} 頁（${item.name}）`, 20, curY + 20);
+                    curY += dividerH;
+                }
+                ctx.drawImage(item.canvas, 0, curY, item.width, item.height);
+                const srcPage = examPages[idx];
+                const f = item.width / item.canvas.width;
+                pdfTextLayer.pageRects.push({ x0: 0, y0: curY, x1: item.width, y1: curY + item.height });
+                if (srcPage && Array.isArray(srcPage.textItems) && srcPage.textItems.length) {
+                    pdfTextLayer.pagesWithText++;
+                    srcPage.textItems.forEach(t => {
+                        const it = { s: t.s, x0: t.x0 * f, x1: t.x1 * f, y0: t.y0 * f + curY, y1: t.y1 * f + curY, fs: t.fs * f, vert: t.vert, page: idx };
+                        it.cx = (it.x0 + it.x1) / 2; it.cy = (it.y0 + it.y1) / 2;
+                        pdfTextLayer.items.push(it);
+                    });
+                }
+                curY += item.height;
+            });
+            await loadExamImageToPreview(stitched.toDataURL('image/jpeg', 0.86), 'image/jpeg');
+            updatePdfTextButton();
+            renderImportedPagesBar();
+            if (toastMsg) showToast(toastMsg, "✅");
+        }
+
+        async function appendPagesAndRebuild(newItems, labelPrefix = "已加入考卷頁面") {
+            const remaining = Math.max(0, 12 - examPages.length);
+            if (remaining === 0) {
+                showToast("已達單次合併上限，請先清空或開始解析。", "⚠️");
+                return;
+            }
+            examPages.push(...newItems.slice(0, remaining));
+            if (!uploadedOriginalFileName && examPages[0]) {
+                uploadedOriginalFileName = examPages[0].name;
+                currentExamTitle = uploadedOriginalFileName;
+            }
+            await rebuildStitchedExamFromPages(`${labelPrefix}（共 ${examPages.length} 頁），可繼續加入檔案，或按「PDF 文字直讀」／「Gemini 解析」。`);
+        }
+
+        async function removeImportedPage(idx) {
+            examPages.splice(idx, 1);
+            if (examPages.length === 0) {
+                clearAllImportedPages();
+                return;
+            }
+            await rebuildStitchedExamFromPages(`已移除該頁，剩餘 ${examPages.length} 頁。`);
+        }
+
+        function clearAllImportedPages() {
+            examPages = [];
+            pdfTextLayer = null;
+            updatePdfTextButton();
+            currentImageDataUrl = "";
+            currentImageBase64 = null;
+            uploadedOriginalFileName = "";
+            currentExamTitle = "";
+            renderImportedPagesBar();
+            document.getElementById('struct-stage-wrapper')?.classList.add('hidden');
+            document.getElementById('empty-image-placeholder')?.classList.remove('hidden');
+            document.getElementById('interactive-stage-wrapper')?.classList.add('hidden');
+            document.getElementById('interactive-empty-msg')?.classList.remove('hidden');
+            showToast("已清空全部頁面。", "🗑️");
+        }
+
+        function applyStructStageDimensions() {
+            const img = document.getElementById('exam-preview-img');
+            const wrapper = document.getElementById('struct-stage-wrapper');
+            const scrollBox = document.getElementById('struct-img-scroll-container');
+            if (!img || !wrapper || !scrollBox || !img.naturalWidth) return;
+
+            const containerWidth = Math.max(280, scrollBox.clientWidth - 28);
+            const baseScale = containerWidth / img.naturalWidth;
+            const targetWidth = Math.round(img.naturalWidth * baseScale * structZoom);
+            const targetHeight = Math.round(img.naturalHeight * baseScale * structZoom);
+
+            wrapper.style.width = `${targetWidth}px`;
+            wrapper.style.height = `${targetHeight}px`;
+            img.style.width = `${targetWidth}px`;
+            img.style.height = `${targetHeight}px`;
+            syncScrollContainerAlignment(scrollBox, targetWidth);
+
+            const label = document.getElementById('struct-zoom-level');
+            if (label) label.textContent = `${Math.round(structZoom * 100)}%`;
+        }
+
+        function zoomStructuredImg(delta) {
+            structZoom = Math.max(0.5, Math.min(2.6, +(structZoom + delta).toFixed(2)));
+            applyStructStageDimensions();
+            if (currentReadingIndex >= 0) {
+                positionLeftSyncLineBar(currentReadingIndex, false);
+            }
+        }
+
+        function resetStructuredZoom() {
+            structZoom = 1.0;
+            applyStructStageDimensions();
+            if (currentReadingIndex >= 0) {
+                positionLeftSyncLineBar(currentReadingIndex, false);
+            }
+        }
+
+        function applyInteractiveStageDimensions() {
+            const img = document.getElementById('interactive-exam-img');
+            const wrapper = document.getElementById('interactive-stage-wrapper');
+            const scrollBox = document.getElementById('interactive-scroll-container');
+            if (!img || !wrapper || !scrollBox || !img.naturalWidth) return;
+
+            const containerWidth = Math.max(320, scrollBox.clientWidth - 48);
+            const baseScale = Math.min(1.25, containerWidth / img.naturalWidth);
+            const targetWidth = Math.round(img.naturalWidth * baseScale * interZoom);
+            const targetHeight = Math.round(img.naturalHeight * baseScale * interZoom);
+
+            wrapper.style.width = `${targetWidth}px`;
+            wrapper.style.height = `${targetHeight}px`;
+            img.style.width = `${targetWidth}px`;
+            img.style.height = `${targetHeight}px`;
+            syncScrollContainerAlignment(scrollBox, targetWidth);
+
+            const label = document.getElementById('inter-zoom-level');
+            if (label) label.textContent = `${Math.round(interZoom * 100)}%`;
+        }
+
+        function zoomInteractiveBoard(delta) {
+            interZoom = Math.max(0.5, Math.min(2.5, +(interZoom + delta).toFixed(2)));
+            applyInteractiveStageDimensions();
+        }
+
+        function resetInteractiveZoom() {
+            interZoom = 1.0;
+            applyInteractiveStageDimensions();
+        }
+
+        window.addEventListener('resize', () => {
+            applyStructStageDimensions();
+            applyInteractiveStageDimensions();
+        });
+
+        function enableAnalyzeButton() {
+            const btn = document.getElementById('btn-analyze');
+            if (btn) {
+                btn.disabled = false;
+                btn.className = "bg-blue-600 hover:bg-blue-700 active:scale-95 text-white cursor-pointer font-black text-sm px-5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition";
+            }
+            enableSaveButton();
+        }
+
+        function enableSaveButton() {
+            const saveBtn = document.getElementById('btn-open-save');
+            if (!saveBtn) return;
+            saveBtn.disabled = false;
+            saveBtn.className = "bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white cursor-pointer font-black text-sm px-4 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition";
+        }
+
+        function stripFileExtension(fileName) {
+            if (!fileName) return "";
+            return String(fileName).replace(/\.[^/.]+$/, "").trim();
+        }
+
+        function waitForImageReady(imgElement) {
+            return new Promise((resolve, reject) => {
+                if (!imgElement) return reject(new Error("找不到圖片元素"));
+                if (imgElement.complete && imgElement.naturalWidth > 0) {
+                    if (typeof imgElement.decode === 'function') {
+                        imgElement.decode().then(() => resolve(imgElement)).catch(() => resolve(imgElement));
+                    } else {
+                        resolve(imgElement);
+                    }
+                    return;
+                }
+                const onLoad = () => {
+                    cleanup();
+                    if (typeof imgElement.decode === 'function') {
+                        imgElement.decode().then(() => resolve(imgElement)).catch(() => resolve(imgElement));
+                    } else {
+                        resolve(imgElement);
+                    }
+                };
+                const onError = () => {
+                    cleanup();
+                    reject(new Error("圖片載入或解碼失敗"));
+                };
+                const cleanup = () => {
+                    imgElement.removeEventListener('load', onLoad);
+                    imgElement.removeEventListener('error', onError);
+                };
+                imgElement.addEventListener('load', onLoad);
+                imgElement.addEventListener('error', onError);
+            });
+        }
+
+        function cropNormalizedBoxToDataUrl(imgElement, box) {
+            try {
+                if (!imgElement || !imgElement.naturalWidth || !imgElement.naturalHeight) return null;
+                if (!Array.isArray(box) || box.length < 4) return null;
+
+                const natW = imgElement.naturalWidth;
+                const natH = imgElement.naturalHeight;
+
+                const rawY1 = Number(box[0]);
+                const rawX1 = Number(box[1]);
+                const rawY2 = Number(box[2]);
+                const rawX2 = Number(box[3]);
+                if ([rawY1, rawX1, rawY2, rawX2].some(v => Number.isNaN(v))) return null;
+
+                const clampedY1 = Math.max(0, Math.min(1000, Math.min(rawY1, rawY2)));
+                const clampedX1 = Math.max(0, Math.min(1000, Math.min(rawX1, rawX2)));
+                const clampedY2 = Math.max(0, Math.min(1000, Math.max(rawY1, rawY2)));
+                const clampedX2 = Math.max(0, Math.min(1000, Math.max(rawX1, rawX2)));
+
+                const sx = Math.max(0, Math.min(natW - 1, Math.floor((clampedX1 / 1000) * natW)));
+                const sy = Math.max(0, Math.min(natH - 1, Math.floor((clampedY1 / 1000) * natH)));
+                const ex = Math.max(sx + 1, Math.min(natW, Math.ceil((clampedX2 / 1000) * natW)));
+                const ey = Math.max(sy + 1, Math.min(natH, Math.ceil((clampedY2 / 1000) * natH)));
+
+                const sw = ex - sx;
+                const sh = ey - sy;
+                if (sw <= 2 || sh <= 2) return null;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = sw;
+                canvas.height = sh;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return null;
+
+                ctx.drawImage(imgElement, sx, sy, sw, sh, 0, 0, sw, sh);
+                return canvas.toDataURL('image/jpeg', 0.92);
+            } catch (err) {
+                console.warn("圖片裁切略過:", err);
+                return null;
+            }
+        }
+
+        function openCropModal(imgSrc, title = "題組附圖放大檢視") {
+            const modal = document.getElementById('image-zoom-modal');
+            const img = document.getElementById('crop-modal-img');
+            const titleEl = document.getElementById('crop-modal-title');
+            if (!modal || !img) return;
+            img.src = imgSrc;
+            if (titleEl) titleEl.textContent = `🖼️ ${title}`;
+            modal.classList.remove('hidden');
+        }
+
+        function closeCropModal() {
+            const modal = document.getElementById('image-zoom-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function loadExamImageToPreview(dataUrl, mimeType = "image/jpeg") {
+            currentImageDataUrl = dataUrl;
+            const structImg = document.getElementById('exam-preview-img');
+            const structWrapper = document.getElementById('struct-stage-wrapper');
+            const placeholder = document.getElementById('empty-image-placeholder');
+
+            const interImg = document.getElementById('interactive-exam-img');
+            const interWrapper = document.getElementById('interactive-stage-wrapper');
+            const interEmpty = document.getElementById('interactive-empty-msg');
+
+            structImg.src = dataUrl;
+            structWrapper.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+
+            interImg.src = dataUrl;
+            interWrapper.classList.remove('hidden');
+            interEmpty.classList.add('hidden');
+
+            document.getElementById('struct-hotspots-overlay').innerHTML = '';
+            document.getElementById('hotspots-overlay').innerHTML = '';
+            document.getElementById('sync-active-line-bar').classList.add('hidden');
+
+            await Promise.all([
+                waitForImageReady(structImg).catch(() => {}),
+                waitForImageReady(interImg).catch(() => {})
+            ]);
+
+            resetStructuredZoom();
+            resetInteractiveZoom();
+
+            const commaIdx = dataUrl.indexOf(',');
+            currentImageBase64 = commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+            currentImageMimeType = mimeType;
+            enableAnalyzeButton();
+        }
+
+        // ==========================================
+        // 4. 檔案匯入與範例考卷
+        // ==========================================
+
+        // 4.1 圖片上傳
+        document.getElementById('image-upload').addEventListener('change', async function(e) {
+            const files = Array.from(e.target.files || []);
+            if (files.length === 0) return;
+            document.getElementById('pdf-page-controls')?.classList.add('hidden');
+            document.getElementById('pdf-page-controls')?.classList.remove('flex');
+            pdfDoc = null;
+            try {
+                const newPages = [];
+                for (let f of files) {
+                    const objUrl = URL.createObjectURL(f);
+                    try {
+                        const img = new Image();
+                        img.src = objUrl;
+                        await waitForImageReady(img);
+                        const cvs = document.createElement('canvas');
+                        cvs.width = img.naturalWidth;
+                        cvs.height = img.naturalHeight;
+                        cvs.getContext('2d').drawImage(img, 0, 0);
+                        newPages.push({ name: stripFileExtension(f.name), canvas: cvs });
+                    } finally {
+                        URL.revokeObjectURL(objUrl);
+                    }
+                }
+                await appendPagesAndRebuild(newPages, "圖片載入成功");
+            } catch (err) {
+                showToast("圖片讀取失敗，請重新選擇。", "❌");
+            } finally {
+                e.target.value = '';
+            }
+        });
+
+        // 4.2 PDF 上傳 (支援多頁一次辨識，垂直拼接合併)
+        document.getElementById('pdf-upload').addEventListener('change', async function(e) {
+            const files = Array.from(e.target.files || []);
+            if (files.length === 0) return;
+            document.getElementById('pdf-page-controls')?.classList.add('hidden');
+            document.getElementById('pdf-page-controls')?.classList.remove('flex');
+            showToast("正在提取 PDF 頁面...", "⏳");
+            try {
+                if (typeof pdfjsLib === 'undefined') throw new Error("PDF 解析元件尚未載入");
+                const newPages = [];
+                for (let f of files) {
+                    const buf = await f.arrayBuffer();
+                    const doc = await pdfjsLib.getDocument({ data: buf, cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/', cMapPacked: true }).promise;
+                    for (let i = 1; i <= Math.min(doc.numPages, 10); i++) {
+                        const page = await doc.getPage(i);
+                        const vp = page.getViewport({ scale: 1.5 });
+                        const cvs = document.createElement('canvas');
+                        cvs.width = Math.floor(vp.width);
+                        cvs.height = Math.floor(vp.height);
+                        await page.render({ canvasContext: cvs.getContext('2d'), viewport: vp }).promise;
+                        let textItems = [];
+                        try { textItems = await extractPdfPageTextItems(page, vp); } catch (tErr) { console.warn('PDF 文字層讀取略過', tErr); }
+                        newPages.push({ name: `${stripFileExtension(f.name)}_P${i}`, canvas: cvs, textItems });
+                    }
+                }
+                await appendPagesAndRebuild(newPages, "PDF 頁面擷取成功");
+            } catch (err) {
+                showToast("PDF 讀取失敗，請確認檔案是否損毀。", "❌");
+            } finally {
+                e.target.value = '';
+            }
+        });
+
+        async function renderPdfPage(pageNum) {
+            if (!pdfDoc) return;
+            document.getElementById('pdf-page-info').textContent = `${pageNum} / ${totalPdfPages}`;
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 2.0 });
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = Math.floor(viewport.width);
+            canvas.height = Math.floor(viewport.height);
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            await loadExamImageToPreview(dataUrl, 'image/jpeg');
+        }
+
+        async function changePdfPage(delta) {
+            if (!pdfDoc) return;
+            const nextPage = currentPdfPage + delta;
+            if (nextPage < 1 || nextPage > totalPdfPages) return;
+            stopSpeech();
+            currentPdfPage = nextPage;
+            await renderPdfPage(currentPdfPage);
+            showToast(`已切換至 PDF 第 ${currentPdfPage} 頁。`, "📄");
+        }
+
+        // 4.3 Word (.docx) 上傳
+        document.getElementById('docx-upload').addEventListener('change', async function(e) {
+            const files = Array.from(e.target.files || []);
+            if (files.length === 0) return;
+            document.getElementById('pdf-page-controls')?.classList.add('hidden');
+            document.getElementById('pdf-page-controls')?.classList.remove('flex');
+            showToast("正在解析 Word 檔案...", "⏳");
+            try {
+                const newPages = [];
+                for (let f of files) {
+                    const rawText = await safeParseDocxFile(f);
+                    const dUrl = renderTextLinesToExamImage(rawText, f.name);
+                    const img = new Image();
+                    img.src = dUrl;
+                    await waitForImageReady(img);
+                    const cvs = document.createElement('canvas');
+                    cvs.width = img.naturalWidth;
+                    cvs.height = img.naturalHeight;
+                    cvs.getContext('2d').drawImage(img, 0, 0);
+                    newPages.push({ name: stripFileExtension(f.name), canvas: cvs });
+                }
+                await appendPagesAndRebuild(newPages, "Word 檔案載入成功");
+            } catch (err) {
+                showToast(`Word 讀取失敗：${err.message || "請確認檔案格式"}`, "❌");
+            } finally {
+                e.target.value = '';
+            }
+        });
+
+        async function safeParseDocxFile(file) {
+            if (typeof mammoth === 'undefined') throw new Error("Word 解析模組尚未載入");
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer });
+            return (result?.value || "").trim();
+        }
+
+        function renderTextLinesToExamImage(rawText, fileName) {
+            const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            const wrappedLines = [];
+            lines.forEach(line => {
+                for (let i = 0; i < line.length; i += 34) {
+                    wrappedLines.push(line.slice(i, i + 34));
+                }
+            });
+            const lineHeight = 46;
+            const canvas = document.createElement('canvas');
+            canvas.width = 1000;
+            canvas.height = Math.max(900, 180 + wrappedLines.length * lineHeight);
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 26px "Noto Sans TC", sans-serif';
+            ctx.fillText(`考卷檔案：${fileName}`, 60, 82);
+            ctx.beginPath();
+            ctx.moveTo(30, 105);
+            ctx.lineTo(canvas.width - 30, 105);
+            ctx.stroke();
+            ctx.font = '24px "Noto Sans TC", sans-serif';
+            wrappedLines.forEach((txt, idx) => ctx.fillText(txt, 60, 155 + idx * lineHeight));
+            return canvas.toDataURL('image/png');
+        }
+
+        // 4.4 相機拍照
+        async function openCameraModal() {
+            const modal = document.getElementById('camera-modal');
+            const video = document.getElementById('camera-video');
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = cameraStream;
+                modal.classList.remove('hidden');
+            } catch (err) {
+                showToast("無法開啟相機，請確認權限。", "❌");
+            }
+        }
+
+        function closeCameraModal() {
+            const modal = document.getElementById('camera-modal');
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = null;
+            }
+            document.getElementById('camera-video').srcObject = null;
+            modal.classList.add('hidden');
+        }
+
+        async function capturePhoto(continueShooting = false) {
+            const video = document.getElementById('camera-video');
+            const canvas = document.getElementById('camera-canvas');
+            if (!video.videoWidth) return;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const now = new Date();
+            const stamp = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+            const cvsCopy = document.createElement('canvas');
+            cvsCopy.width = canvas.width;
+            cvsCopy.height = canvas.height;
+            cvsCopy.getContext('2d').drawImage(canvas, 0, 0);
+            await appendPagesAndRebuild([{ name: `拍照_${stamp}`, canvas: cvsCopy }], "拍照擷取成功");
+            if (!continueShooting) closeCameraModal();
+        }
+
+        // 4.5 內建範例考卷
+        async function loadSampleExam() {
+            stopSpeech();
+            const canvas = document.createElement('canvas');
+            canvas.width = 1000;
+            canvas.height = 1200;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 1000, 1200);
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(36, 36, 928, 1128);
+
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 34px "Noto Sans TC", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('國小國語文領域評量（引號標記防破題測試）', 500, 96);
+
+            ctx.beginPath();
+            ctx.moveTo(36, 135);
+            ctx.lineTo(964, 135);
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#0f172a';
+
+            // 第一大題
+            ctx.font = 'bold 28px "Noto Sans TC", sans-serif';
+            ctx.fillText('一、是非題：對的打○，錯的打✕', 64, 190);
+
+            ctx.font = '26px "Noto Sans TC", sans-serif';
+            ctx.fillText('（　）1. 過馬路要走斑馬線。', 84, 250);
+
+            ctx.beginPath();
+            ctx.moveTo(36, 300);
+            ctx.lineTo(964, 300);
+            ctx.stroke();
+
+            // 第二大題：注音是...消音測試
+            ctx.font = 'bold 28px "Noto Sans TC", sans-serif';
+            ctx.fillText('二、寫出國字的注音（「的注音是」消音測試）', 64, 350);
+
+            ctx.font = '27px "Noto Sans TC", sans-serif';
+            ctx.fillText('1. 「壽」的注音是（　　）。', 84, 410);
+
+            ctx.beginPath();
+            ctx.moveTo(36, 460);
+            ctx.lineTo(964, 460);
+            ctx.stroke();
+
+            // 第三大題：引號考點字消音測試
+            ctx.font = 'bold 28px "Noto Sans TC", sans-serif';
+            ctx.fillText('三、看注音寫國字（引號標記字消音測試）', 64, 510);
+
+            ctx.font = '27px "Noto Sans TC", sans-serif';
+            ctx.fillText('1. 去「泰」國旅遊。', 84, 570);
+            ctx.fillText('2. 穿著「背」心。', 84, 630);
+            ctx.fillText('3. 動作很「靈」活。', 84, 690);
+            ctx.fillText('4. 努力加「倍」。', 84, 750);
+
+            ctx.beginPath();
+            ctx.moveTo(36, 800);
+            ctx.lineTo(964, 800);
+            ctx.stroke();
+
+            // 第四大題：看圖回答問題
+            ctx.font = 'bold 28px "Noto Sans TC", sans-serif';
+            ctx.fillText('四、看圖回答問題', 64, 850);
+
+            ctx.font = '26px "Noto Sans TC", sans-serif';
+            ctx.fillText('1. 請觀察右邊的時鐘圖片，現在是幾點？', 84, 910);
+            ctx.fillText('   答：（　）點（　）分。', 84, 960);
+
+            const cx = 770, cy = 940, r = 90;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fillStyle = '#fffbeb';
+            ctx.fill();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#0f172a';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + 45, cy);
+            ctx.lineWidth = 6;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx, cy - 65);
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#2563eb';
+            ctx.stroke();
+            ctx.restore();
+
+            const dataUrl = canvas.toDataURL('image/png');
+            document.getElementById('pdf-page-controls').classList.add('hidden');
+            document.getElementById('pdf-page-controls').classList.remove('flex');
+            pdfDoc = null;
+            examPages = [];
+            pdfTextLayer = null;
+            updatePdfTextButton();
+            renderImportedPagesBar();
+            uploadedOriginalFileName = "國小國語文領域評量";
+            currentExamTitle = uploadedOriginalFileName;
+            lastUsedGeminiModelLabel = "";
+
+            await loadExamImageToPreview(dataUrl, 'image/png');
+
+            parsedExamData = {
+                detectedLayout: "單區整頁（自動辨識）",
+                detectedDirection: "橫書（由左至右、由上至下）",
+                subject: "國語文",
+                sections: [
+                    {
+                        sectionTitle: "一、是非題：對的打○，錯的打✕",
+                        box_2d: [160, 55, 205, 620],
+                        questions: [
+                            {
+                                questionNumber: "第 1 題",
+                                rawText: "（　）1. 過馬路要走斑馬線。",
+                                displayText: "（　）1. 過馬路要走斑馬線。",
+                                spokenText: "過馬路要走斑馬線。",
+                                antiSpoilerApplied: false,
+                                box_2d: [220, 72, 260, 420]
+                            }
+                        ]
+                    },
+                    {
+                        sectionTitle: "二、寫出國字的注音",
+                        box_2d: [320, 55, 365, 850],
+                        questions: [
+                            {
+                                questionNumber: "第 1 題",
+                                rawText: "1. 「壽」的注音是（　　）。",
+                                displayText: "1. 「壽」的注音是（　　）。",
+                                spokenText: "「壽」的注音是（　　）。",
+                                antiSpoilerApplied: true,
+                                box_2d: [380, 74, 420, 520]
+                            }
+                        ]
+                    },
+                    {
+                        sectionTitle: "三、看注音寫國字（引號標記字消音測試）",
+                        box_2d: [480, 55, 525, 750],
+                        questions: [
+                            {
+                                questionNumber: "第 1 題",
+                                rawText: "1. 去「泰」國旅遊。",
+                                displayText: "1. 去「泰」國旅遊。",
+                                spokenText: "去「泰」國旅遊。",
+                                antiSpoilerApplied: true,
+                                box_2d: [540, 74, 580, 420]
+                            },
+                            {
+                                questionNumber: "第 2 題",
+                                rawText: "2. 穿著「背」心。",
+                                displayText: "2. 穿著「背」心。",
+                                spokenText: "穿著「背」心。",
+                                antiSpoilerApplied: true,
+                                box_2d: [600, 74, 640, 420]
+                            },
+                            {
+                                questionNumber: "第 3 題",
+                                rawText: "3. 動作很「靈」活。",
+                                displayText: "3. 動作很「靈」活。",
+                                spokenText: "動作很「靈」活。",
+                                antiSpoilerApplied: true,
+                                box_2d: [660, 74, 700, 420]
+                            },
+                            {
+                                questionNumber: "第 4 題",
+                                rawText: "4. 努力加「倍」。",
+                                displayText: "4. 努力加「倍」。",
+                                spokenText: "努力加「倍」。",
+                                antiSpoilerApplied: true,
+                                box_2d: [720, 74, 760, 420]
+                            }
+                        ]
+                    },
+                    {
+                        sectionTitle: "四、看圖回答問題",
+                        box_2d: [820, 55, 865, 420],
+                        questions: [
+                            {
+                                questionNumber: "第 1 題",
+                                rawText: "1. 請觀察右邊的時鐘圖片，現在是幾點？答：（　）點（　）分。",
+                                displayText: "1. 請觀察右邊的時鐘圖片，現在是幾點？\n答：（　）點（　）分。",
+                                spokenText: "請觀察右邊的時鐘圖片，現在是幾點？答：（　）點（　）分。",
+                                hasImage: true,
+                                imageDescription: "圓形鐘面，時針指向 3，分針指向 12。",
+                                imageBox: [830, 660, 1050, 880],
+                                box_2d: [880, 74, 980, 615]
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            renderExamQuestions(parsedExamData);
+            showToast("已載入範例考卷！請點選第三大題測試「什麼心/什麼活/加什麼」！", "✨");
+        }
+
+        // ==========================================
+        // 5. Gemini 視覺辨識與防破題 Prompt（支援多款免費模型切換與自動備援）
+        // ==========================================
+        function saveGeminiModelPref() {
+            try {
+                const modelVal = document.getElementById('gemini-model-select')?.value || GEMINI_MODEL;
+                const fallbackVal = document.getElementById('gemini-auto-fallback')?.checked !== false ? '1' : '0';
+                localStorage.setItem('exam_reader_gemini_model', modelVal);
+                localStorage.setItem('exam_reader_gemini_fallback', fallbackVal);
+            } catch (e) {}
+        }
+
+        function loadGeminiModelPref() {
+            try {
+                const savedModel = localStorage.getItem('exam_reader_gemini_model');
+                const savedFallback = localStorage.getItem('exam_reader_gemini_fallback');
+                const selectEl = document.getElementById('gemini-model-select');
+                const fallbackEl = document.getElementById('gemini-auto-fallback');
+                if (savedModel && selectEl && Array.from(selectEl.options).some(o => o.value === savedModel)) {
+                    selectEl.value = savedModel;
+                }
+                if (savedFallback !== null && fallbackEl) {
+                    fallbackEl.checked = savedFallback === '1';
+                }
+            } catch (e) {}
+        }
+
+        function cleanAndParseJsonResponse(rawText) {
+            let cleaned = String(rawText).trim();
+            cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+            const firstBrace = cleaned.indexOf('{');
+            const lastBrace = cleaned.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+            }
+            return JSON.parse(cleaned);
+        }
+
+        function buildGeminiSystemInstruction(layoutHint, dirHint) {
+            return `你是一位臺灣特殊教育考卷語音報讀與版面座標定位專家。
+請精準解析考卷圖片，嚴格遵守以下規則：
+1. 【極度嚴格的字元辨識（禁止腦補與校正）】：請逐字、逐注音精準辨識圖片上的文字！絕對禁止自行「腦補」或替換成常見詞彙。例如圖片上是「泰」國，就必須精準輸出「泰」國，絕對不可以擅自改成「國家」！這對特教生非常重要。
+2. 【標記部分區分與目標字消音】：凡是題目中用「」或『』框起來的標記字（通常是考點，要求寫注音或國字），在 \`spokenText\` 中必須將該字替換為「什麼」（或依詞性適當替換），絕對不可以念出該目標字！
+3. 【括號不唸出與題號不重複】：考卷題目中的括號，在 \`spokenText\` 中絕對不可寫成「括號」，請直接省略括號外框，且 \`spokenText\` 開頭不需重複加上題號。
+4. 【自動隱藏答案】：若原卷上已有作答痕跡，請在 \`displayText\` 與 \`spokenText\` 中自動清空。
+5. 【選擇題選項完整報讀（編號＋國字都要唸）】：遇到選擇題時，除了唸出選項編號「1」、「2」、「3」、「4」（不要加上「選項」二字）之外，必須將每個選項後面的完整國字、注音或數字內容一字不漏唸出來，並在編號與國字之間、以及各選項之間加上「……」作為停頓！
+6. 【完整辨識題組文章與參考項目框】：凡是大題下方或題組前方的閱讀短文、提示框、詞庫／代號參考框（例如框內有「①守護村莊、保佑作物豐收 ②具有團結族人的意義」等所有項目），必須完整辨識並填入該大題的 \`referenceBox\`（含 \`displayText\`、\`spokenText\`、\`box_2d\`，無則填 \`null\`），裡面的每一個項目都要一字不漏唸出來，絕對不可省略！
+7. 【版面與座標】：偵測分欄黑線（${layoutHint}）與直/橫書方向（${dirHint}），提供精準 box_2d 座標 [ymin, xmin, ymax, xmax]（0~1000）。
+8. 【是非題校正】：「對的打○，錯的打✕」統一整理為「對的打圈，錯的打叉」。
+9. 【看注音寫國字遮罩】：括號內純注音保留，由前端系統處理。
+
+請僅輸出合法的 JSON 物件，結構如下：
+{
+  "detectedLayout": "...",
+  "detectedDirection": "...",
+  "subject": "...",
+  "sections": [
+    {
+      "sectionTitle": "大題標題",
+      "box_2d": [ymin, xmin, ymax, xmax],
+      "referenceBox": {
+        "displayText": "...",
+        "spokenText": "...",
+        "box_2d": [ymin, xmin, ymax, xmax]
+      },
+      "questions": [
+        {
+          "questionNumber": "第 1 題",
+          "displayText": "...",
+          "spokenText": "...",
+          "hasImage": false,
+          "imageBox": null,
+          "box_2d": [ymin, xmin, ymax, xmax]
+        }
+      ]
+    }
+  ]
+}`;
+        }
+
+        async function analyzeExamImage() {
+            if (!currentImageBase64) {
+                showToast("請先上傳圖片！", "⚠️");
+                return;
+            }
+            stopSpeech();
+            document.getElementById('loading-panel').classList.remove('hidden');
+            document.getElementById('questions-container').classList.add('hidden');
+            const btn = document.getElementById('btn-analyze');
+            if (btn) btn.disabled = true;
+
+            const layoutHint = document.getElementById('layout-mode').value;
+            const dirHint = document.getElementById('text-direction').value;
+            const selectedModel = document.getElementById('gemini-model-select')?.value || GEMINI_MODEL;
+            const autoFallback = document.getElementById('gemini-auto-fallback')?.checked !== false;
+
+            const modelsToTry = [selectedModel];
+            if (autoFallback) {
+                GEMINI_FREE_MODELS.forEach(m => {
+                    if (!modelsToTry.includes(m.id)) modelsToTry.push(m.id);
+                });
+            }
+
+            const systemInstruction = buildGeminiSystemInstruction(layoutHint, dirHint);
+
+            const payload = {
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: "請解析這張考卷，嚴格禁止腦補（例如不可將泰國改為國家），並將引號「」內的標記字替換為「什麼」。輸出 JSON。" },
+                            { inlineData: { mimeType: currentImageMimeType, data: currentImageBase64 } }
+                        ]
+                    }
+                ],
+                generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+            };
+
+            const statusEl = document.getElementById('loading-model-status');
+
+            try {
+                let lastError = null;
+                let succeeded = false;
+
+                for (let i = 0; i < modelsToTry.length; i++) {
+                    const modelId = modelsToTry[i];
+                    const isFallbackAttempt = i > 0;
+                    const modelMeta = GEMINI_FREE_MODELS.find(m => m.id === modelId);
+                    const modelName = modelMeta ? modelMeta.name : modelId;
+
+                    if (statusEl) {
+                        statusEl.textContent = isFallbackAttempt
+                            ? `🔄 自動備援切換中：正在使用 ${modelName}（第 ${i + 1}/${modelsToTry.length} 順位）...`
+                            : `🤖 正在使用 ${modelName} 解析考卷...`;
+                    }
+
+                    try {
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const result = await response.json().catch(() => ({}));
+
+                        if (!response.ok || result?.error) {
+                            const errCode = result?.error?.code || response.status;
+                            const errMsg = result?.error?.message || `HTTP ${response.status}`;
+                            const isInvalidKey = String(errMsg).toLowerCase().includes('api key not valid') || String(errMsg).toLowerCase().includes('api_key_invalid');
+                            if (isInvalidKey || !autoFallback || i === modelsToTry.length - 1) {
+                                throw new Error(`${modelName} 失敗 (${errCode}): ${errMsg}`);
+                            }
+                            console.warn(`模型 ${modelId} 暫無法使用，自動切換下一個免費備援模型:`, errMsg);
+                            showToast(`⚠️ ${modelName} 暫無法使用（${errCode}），自動切換下一個免費備援模型...`, "🔄");
+                            continue;
+                        }
+
+                        const candidateText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (!candidateText) {
+                            if (!autoFallback || i === modelsToTry.length - 1) {
+                                throw new Error(`${modelName} 未回傳有效解析內容`);
+                            }
+                            continue;
+                        }
+
+                        const parsed = cleanAndParseJsonResponse(candidateText);
+                        if (!parsed || !Array.isArray(parsed.sections)) {
+                            throw new Error(`${modelName} 回傳格式缺少題目區塊`);
+                        }
+
+                        parsedExamData = parsed;
+                        lastUsedGeminiModelLabel = isFallbackAttempt ? `${modelName}（自動備援）` : modelName;
+                        parsedExamData._usedModelLabel = lastUsedGeminiModelLabel;
+                        succeeded = true;
+                        break;
+                    } catch (stepErr) {
+                        lastError = stepErr;
+                        if (!autoFallback || i === modelsToTry.length - 1) {
+                            throw stepErr;
+                        }
+                    }
+                }
+
+                if (!succeeded) {
+                    throw lastError || new Error("所有免費備援模型皆無法完成解析");
+                }
+                
+                renderExamQuestions(parsedExamData);
+                showToast(`考卷辨識完成（使用 ${lastUsedGeminiModelLabel}）！點擊左側考卷即可同步報讀。`, "🎉");
+            } catch (err) {
+                console.error(err);
+                showToast("尚未設定 API Key、免費額度已滿或連線失敗，請點擊「載入範例考卷」直接體驗。", "❌");
+            } finally {
+                document.getElementById('loading-panel').classList.add('hidden');
+                document.getElementById('questions-container').classList.remove('hidden');
+                if (btn && currentImageBase64) btn.disabled = false;
+            }
+        }
+
+        // ==========================================
+        // 6. 語音前端過濾引擎 (引號消音與注音遮罩)
+        // ==========================================
+        function getReplacementToken() {
+            const mode = document.getElementById('mask-replacement')?.value || '什麼';
+            return mode === 'beep' ? '[BEEP]' : mode;
+        }
+
+        function fixTrueFalseSymbols(text) {
+            if (!text || typeof text !== 'string') return '';
+            let out = text;
+            out = out.replace(/([對正確])\s*的\s*([打畫填寫])\s*[○Ｏ◯〇oO0]/g, '$1的$2圈');
+            out = out.replace(/([錯不誤])\s*的\s*([打畫填寫])\s*[✕✖×╳ＸxX✗✘]/g, '$1的$2叉');
+            out = out.replace(/([打畫填寫])\s*[○Ｏ◯〇]/g, '$1圈');
+            out = out.replace(/([打畫填寫])\s*[✕✖×╳Ｘ✗✘]/g, '$1叉');
+            return out;
+        }
+
+        function sanitizeZhuyinAndPlaceholders(text) {
+            if (!text || typeof text !== 'string') return '';
+            const maskToken = getReplacementToken();
+            let out = fixTrueFalseSymbols(text);
+
+            // 【規則 A】聽到「的注音是…」自動隱藏前方考點字
+            out = out.replace(/[「『【"]([^」』】"]+)[」』】"](?:[，,、\s]*[^，。！？\n]*?的\1)?[，,、\s]*(?:的)?注音是/g, '這個國字的注音是');
+            out = out.replace(/(?:國字)?\s*[\u4e00-\u9fff]{1,2}\s*的注音是/g, '這個國字的注音是');
+            if (out.includes('注音是')) {
+                out = out.replace(/[「『【"]([^」』】"]+)[」』】"]/g, '這個字');
+            }
+
+            // 【規則 B】引號內考點字替換 (例如: 「背」心 -> 什麼心，加「倍」 -> 加什麼)
+            if (maskToken !== '[BEEP]') {
+                out = out.replace(/[「『【]([^」』】]{1,4})[」』】]/g, maskToken);
+            } else {
+                out = out.replace(/[「『【]([^」』】]{1,4})[」』】]/g, '[BEEP]');
+            }
+
+            // 【規則 C】看注音寫國字防破題 (括號內注音)
+            out = out.replace(/[\(（]\s*[ㄅ-ㄩˊˇˋ˙\s]+\s*[\)）]/g, maskToken);
+
+            if (maskToken !== '[BEEP]') {
+                const escapedMask = maskToken.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                out = out.replace(new RegExp(`(${escapedMask}\\s*){2,}`, 'g'), maskToken);
+            }
+
+            // 【規則 D】隱藏括號內常見已作答答案，且報讀時括號不唸出來
+            out = out.replace(/[(（]\s*[1-5一二三四五○Ｏ◯〇✕✖×╳]\s*[)）]/g, ' ');
+
+            // 【規則 E】報讀時所有括號不唸出來（空白括號直接省略，有內文之括號僅保留內文並轉為自然停頓）
+            out = out.replace(/[\(（〔［【]\s*[\)）〕］】]/g, ' ');
+            out = out.replace(/[\(（〔［]\s*([^\)）〕］]+?)\s*[\)）〕］]/g, '，$1，');
+            out = out.replace(/[\(（\)）〔〕［］]/g, '');
+            out = out.replace(/^\s*括號[。，、,\.\s]*/g, '');
+            out = out.replace(/([。，、；：！？\s])括號(?=[。，、；：！？\s]|$)/g, '$1');
+
+            // 【規則 F】選項朗讀簡化：選項一 -> 一
+            out = out.replace(/選項([一二三四五1-5])/g, '$1');
+
+            // 清理多餘標點與空白
+            out = out.replace(/([：:])\s*[，,、]+/g, '$1 ');
+            out = out.replace(/[，,、]{2,}/g, '，');
+            out = out.replace(/^[，,、。\s]+/g, '');
+            out = out.replace(/\s{2,}/g, ' ').trim();
+
+            return out;
+        }
+
+        function stripParenthesesForSpeech(text) {
+            if (!text || typeof text !== 'string') return '';
+            let out = text;
+            out = out.replace(/[\(（〔［【]\s*[\)）〕］】]/g, ' ');
+            out = out.replace(/[\(（〔［]\s*([^\)）〕］]+?)\s*[\)）〕］]/g, '，$1，');
+            out = out.replace(/[\(（\)）〔〕［］]/g, '');
+            out = out.replace(/^\s*括號[。，、,\.\s]*/g, '');
+            out = out.replace(/([。，、；：！？\s])括號(?=[。，、；：！？\s]|$)/g, '$1');
+            out = out.replace(/([：:])\s*[，,、]+/g, '$1 ');
+            out = out.replace(/[，,、]{2,}/g, '，');
+            out = out.replace(/^[，,、\s]+/g, '');
+            out = out.replace(/\s{2,}/g, ' ').trim();
+            return out;
+        }
+
+        function expandCircledItemsForSpeech(text) {
+            if (!text || typeof text !== 'string') return '';
+            const circledMap = { '①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5', '⑥': '6', '⑦': '7', '⑧': '8', '⑨': '9', '⑩': '10' };
+            let out = text.replace(/\s*([①②③④⑤⑥⑦⑧⑨⑩])\s*/g, (match, sym, offset) => {
+                const num = circledMap[sym] || sym;
+                const prefix = offset > 0 ? '…… ' : '';
+                return `${prefix}${num}…… `;
+            });
+            return out.replace(/……\s*……/g, '……');
+        }
+
+        function normalizeTextForTaiwanTTS(spokenText) {
+            if (!spokenText || typeof spokenText !== 'string') return '';
+            let ttsStr = fixTrueFalseSymbols(spokenText);
+            ttsStr = stripParenthesesForSpeech(ttsStr);
+            ttsStr = expandCircledItemsForSpeech(ttsStr);
+            ttsStr = ttsStr.replace(/打叉/g, '打插');
+            ttsStr = ttsStr.replace(/畫叉/g, '畫插');
+            return ttsStr;
+        }
+
+        function formatDisplayPreviewText(spokenText) {
+            return spokenText.replace(/\[BEEP\]/g, '【🔔嗶】');
+        }
+
+        function updateReplacementMode() {
+            if (!parsedExamData) return;
+            renderExamQuestions(parsedExamData);
+        }
+
+        // ==========================================
+        // 7. 渲染 UI
+        // ==========================================
+        function renderExamQuestions(data) {
+            const container = document.getElementById('questions-container');
+            const metaTags = document.getElementById('detected-meta-tags');
+            const structOverlay = document.getElementById('struct-hotspots-overlay');
+            const interOverlay = document.getElementById('hotspots-overlay');
+
+            container.innerHTML = '';
+            if (structOverlay) structOverlay.innerHTML = '';
+            if (interOverlay) interOverlay.innerHTML = '';
+
+            if (metaTags) {
+                const activeModelBadge = (data._usedModelLabel || lastUsedGeminiModelLabel)
+                    ? `<span class="bg-emerald-100 text-emerald-900 px-2.5 py-1 rounded-full font-bold">🤖 ${escapeHtml(data._usedModelLabel || lastUsedGeminiModelLabel)}</span>`
+                    : '';
+                metaTags.innerHTML = `
+                    <span class="bg-blue-100 text-blue-900 px-2.5 py-1 rounded-full font-black">📚 ${escapeHtml(data.subject || '考卷')}</span>
+                    <span class="bg-indigo-100 text-indigo-900 px-2.5 py-1 rounded-full font-bold">📐 ${escapeHtml(data.detectedLayout || '自動分欄')}</span>
+                    ${activeModelBadge}
+                `;
+            }
+
+            flattenedQuestions = [];
+            let globalIdx = 0;
+            const previewImg = document.getElementById('exam-preview-img');
+
+            (data.sections || []).forEach((sec, secIdx) => {
+                const secIndex = globalIdx;
+                const cleanSecTitle = sanitizeZhuyinAndPlaceholders(sec.sectionTitle || `大題 ${secIdx + 1}`);
+                const displaySecTitle = fixTrueFalseSymbols(sec.sectionTitle || `大題 ${secIdx + 1}`);
+
+                flattenedQuestions.push({
+                    index: secIndex, isSectionTitle: true, text: cleanSecTitle,
+                    displayText: displaySecTitle, box_2d: sec.box_2d || null
+                });
+                globalIdx++;
+
+                const secHeader = document.createElement('div');
+                secHeader.id = `q-card-${secIndex}`;
+                secHeader.className = "bg-slate-900 text-white rounded-2xl p-3.5 shadow-sm border-2 border-slate-800 cursor-pointer transition hover:border-blue-500 flex justify-between";
+                secHeader.onclick = (e) => { if (!e.target.closest('.no-read-trigger')) readSingleItem(secIndex); };
+                secHeader.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-400 text-slate-950 font-black text-xs px-2 py-1 rounded">大題</span>
+                        <h3 class="font-black">${escapeHtml(displaySecTitle)}</h3>
+                    </div>
+                `;
+                container.appendChild(secHeader);
+                if (sec.box_2d) {
+                    createHotspotElement(structOverlay, sec.box_2d, secIndex, true, displaySecTitle);
+                    createHotspotElement(interOverlay, sec.box_2d, secIndex, true, displaySecTitle);
+                }
+
+                if (sec.referenceBox && (sec.referenceBox.displayText || sec.referenceBox.spokenText)) {
+                    const refIndex = globalIdx;
+                    const rawRefSpoken = sec.referenceBox.spokenText || sec.referenceBox.displayText || '';
+                    const cleanRefSpoken = sanitizeZhuyinAndPlaceholders(rawRefSpoken);
+                    const displayRefText = fixTrueFalseSymbols(sec.referenceBox.displayText || rawRefSpoken);
+
+                    flattenedQuestions.push({
+                        index: refIndex, isSectionTitle: false, isReferenceBox: true,
+                        text: cleanRefSpoken, bodyText: cleanRefSpoken,
+                        displayText: displayRefText, box_2d: sec.referenceBox.box_2d || null,
+                        secIdx: secIdx
+                    });
+                    globalIdx++;
+
+                    const refCard = document.createElement('div');
+                    refCard.id = `q-card-${refIndex}`;
+                    refCard.className = "bg-amber-50/90 text-slate-900 rounded-2xl p-3.5 shadow-sm border-2 border-amber-300 cursor-pointer transition hover:border-amber-500";
+                    refCard.onclick = (e) => { if (!e.target.closest('.no-read-trigger')) readSingleItem(refIndex); };
+                    refCard.innerHTML = `
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="bg-amber-500 text-slate-950 font-black text-xs px-2.5 py-0.5 rounded-md">📋 大題提示／參考項目框（全部報讀）</span>
+                            <span class="text-xs font-bold text-amber-900">🔊 點擊唸出全部項目</span>
+                        </div>
+                        <div class="text-slate-900 font-bold whitespace-pre-line leading-relaxed">${escapeHtml(displayRefText)}</div>
+                    `;
+                    container.appendChild(refCard);
+                    if (sec.referenceBox.box_2d) {
+                        createHotspotElement(structOverlay, sec.referenceBox.box_2d, refIndex, false, displayRefText);
+                        createHotspotElement(interOverlay, sec.referenceBox.box_2d, refIndex, false, displayRefText);
+                    }
+                }
+
+                if (Array.isArray(sec.questions)) {
+                    sec.questions.forEach((q, qLocalIdx) => {
+                        const qIndex = globalIdx;
+                        const sourceForSpeech = q.spokenText || q.rawText || q.displayText || '';
+                        let cleanSpokenBody = q.isCustomEdited
+                            ? stripParenthesesForSpeech(sourceForSpeech)
+                            : sanitizeZhuyinAndPlaceholders(sourceForSpeech);
+
+                        if (q.questionNumber && !q.isCustomEdited) {
+                            cleanSpokenBody = cleanSpokenBody.replace(/^(?:第\s*[0-9一二三四五六七八九十百]+\s*題|[0-9]+[．.、])\s*[。，、]?\s*/g, '').trim();
+                        }
+
+                        const fullReadText = `${q.questionNumber ? q.questionNumber + '，' : ''}${cleanSpokenBody}`;
+                        const cardDisplayText = fixTrueFalseSymbols(q.displayText || q.rawText || cleanSpokenBody);
+
+                        flattenedQuestions.push({
+                            index: qIndex, isSectionTitle: false, text: fullReadText,
+                            bodyText: cleanSpokenBody,
+                            displayText: cardDisplayText, box_2d: q.box_2d || null,
+                            secIdx: secIdx, qLocalIdx: qLocalIdx
+                        });
+                        globalIdx++;
+
+                        let badgesHtml = '';
+                        if (cleanSpokenBody.includes('什麼') || cleanSpokenBody.includes('[BEEP]') || cleanSpokenBody.includes('這個字')) {
+                            badgesHtml += `<span class="bg-amber-100 text-amber-900 border border-amber-300 text-xs font-black px-2 py-0.5 rounded-md">🔇 標記字已消音</span>`;
+                        }
+                        if (q.isCustomEdited) {
+                            badgesHtml += `<span class="bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-black px-2 py-0.5 rounded-md">✍️ 教師已修訂</span>`;
+                        }
+
+                        let imageDescHtml = '';
+                        if (q.hasImage && q.imageBox) {
+                            const croppedUrl = cropNormalizedBoxToDataUrl(previewImg, q.imageBox);
+                            if (croppedUrl) {
+                                imageDescHtml = `<div class="mt-2 inline-block cursor-zoom-in no-read-trigger" onclick="openCropModal('${croppedUrl}', '題組附圖')">
+                                   <img src="${croppedUrl}" alt="題組附圖" class="max-h-40 rounded-lg border-2 border-rose-200 p-1 bg-white">
+                                </div>`;
+                            }
+                        }
+
+                        const card = document.createElement('div');
+                        card.id = `q-card-${qIndex}`;
+                        card.className = "bg-white rounded-2xl p-4 border-2 border-slate-200 hover:border-blue-400 shadow-sm cursor-pointer transition";
+                        card.onclick = (e) => { if (!e.target.closest('.no-read-trigger')) readSingleItem(qIndex); };
+                        card.innerHTML = `
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="bg-blue-600 text-white font-black text-sm px-2.5 py-0.5 rounded-lg">${escapeHtml(q.questionNumber || '題目')}</span>
+                                    ${badgesHtml}
+                                </div>
+                            </div>
+                            <div class="text-slate-900 font-bold whitespace-pre-line">${escapeHtml(cardDisplayText)}</div>
+                            <div id="spoken-box-${qIndex}" class="mt-2 text-xs text-slate-600 bg-slate-50 px-2.5 py-2 rounded-xl border border-slate-200 no-read-trigger">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="flex-1 leading-relaxed cursor-text" onclick="startEditSpokenText(${secIdx}, ${qLocalIdx}, ${qIndex})" title="點擊可直接修改實際報讀內容">
+                                        <span class="font-bold text-blue-700">🔊 實際報讀：</span><span id="spoken-preview-${qIndex}" class="text-slate-700">${escapeHtml(formatDisplayPreviewText(cleanSpokenBody))}</span>
+                                    </div>
+                                    <button type="button" onclick="startEditSpokenText(${secIdx}, ${qLocalIdx}, ${qIndex})" class="shrink-0 bg-white hover:bg-blue-50 text-blue-700 border border-blue-300 font-bold px-2.5 py-1 rounded-lg text-[11px] shadow-xs transition flex items-center gap-1" title="修改此題實際報讀內容">
+                                        <span>✏️ 修改</span>
+                                    </button>
+                                </div>
+                                <div id="spoken-editor-${qIndex}" class="hidden mt-2 pt-2 border-t border-slate-200 space-y-2">
+                                    <textarea id="spoken-input-${qIndex}" rows="2" onkeydown="handleSpokenEditorKeydown(event, ${secIdx}, ${qLocalIdx}, ${qIndex})" class="w-full bg-white border-2 border-blue-500 rounded-lg px-2.5 py-1.5 text-sm font-bold text-slate-900 focus:outline-none shadow-inner" placeholder="請輸入正確的報讀文字...">${escapeHtml(cleanSpokenBody)}</textarea>
+                                    <div class="flex flex-wrap items-center justify-between gap-1.5">
+                                        <span class="text-[11px] text-slate-500">💡 報讀時括號不會唸出；按 Enter 可直接儲存</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <button type="button" onclick="previewEditedSpokenText(${qIndex})" class="bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 font-bold px-2.5 py-1 rounded-lg text-xs transition">🔊 試聽</button>
+                                            ${q.isCustomEdited ? `<button type="button" onclick="resetEditedSpokenText(${secIdx}, ${qLocalIdx}, ${qIndex})" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-xs transition">🔄 還原原始</button>` : ''}
+                                            <button type="button" onclick="cancelEditSpokenText(${qIndex})" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-xs transition">取消</button>
+                                            <button type="button" onclick="saveEditedSpokenText(${secIdx}, ${qLocalIdx}, ${qIndex})" class="bg-blue-600 hover:bg-blue-700 text-white font-black px-3 py-1 rounded-lg text-xs shadow-xs transition">✅ 確認修改</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            ${imageDescHtml}
+                        `;
+                        container.appendChild(card);
+                        if (q.box_2d) {
+                            createHotspotElement(structOverlay, q.box_2d, qIndex, false, cardDisplayText);
+                            createHotspotElement(interOverlay, q.box_2d, qIndex, false, cardDisplayText);
+                        }
+                    });
+                }
+            });
+
+            if (isCalibrationMode) {
+                document.getElementById('interactive-stage-wrapper')?.classList.add('calibration-mode');
+                document.querySelectorAll('#hotspots-overlay .resize-handle').forEach(h => h.classList.remove('hidden'));
+            }
+
+            applyStructStageDimensions();
+            applyInteractiveStageDimensions();
+        }
+
+        // ==========================================
+        // 7.1 教師手動修訂「實際報讀」文字控制
+        // ==========================================
+        function startEditSpokenText(secIdx, qLocalIdx, qIndex) {
+            const editor = document.getElementById(`spoken-editor-${qIndex}`);
+            const input = document.getElementById(`spoken-input-${qIndex}`);
+            const box = document.getElementById(`spoken-box-${qIndex}`);
+            if (!editor || !input) return;
+
+            const qObj = parsedExamData?.sections?.[secIdx]?.questions?.[qLocalIdx];
+            const currentItem = flattenedQuestions[qIndex];
+            if (currentItem && currentItem.bodyText !== undefined) {
+                input.value = currentItem.bodyText;
+            } else if (qObj) {
+                input.value = stripParenthesesForSpeech(qObj.spokenText || '');
+            }
+
+            editor.classList.remove('hidden');
+            if (box) {
+                box.classList.remove('bg-slate-50', 'border-slate-200');
+                box.classList.add('bg-blue-50/70', 'border-blue-400');
+            }
+            setTimeout(() => {
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+            }, 30);
+        }
+
+        function cancelEditSpokenText(qIndex) {
+            const editor = document.getElementById(`spoken-editor-${qIndex}`);
+            const box = document.getElementById(`spoken-box-${qIndex}`);
+            if (editor) editor.classList.add('hidden');
+            if (box) {
+                box.classList.remove('bg-blue-50/70', 'border-blue-400');
+                box.classList.add('bg-slate-50', 'border-slate-200');
+            }
+        }
+
+        function handleSpokenEditorKeydown(e, secIdx, qLocalIdx, qIndex) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                saveEditedSpokenText(secIdx, qLocalIdx, qIndex);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelEditSpokenText(qIndex);
+            }
+        }
+
+        function previewEditedSpokenText(qIndex) {
+            const input = document.getElementById(`spoken-input-${qIndex}`);
+            if (!input) return;
+            const cleanPreview = stripParenthesesForSpeech(input.value);
+            if (!cleanPreview) {
+                showToast("請先輸入欲試聽的報讀文字。", "⚠️");
+                return;
+            }
+            playSessionId++;
+            const sid = playSessionId;
+            isContinuousReading = false;
+            document.getElementById('reading-status').textContent = `試聽修訂內容（第 ${qIndex + 1} 項）`;
+            speakText(cleanPreview, sid, () => {
+                if (sid === playSessionId) document.getElementById('reading-status').textContent = "試聽完畢";
+            });
+        }
+
+        function saveEditedSpokenText(secIdx, qLocalIdx, qIndex) {
+            const input = document.getElementById(`spoken-input-${qIndex}`);
+            const qObj = parsedExamData?.sections?.[secIdx]?.questions?.[qLocalIdx];
+            if (!input || !qObj) return;
+
+            const editedClean = stripParenthesesForSpeech(input.value);
+            if (!editedClean) {
+                showToast("實際報讀內容不可為空白！", "⚠️");
+                input.focus();
+                return;
+            }
+
+            if (qObj.originalSpokenText === undefined) {
+                qObj.originalSpokenText = qObj.spokenText || qObj.rawText || qObj.displayText || '';
+            }
+            qObj.spokenText = editedClean;
+            qObj.isCustomEdited = true;
+
+            renderExamQuestions(parsedExamData);
+            if (currentReadingIndex === qIndex) {
+                syncHighlightAllViews(qIndex, false);
+            }
+            showToast(`已更新${qObj.questionNumber ? '「' + qObj.questionNumber + '」' : '此題'}的實際報讀內容！`, "✅");
+        }
+
+        function resetEditedSpokenText(secIdx, qLocalIdx, qIndex) {
+            const qObj = parsedExamData?.sections?.[secIdx]?.questions?.[qLocalIdx];
+            if (!qObj || qObj.originalSpokenText === undefined) return;
+            qObj.spokenText = qObj.originalSpokenText;
+            qObj.isCustomEdited = false;
+
+            renderExamQuestions(parsedExamData);
+            if (currentReadingIndex === qIndex) {
+                syncHighlightAllViews(qIndex, false);
+            }
+            showToast("已還原為系統原始辨識的報讀內容。", "🔄");
+        }
+
+        function createHotspotElement(overlayContainer, box, itemIndex, isSection, titleHint) {
+            if (!overlayContainer || !box || !Array.isArray(box) || box.length < 4) return;
+            const [y1, x1, y2, x2] = box.map(Number);
+            const top = Math.max(0, Math.min(100, y1 / 10));
+            const left = Math.max(0, Math.min(100, x1 / 10));
+            const height = Math.max(1.2, Math.min(100 - top, (y2 - y1) / 10));
+            const width = Math.max(2.0, Math.min(100 - left, (x2 - x1) / 10));
+
+            const isVisible = document.getElementById('toggle-hotspots-visible')?.checked !== false;
+            const el = document.createElement('div');
+            el.className = `hotspot-box ${isVisible ? 'hotspot-visible' : 'hotspot-hidden'}`;
+            el.dataset.index = String(itemIndex);
+            el.title = titleHint || '';
+            el.style.top = `${top}%`;
+            el.style.left = `${left}%`;
+            el.style.width = `${width}%`;
+            el.style.height = `${height}%`;
+            
+            const handle = document.createElement('div');
+            handle.className = 'resize-handle hidden';
+            el.appendChild(handle);
+            overlayContainer.appendChild(el);
+        }
+
+        // ==========================================
+        // 8. 精準點擊、框線微調與同步追蹤
+        // ==========================================
+        function spawnClickRipple(overlayElement, clientX, clientY) {
+            if (!overlayElement) return;
+            const rect = overlayElement.getBoundingClientRect();
+            const ripple = document.createElement('div');
+            ripple.className = 'click-ripple';
+            ripple.style.left = `${clientX - rect.left}px`;
+            ripple.style.top = `${clientY - rect.top}px`;
+            overlayElement.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        function findBestMatchedQuestionIndex(clientX, clientY, overlayElement) {
+            const rect = overlayElement.getBoundingClientRect();
+            const clickX = clientX - rect.left, clickY = clientY - rect.top;
+            const candidates = [];
+            
+            flattenedQuestions.forEach((item) => {
+                if (!item.box_2d) return;
+                const [y1, x1, y2, x2] = item.box_2d.map(Number);
+                const bx1 = (x1 / 1000) * rect.width, by1 = (y1 / 1000) * rect.height;
+                const bx2 = (x2 / 1000) * rect.width, by2 = (y2 / 1000) * rect.height;
+                const area = Math.max(1, (bx2 - bx1) * (by2 - by1));
+                const inside = clickX >= bx1 && clickX <= bx2 && clickY >= by1 && clickY <= by2;
+                const dist = Math.hypot(Math.max(bx1 - clickX, 0, clickX - bx2), Math.max(by1 - clickY, 0, clickY - by2));
+                candidates.push({ index: item.index, isSection: item.isSectionTitle, area, inside, dist });
+            });
+
+            const insideHits = candidates.filter(c => c.inside).sort((a, b) => (a.isSection ? 1 : -1) || (a.area - b.area));
+            if (insideHits.length > 0) return insideHits[0].index;
+            
+            const nearHits = candidates.filter(c => c.dist <= 25).sort((a, b) => (Math.abs(a.dist - b.dist) > 4 ? a.dist - b.dist : (a.isSection ? 1 : -1) || (a.area - b.area)));
+            if (nearHits.length > 0) return nearHits[0].index;
+            return -1;
+        }
+
+        ['struct-hotspots-overlay', 'hotspots-overlay'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('click', (e) => {
+                    if (id === 'hotspots-overlay' && isCalibrationMode) return;
+                    spawnClickRipple(el, e.clientX, e.clientY);
+                    const idx = findBestMatchedQuestionIndex(e.clientX, e.clientY, el);
+                    if (idx >= 0) readSingleItem(idx);
+                });
+            }
+        });
+
+        function positionLeftSyncLineBar(index, shouldScroll = true) {
+            const bar = document.getElementById('sync-active-line-bar');
+            const scrollBox = document.getElementById('struct-img-scroll-container');
+            const stageWrapper = document.getElementById('struct-stage-wrapper');
+            const item = flattenedQuestions[index];
+            if (!bar || !item || !item.box_2d || !stageWrapper) {
+                if (bar) bar.classList.add('hidden');
+                return;
+            }
+
+            const [y1, x1, y2, x2] = item.box_2d.map(Number);
+            bar.style.top = `${Math.max(0, y1 / 10)}%`;
+            bar.style.left = `${Math.max(0, x1 / 10)}%`;
+            bar.style.width = `${Math.max(2, (x2 - x1) / 10)}%`;
+            bar.style.height = `${Math.max(1.5, (y2 - y1) / 10)}%`;
+            bar.classList.remove('hidden');
+
+            if (shouldScroll && scrollBox) {
+                const targetCenterY = (y1 / 1000) * stageWrapper.offsetHeight;
+                scrollBox.scrollTo({ top: Math.max(0, targetCenterY - scrollBox.clientHeight * 0.4), behavior: 'smooth' });
+            }
+        }
+
+        function syncHighlightAllViews(index, shouldScroll = true) {
+            document.querySelectorAll('[id^="q-card-"]').forEach(el => el.classList.remove('reading-active'));
+            document.querySelectorAll('.hotspot-box').forEach(el => el.classList.remove('hotspot-active'));
+            
+            if (index < 0 || !flattenedQuestions[index]) {
+                document.getElementById('sync-active-line-bar')?.classList.add('hidden');
+                return;
+            }
+
+            const targetCard = document.getElementById(`q-card-${index}`);
+            if (targetCard) {
+                targetCard.classList.add('reading-active');
+                if (shouldScroll) targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            document.querySelectorAll(`.hotspot-box[data-index="${index}"]`).forEach(box => {
+                box.classList.add('hotspot-active');
+                if (shouldScroll && box.closest('#view-interactive') && !document.getElementById('view-interactive').classList.contains('hidden')) {
+                    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+
+            positionLeftSyncLineBar(index, shouldScroll);
+            const subTextEl = document.getElementById('interactive-subtitle-text');
+            if (subTextEl) {
+                subTextEl.textContent = formatDisplayPreviewText(flattenedQuestions[index].text);
+            }
+        }
+
+        function toggleHotspotVisibility() {
+            const isVisible = document.getElementById('toggle-hotspots-visible')?.checked !== false;
+            document.querySelectorAll('.hotspot-box').forEach(box => {
+                if (isVisible) {
+                    box.classList.remove('hotspot-hidden');
+                    box.classList.add('hotspot-visible');
+                } else {
+                    box.classList.remove('hotspot-visible');
+                    box.classList.add('hotspot-hidden');
+                }
+            });
+        }
+
+        function toggleCalibrationMode() {
+            isCalibrationMode = !isCalibrationMode;
+            const wrapper = document.getElementById('interactive-stage-wrapper');
+            const btn = document.getElementById('toggle-calibration-mode');
+            const handles = document.querySelectorAll('#hotspots-overlay .resize-handle');
+
+            if (isCalibrationMode) {
+                wrapper?.classList.add('calibration-mode');
+                handles.forEach(h => h.classList.remove('hidden'));
+                if (btn) {
+                    btn.className = "bg-pink-600 border border-pink-700 text-white px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1 shadow";
+                    btn.innerHTML = '<span>✅ 完成框線微調</span>';
+                }
+                showToast("已進入微調框線模式：可直接拖曳框線位置或拉動右下角調整大小。", "🎯");
+            } else {
+                wrapper?.classList.remove('calibration-mode');
+                handles.forEach(h => h.classList.add('hidden'));
+                if (btn) {
+                    btn.className = "bg-white border border-slate-300 hover:bg-pink-50 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1";
+                    btn.innerHTML = '<span>🎯 微調框線</span>';
+                }
+                showToast("已退出微調框線模式並套用新座標。", "✅");
+            }
+        }
+
+        // 原卷點讀框線拖曳與縮放微調互動
+        (function initHotspotCalibrationDrag() {
+            const overlay = document.getElementById('hotspots-overlay');
+            if (!overlay) return;
+            let activeBox = null;
+            let dragType = null; // 'move' | 'resize'
+            let startX = 0, startY = 0;
+            let origLeft = 0, origTop = 0, origWidth = 0, origHeight = 0;
+
+            overlay.addEventListener('mousedown', (e) => {
+                if (!isCalibrationMode) return;
+                const handle = e.target.closest('.resize-handle');
+                const box = e.target.closest('.hotspot-box');
+                if (!box) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+                activeBox = box;
+                dragType = handle ? 'resize' : 'move';
+                startX = e.clientX;
+                startY = e.clientY;
+                origLeft = parseFloat(box.style.left) || 0;
+                origTop = parseFloat(box.style.top) || 0;
+                origWidth = parseFloat(box.style.width) || 10;
+                origHeight = parseFloat(box.style.height) || 5;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!activeBox || !isCalibrationMode) return;
+                const rect = overlay.getBoundingClientRect();
+                if (!rect.width || !rect.height) return;
+
+                const dxPct = ((e.clientX - startX) / rect.width) * 100;
+                const dyPct = ((e.clientY - startY) / rect.height) * 100;
+
+                if (dragType === 'move') {
+                    const newLeft = Math.max(0, Math.min(100 - origWidth, origLeft + dxPct));
+                    const newTop = Math.max(0, Math.min(100 - origHeight, origTop + dyPct));
+                    activeBox.style.left = `${newLeft}%`;
+                    activeBox.style.top = `${newTop}%`;
+                } else if (dragType === 'resize') {
+                    const newWidth = Math.max(2, Math.min(100 - origLeft, origWidth + dxPct));
+                    const newHeight = Math.max(1.2, Math.min(100 - origTop, origHeight + dyPct));
+                    activeBox.style.width = `${newWidth}%`;
+                    activeBox.style.height = `${newHeight}%`;
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (!activeBox) return;
+                const idx = Number(activeBox.dataset.index);
+                const top = parseFloat(activeBox.style.top) || 0;
+                const left = parseFloat(activeBox.style.left) || 0;
+                const width = parseFloat(activeBox.style.width) || 10;
+                const height = parseFloat(activeBox.style.height) || 5;
+
+                const newBox2d = [
+                    Math.round(top * 10),
+                    Math.round(left * 10),
+                    Math.round((top + height) * 10),
+                    Math.round((left + width) * 10)
+                ];
+
+                if (flattenedQuestions[idx]) {
+                    flattenedQuestions[idx].box_2d = newBox2d;
+                }
+                // 同步更新左側對照視窗的熱區與 parsedExamData
+                const structBox = document.querySelector(`#struct-hotspots-overlay .hotspot-box[data-index="${idx}"]`);
+                if (structBox) {
+                    structBox.style.top = `${top}%`;
+                    structBox.style.left = `${left}%`;
+                    structBox.style.width = `${width}%`;
+                    structBox.style.height = `${height}%`;
+                }
+                if (parsedExamData && Array.isArray(parsedExamData.sections)) {
+                    let counter = 0;
+                    parsedExamData.sections.forEach(sec => {
+                        if (counter === idx) sec.box_2d = newBox2d;
+                        counter++;
+                        if (sec.referenceBox && (sec.referenceBox.displayText || sec.referenceBox.spokenText)) {
+                            if (counter === idx) sec.referenceBox.box_2d = newBox2d;
+                            counter++;
+                        }
+                        if (Array.isArray(sec.questions)) {
+                            sec.questions.forEach(q => {
+                                if (counter === idx) q.box_2d = newBox2d;
+                                counter++;
+                            });
+                        }
+                    });
+                }
+
+                activeBox = null;
+                dragType = null;
+            });
+        })();
+
+        // ==========================================
+        // 9. 語音引擎
+        // ==========================================
+        const synth = window.speechSynthesis;
+        let availableVoices = [];
+
+        function populateVoices() {
+            if (!synth) return;
+            availableVoices = synth.getVoices();
+            const voiceSelect = document.getElementById('voice-select');
+            if (!voiceSelect) return;
+            voiceSelect.innerHTML = '';
+            const zhVoices = availableVoices.filter(v => v.lang.includes('zh') || v.lang.includes('cmn'));
+            const listToUse = zhVoices.length > 0 ? zhVoices : availableVoices;
+            if (listToUse.length === 0) {
+                voiceSelect.innerHTML = '<option value="">預設系統語音</option>';
+                return;
+            }
+            listToUse.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.name;
+                opt.textContent = `${v.name} (${v.lang})`;
+                if (v.lang === 'zh-TW' || v.lang === 'zh_TW') opt.selected = true;
+                voiceSelect.appendChild(opt);
+            });
+        }
+        if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = populateVoices;
+        }
+        populateVoices();
+
+        async function playPromptBeep() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!sharedAudioCtx) sharedAudioCtx = new AudioCtx();
+                if (sharedAudioCtx.state === 'suspended') await sharedAudioCtx.resume();
+                const osc = sharedAudioCtx.createOscillator(), gain = sharedAudioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(sharedAudioCtx.destination);
+                osc.frequency.value = 587.33;
+                gain.gain.value = 0.09;
+                gain.gain.exponentialRampToValueAtTime(0.001, sharedAudioCtx.currentTime + 0.18);
+                osc.start();
+                osc.stop(sharedAudioCtx.currentTime + 0.19);
+            } catch (e) {}
+        }
+
+        function speakText(text, sessionId, onEndCallback) {
+            if (!synth) return;
+            synth.cancel();
+            const rate = parseFloat(document.getElementById('speech-rate')?.value) || 1.0;
+            
+            setTimeout(async () => {
+                if (sessionId !== playSessionId) return;
+                if (text.includes('[BEEP]')) {
+                    const segments = text.split('[BEEP]');
+                    for (let i = 0; i < segments.length; i++) {
+                        if (sessionId !== playSessionId) return;
+                        if (segments[i].trim()) {
+                            await speakSingleUtterancePromise(normalizeTextForTaiwanTTS(segments[i]), sessionId, rate);
+                        }
+                        if (i < segments.length - 1 && sessionId === playSessionId) {
+                            await playPromptBeep();
+                            await new Promise(r => setTimeout(r, 260));
+                        }
+                    }
+                    if (sessionId === playSessionId && onEndCallback) onEndCallback();
+                    return;
+                }
+                await speakSingleUtterancePromise(normalizeTextForTaiwanTTS(text), sessionId, rate);
+                if (sessionId === playSessionId && onEndCallback) onEndCallback();
+            }, 50);
+        }
+
+        function speakSingleUtterancePromise(ttsText, sessionId, rate) {
+            return new Promise(resolve => {
+                if (!ttsText) {
+                    resolve();
+                    return;
+                }
+                let finished = false;
+                const done = () => {
+                    if (finished) return;
+                    finished = true;
+                    resolve();
+                };
+                const u = new SpeechSynthesisUtterance(ttsText);
+                const selectedName = document.getElementById('voice-select')?.value;
+                const voice = availableVoices.find(v => v.name === selectedName) || availableVoices.find(v => v.lang === 'zh-TW' || v.lang === 'zh_TW');
+                if (voice) u.voice = voice;
+                u.lang = 'zh-TW';
+                u.rate = rate;
+                u.onend = done;
+                u.onerror = done;
+                synth.speak(u);
+            });
+        }
+
+        function readSingleItem(index) {
+            if (!flattenedQuestions[index]) return;
+            playSessionId++;
+            const sid = playSessionId;
+            isContinuousReading = false;
+            currentReadingIndex = index;
+            lastInteractiveIndex = index;
+            syncHighlightAllViews(index, true);
+            document.getElementById('reading-status').textContent = `正在朗讀第 ${index + 1} 項`;
+            speakText(flattenedQuestions[index].text, sid, () => {
+                if (sid === playSessionId) document.getElementById('reading-status').textContent = "朗讀完畢";
+            });
+        }
+        
+        function replayLastInteractive() {
+            const idx = lastInteractiveIndex >= 0 ? lastInteractiveIndex : currentReadingIndex;
+            if (idx >= 0) readSingleItem(idx);
+        }
+
+        function stopSpeech() {
+            playSessionId++;
+            isContinuousReading = false;
+            if (synth) synth.cancel();
+            syncHighlightAllViews(-1, false);
+            document.getElementById('reading-status').textContent = "已停止";
+        }
+
+        function togglePauseResume() {
+            if (!synth) return;
+            if (synth.speaking) {
+                if (synth.paused) {
+                    synth.resume();
+                } else {
+                    synth.pause();
+                }
+            }
+        }
+
+        // ==========================================
+        // 10. 連續報讀與上一題 / 下一題控制
+        // ==========================================
+        function playAllQuestions() {
+            if (!flattenedQuestions || flattenedQuestions.length === 0) {
+                showToast("請先解析考卷或載入範例考卷，再開始連續報讀。", "⚠️");
+                return;
+            }
+            const startIndex = currentReadingIndex >= 0 ? currentReadingIndex : 0;
+            playContinuousFrom(startIndex);
+        }
+
+        function playContinuousFrom(index) {
+            if (!flattenedQuestions[index]) {
+                isContinuousReading = false;
+                document.getElementById('reading-status').textContent = "全部朗讀完畢";
+                return;
+            }
+            playSessionId++;
+            const sid = playSessionId;
+            isContinuousReading = true;
+            currentReadingIndex = index;
+            lastInteractiveIndex = index;
+            syncHighlightAllViews(index, true);
+            document.getElementById('reading-status').textContent = `連續報讀中（${index + 1} / ${flattenedQuestions.length}）`;
+
+            speakText(flattenedQuestions[index].text, sid, () => {
+                if (sid === playSessionId && isContinuousReading) {
+                    if (index + 1 < flattenedQuestions.length) {
+                        setTimeout(() => {
+                            if (sid === playSessionId && isContinuousReading) {
+                                playContinuousFrom(index + 1);
+                            }
+                        }, 450);
+                    } else {
+                        isContinuousReading = false;
+                        document.getElementById('reading-status').textContent = "全部朗讀完畢";
+                    }
+                }
+            });
+        }
+
+        function stepQuestion(delta) {
+            if (!flattenedQuestions || flattenedQuestions.length === 0) return;
+            const base = currentReadingIndex >= 0 ? currentReadingIndex : 0;
+            const target = Math.max(0, Math.min(flattenedQuestions.length - 1, base + delta));
+            readSingleItem(target);
+        }
+
+        // ==========================================
+        // 11. 考卷儲存與讀取功能（僅保留 Google 雲端硬碟與本機儲存功能）
+        // ==========================================
+        function loadDrivePrefs() {
+            try {
+                const slot = localStorage.getItem('exam_reader_drive_slot');
+                const email = localStorage.getItem('exam_reader_drive_email');
+                if (slot !== null && document.getElementById('drive-account-slot')) {
+                    document.getElementById('drive-account-slot').value = slot;
+                }
+                if (email && document.getElementById('drive-account-email')) {
+                    document.getElementById('drive-account-email').value = email;
+                }
+            } catch (e) {}
+        }
+
+        function saveDrivePrefs() {
+            try {
+                const slot = document.getElementById('drive-account-slot')?.value || '0';
+                const email = document.getElementById('drive-account-email')?.value.trim() || '';
+                localStorage.setItem('exam_reader_drive_slot', slot);
+                localStorage.setItem('exam_reader_drive_email', email);
+            } catch (e) {}
+        }
+
+        function buildGoogleDriveTargetUrl() {
+            const slot = document.getElementById('drive-account-slot')?.value || '0';
+            const email = document.getElementById('drive-account-email')?.value.trim() || '';
+            const baseDriveUrl = `https://drive.google.com/drive/u/${encodeURIComponent(slot)}/my-drive`;
+            if (email) {
+                return `https://accounts.google.com/AccountChooser?Email=${encodeURIComponent(email)}&continue=${encodeURIComponent(baseDriveUrl)}`;
+            }
+            return baseDriveUrl;
+        }
+
+        function openGoogleAccountChooser() {
+            saveDrivePrefs();
+            const email = document.getElementById('drive-account-email')?.value.trim() || '';
+            const targetDriveUrl = buildGoogleDriveTargetUrl();
+            const chooserUrl = email
+                ? targetDriveUrl
+                : `https://accounts.google.com/AccountChooser?continue=${encodeURIComponent(targetDriveUrl)}`;
+            window.open(chooserUrl, '_blank', 'noopener,noreferrer,width=720,height=740');
+            showToast("已開啟 Google 帳號與雲端硬碟視窗，請確認登入帳號並存入「智慧考卷報讀」資料夾。", "🔄");
+        }
+
+        function getDefaultExamFileName() {
+            if (uploadedOriginalFileName) return uploadedOriginalFileName;
+            if (currentExamTitle) return currentExamTitle;
+            if (parsedExamData?.subject) {
+                const now = new Date();
+                const d = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+                return `${parsedExamData.subject}_${d}`;
+            }
+            return "智慧考卷報讀單元";
+        }
+
+        function applySuggestedFileName(type) {
+            const input = document.getElementById('save-exam-filename');
+            if (!input) return;
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+            if (type === 'upload') {
+                input.value = uploadedOriginalFileName || getDefaultExamFileName();
+            } else if (type === 'subject') {
+                const subj = parsedExamData?.subject || "考卷評量";
+                input.value = `${subj}_${dateStr}`;
+            }
+            input.focus();
+        }
+
+        function openSaveExamModal() {
+            if (!currentImageDataUrl && !parsedExamData) {
+                showToast("目前尚未匯入或解析任何考卷，無法儲存。", "⚠️");
+                return;
+            }
+            loadDrivePrefs();
+            const input = document.getElementById('save-exam-filename');
+            if (input) {
+                input.value = getDefaultExamFileName();
+            }
+            toggleSaveTargetUI();
+            document.getElementById('save-exam-modal')?.classList.remove('hidden');
+            setTimeout(() => {
+                input?.focus();
+                input?.select();
+            }, 50);
+        }
+
+        function closeSaveExamModal() {
+            document.getElementById('save-exam-modal')?.classList.add('hidden');
+        }
+
+        function toggleSaveTargetUI() {
+            const selected = document.querySelector('input[name="save-target-type"]:checked')?.value || 'drive';
+            const drivePanel = document.getElementById('drive-options-panel');
+            const localPanel = document.getElementById('local-options-panel');
+            const cardDrive = document.getElementById('save-target-card-drive');
+            const cardLocal = document.getElementById('save-target-card-local');
+
+            if (selected === 'drive') {
+                drivePanel?.classList.remove('hidden');
+                localPanel?.classList.add('hidden');
+                if (cardDrive) cardDrive.className = "cursor-pointer border-2 border-blue-600 bg-blue-50 rounded-xl p-3 flex items-start gap-2.5 transition";
+                if (cardLocal) cardLocal.className = "cursor-pointer border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 rounded-xl p-3 flex items-start gap-2.5 transition";
+            } else {
+                drivePanel?.classList.add('hidden');
+                localPanel?.classList.remove('hidden');
+                if (cardLocal) cardLocal.className = "cursor-pointer border-2 border-emerald-600 bg-emerald-50 rounded-xl p-3 flex items-start gap-2.5 transition";
+                if (cardDrive) cardDrive.className = "cursor-pointer border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 rounded-xl p-3 flex items-start gap-2.5 transition";
+            }
+        }
+
+        function buildExamSavePackage(confirmedFileName) {
+            return {
+                appVersion: "v2.0.6",
+                action: "saveExam",
+                folderName: TARGET_DRIVE_FOLDER_NAME,
+                folder: TARGET_DRIVE_FOLDER_NAME,
+                fileName: confirmedFileName,
+                title: confirmedFileName,
+                name: confirmedFileName,
+                savedAt: new Date().toISOString(),
+                accountSlot: document.getElementById('drive-account-slot')?.value || '0',
+                accountEmail: document.getElementById('drive-account-email')?.value.trim() || '',
+                usedModelLabel: lastUsedGeminiModelLabel || '',
+                settings: {
+                    layoutMode: document.getElementById('layout-mode')?.value || 'auto',
+                    textDirection: document.getElementById('text-direction')?.value || 'auto',
+                    maskReplacement: document.getElementById('mask-replacement')?.value || '什麼',
+                    speechRate: document.getElementById('speech-rate')?.value || '1.0'
+                },
+                parsedExamData: parsedExamData || null,
+                imageMimeType: currentImageMimeType || 'image/jpeg',
+                imageDataUrl: currentImageDataUrl || ''
+            };
+        }
+
+        function executeSaveExam() {
+            const rawName = document.getElementById('save-exam-filename')?.value.trim() || '';
+            const safeFileName = rawName.replace(/[\\/:*?"<>|]/g, '_').trim();
+            if (!safeFileName) {
+                showToast("請輸入考卷或作業簿單元檔名！", "⚠️");
+                document.getElementById('save-exam-filename')?.focus();
+                return;
+            }
+
+            currentExamTitle = safeFileName;
+            const saveTarget = document.querySelector('input[name="save-target-type"]:checked')?.value || 'drive';
+            const payloadObj = buildExamSavePackage(safeFileName);
+
+            if (saveTarget === 'local') {
+                saveExamToLocalFile(payloadObj, safeFileName);
+                closeSaveExamModal();
+                return;
+            }
+
+            // 儲存至 Google 雲端硬碟
+            saveDrivePrefs();
+            saveExamToLocalFile(payloadObj, safeFileName, true);
+            const driveUrl = buildGoogleDriveTargetUrl();
+            window.open(driveUrl, '_blank', 'noopener,noreferrer');
+            closeSaveExamModal();
+            const acctInfo = payloadObj.accountEmail ? `（帳號：${payloadObj.accountEmail}）` : '';
+            showToast(`已匯出「${safeFileName}.json」並開啟 Google 雲端硬碟${acctInfo}，請存入「${TARGET_DRIVE_FOLDER_NAME}」資料夾！`, "☁️");
+        }
+
+        function saveExamToLocalFile(payloadObj, safeFileName, silent = false) {
+            const jsonStr = JSON.stringify(payloadObj, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${safeFileName}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            if (!silent) {
+                showToast(`已將考卷儲存至本機：${safeFileName}.json`, "💻");
+            }
+        }
+
+        // 讀取已儲存的考卷檔 (.json)
+        document.getElementById('saved-exam-upload')?.addEventListener('change', function(e) {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(ev) {
+                try {
+                    const saved = JSON.parse(ev.target.result);
+                    const loadedName = saved.fileName || saved.title || stripFileExtension(file.name);
+                    uploadedOriginalFileName = loadedName;
+                    currentExamTitle = loadedName;
+                    examPages = [];
+                    pdfTextLayer = null;
+                    updatePdfTextButton();
+                    renderImportedPagesBar();
+
+                    if (saved.usedModelLabel) {
+                        lastUsedGeminiModelLabel = saved.usedModelLabel;
+                    } else if (saved.parsedExamData?._usedModelLabel) {
+                        lastUsedGeminiModelLabel = saved.parsedExamData._usedModelLabel;
+                    } else {
+                        lastUsedGeminiModelLabel = "";
+                    }
+
+                    if (saved.settings) {
+                        if (saved.settings.layoutMode && document.getElementById('layout-mode')) {
+                            document.getElementById('layout-mode').value = saved.settings.layoutMode;
+                        }
+                        if (saved.settings.textDirection && document.getElementById('text-direction')) {
+                            document.getElementById('text-direction').value = saved.settings.textDirection;
+                        }
+                        if (saved.settings.maskReplacement && document.getElementById('mask-replacement')) {
+                            document.getElementById('mask-replacement').value = saved.settings.maskReplacement;
+                        }
+                        if (saved.settings.speechRate && document.getElementById('speech-rate')) {
+                            document.getElementById('speech-rate').value = saved.settings.speechRate;
+                            updateSpeechRateDisplay(saved.settings.speechRate);
+                        }
+                    }
+
+                    if (saved.imageDataUrl) {
+                        await loadExamImageToPreview(saved.imageDataUrl, saved.imageMimeType || 'image/jpeg');
+                    }
+
+                    if (saved.parsedExamData) {
+                        parsedExamData = saved.parsedExamData;
+                        renderExamQuestions(parsedExamData);
+                        enableSaveButton();
+                        showToast(`已成功載入已存考卷：「${loadedName}」！`, "📂");
+                    } else {
+                        showToast(`已載入考卷圖片：「${loadedName}」，請點擊「PDF 文字直讀」或「Gemini 解析」。`, "📂");
+                    }
+                } catch (err) {
+                    showToast("讀取考卷檔失敗，請確認檔案為本系統儲存的 .json 格式。", "❌");
+                } finally {
+                    e.target.value = '';
+                }
+            };
+            reader.onerror = () => {
+                showToast("檔案讀取發生錯誤，請重新選擇。", "❌");
+                e.target.value = '';
+            };
+            reader.readAsText(file, 'utf-8');
+        });
+
+        // ==========================================
+        // 8. PDF 文字直讀引擎（免 AI、免金鑰）
+        // ==========================================
+        // 將 PDF 文字層（含座標）整理成與 AI 解析相同的 parsedExamData 結構
+        function parsePdfTextItemsToExam(allItems, W, H, pageRects, layoutHint, dirHint) {
+            const isZhuyinOnly = s => /^[ㄅ-ㄩˊˇˋ˙\s　]+$/.test(s);
+            const cjkHeights = allItems.filter(it => /[一-鿿]/.test(it.s)).map(it => it.fs).sort((a, b) => a - b);
+            const medianH = cjkHeights.length ? cjkHeights[Math.floor(cjkHeights.length / 2)] : 12;
+            // 過濾國字旁的小字注音（ruby），保留正常大小的注音題目
+            const normText = t => String(t).replace(/[\u2E80-\u2FDF\uFE10-\uFE19\uFE30-\uFE4F]/g, ch => ch.normalize('NFKC'));
+            allItems = allItems.map(it => ({ ...it, s: normText(it.s) }));
+            let items = allItems.filter(it => it.s.trim() && !(isZhuyinOnly(it.s) && it.fs < medianH * 0.68));
+
+            // 判斷直書/橫書
+            let vertical = dirHint === 'vertical';
+            if (dirHint === 'auto') {
+                let vScore = 0, hScore = 0;
+                for (let i = 1; i < items.length; i++) {
+                    const a = items[i - 1], b = items[i];
+                    if (a.page !== b.page) continue;
+                    const h = Math.max(a.fs, 1);
+                    const dx = b.x0 - a.x1, dy = b.y0 - a.y1;
+                    if (Math.abs(b.cx - a.cx) < h * 0.6 && dy > -h * 0.6 && dy < h * 2) vScore++;
+                    else if (Math.abs(b.cy - a.cy) < h * 0.6 && dx > -h * 0.6 && dx < h * 3) hScore++;
+                }
+                const vertFlag = items.filter(it => it.vert).length;
+                vertical = vertFlag > items.length * 0.5 || vScore > hScore * 1.3;
+            }
+
+            // 區域內組成「行」（直書為由右至左的直行）
+            function buildLines(list) {
+                const lines = [];
+                const sorted = vertical
+                    ? [...list].sort((a, b) => (b.cx - a.cx) || (a.y0 - b.y0))
+                    : [...list].sort((a, b) => (a.cy - b.cy) || (a.x0 - b.x0));
+                sorted.forEach(it => {
+                    const h = Math.max(it.fs, 1);
+                    let target = null;
+                    for (let k = lines.length - 1; k >= 0; k--) {
+                        const ln = lines[k];
+                        if (vertical) {
+                            const ov = Math.min(ln.x1, it.x1) - Math.max(ln.x0, it.x0);
+                            const gap = it.y0 - ln.y1;
+                            if (ov > Math.min(ln.x1 - ln.x0, it.x1 - it.x0) * 0.45 && gap < h * 2.5 && it.y1 > ln.y0 - h) { target = ln; break; }
+                        } else {
+                            const ov = Math.min(ln.y1, it.y1) - Math.max(ln.y0, it.y0);
+                            const gap = it.x0 - ln.x1;
+                            if (ov > Math.min(ln.y1 - ln.y0, it.y1 - it.y0) * 0.45 && gap < h * 2.5 && it.x1 > ln.x0 - h) { target = ln; break; }
+                        }
+                    }
+                    if (!target) { target = { items: [], x0: it.x0, y0: it.y0, x1: it.x1, y1: it.y1, page: it.page }; lines.push(target); }
+                    target.items.push(it);
+                    target.x0 = Math.min(target.x0, it.x0); target.y0 = Math.min(target.y0, it.y0);
+                    target.x1 = Math.max(target.x1, it.x1); target.y1 = Math.max(target.y1, it.y1);
+                });
+                lines.forEach(ln => {
+                    ln.items.sort((a, b) => vertical ? (a.y0 - b.y0) : (a.x0 - b.x0));
+                    let txt = '';
+                    ln.items.forEach((it, i) => {
+                        if (i > 0) {
+                            const prev = ln.items[i - 1];
+                            const gap = vertical ? it.y0 - prev.y1 : it.x0 - prev.x1;
+                            if (gap > Math.max(prev.fs, it.fs) * 0.9 && !/\s$/.test(txt)) txt += ' ';
+                        }
+                        txt += it.s;
+                    });
+                    ln.text = txt.replace(/\s+/g, ' ').trim();
+                    ln.cx = (ln.x0 + ln.x1) / 2; ln.cy = (ln.y0 + ln.y1) / 2;
+                });
+                return lines.filter(ln => ln.text);
+            }
+            const sortLines = arr => arr.sort((a, b) => vertical ? (b.cx - a.cx) : ((a.y0 - b.y0) || (a.x0 - b.x0)));
+
+            // 找分欄空白帶（只看不跨欄的行，在 30%~70% 範圍內找最寬空白）
+            function findGutter(list, axis, lo, hi) {
+                const span = hi - lo;
+                const useful = list.filter(l => ((axis === 'x' ? l.x1 - l.x0 : l.y1 - l.y0) / span) < 0.55);
+                if (span <= 0 || useful.length < 4) return null;
+                const bins = 240, cov = new Array(bins).fill(0);
+                useful.forEach(l => {
+                    const a = axis === 'x' ? l.x0 : l.y0, b = axis === 'x' ? l.x1 : l.y1;
+                    const s0 = Math.max(0, Math.floor((a - lo) / span * bins)), e0 = Math.min(bins - 1, Math.floor((b - lo) / span * bins));
+                    for (let k = s0; k <= e0; k++) cov[k]++;
+                });
+                // 只被 1～2 行（如置中標題）覆蓋的位置也視為空白
+                const emptyMax = Math.max(1, Math.floor(useful.length * 0.1));
+                for (let k = 0; k < bins; k++) cov[k] = cov[k] <= emptyMax ? 0 : cov[k];
+                let best = null, runStart = -1;
+                const kLo = Math.floor(bins * 0.3), kHi = Math.ceil(bins * 0.7);
+                for (let k = kLo; k <= kHi; k++) {
+                    if (cov[k] === 0 && runStart < 0) runStart = k;
+                    if ((cov[k] !== 0 || k === kHi) && runStart >= 0) {
+                        const len = k - runStart;
+                        if (!best || len > best.len) best = { len, s: runStart, e: k };
+                        runStart = -1;
+                    }
+                }
+                if (!best || best.len < bins * 0.012) return null;
+                // 往外延伸到真正的空白邊界
+                while (best.s > 0 && cov[best.s - 1] === 0) best.s--;
+                while (best.e < bins - 1 && cov[best.e] === 0) best.e++;
+                best.a = lo + best.s / bins * span;
+                best.b = lo + best.e / bins * span;
+                best.mid = (best.a + best.b) / 2;
+                const key = axis === 'x' ? 'cx' : 'cy';
+                const before = useful.filter(l => l[key] < best.mid).length;
+                const after = useful.length - before;
+                if (before < useful.length * 0.15 || after < useful.length * 0.15) return null;
+                return best;
+            }
+
+            // 依頁面切分欄位，並決定閱讀順序（跨欄的標題放最前面）
+            const orderedLines = [];
+            pageRects.forEach((pr, pIdx) => {
+                const pageLines = buildLines(items.filter(it => it.page === pIdx));
+                if (!pageLines.length) return;
+                let splitAxis = null;
+                if (layoutHint !== 'single') {
+                    if (layoutHint === 'left-right') splitAxis = 'x';
+                    else if (layoutHint === 'top-bottom') splitAxis = 'y';
+                    else splitAxis = vertical ? 'y' : 'x';
+                }
+                let band = null;
+                if (splitAxis) {
+                    band = splitAxis === 'x' ? findGutter(pageLines, 'x', pr.x0, pr.x1) : findGutter(pageLines, 'y', pr.y0, pr.y1);
+                    if (!band && layoutHint !== 'auto') {
+                        const m = splitAxis === 'x' ? (pr.x0 + pr.x1) / 2 : (pr.y0 + pr.y1) / 2;
+                        band = { a: m, b: m, mid: m };
+                    }
+                }
+                if (!band) { orderedLines.push(...sortLines(pageLines)); return; }
+                const cut = band.mid;
+                const lo = splitAxis === 'x' ? 'x0' : 'y0', hi = splitAxis === 'x' ? 'x1' : 'y1', key = splitAxis === 'x' ? 'cx' : 'cy';
+                const spanning = pageLines.filter(l => band.b > band.a ? (l[lo] < band.b - l.items[0].fs && l[hi] > band.a + l.items[0].fs) : (l[lo] < cut - l.items[0].fs && l[hi] > cut + l.items[0].fs));
+                const rest = pageLines.filter(l => !spanning.includes(l));
+                const first = rest.filter(l => l[key] < cut), second = rest.filter(l => l[key] >= cut);
+                // 跨欄行：位在欄位內容「之前」的放最前面，其餘放最後
+                const crossKey = splitAxis === 'x' ? 'cy' : 'cx';
+                const before = vertical && splitAxis === 'x'
+                    ? spanning.filter(l => rest.every(r => l[crossKey] > r[crossKey]))
+                    : spanning.filter(l => rest.every(r => l[crossKey] < r[crossKey]) || splitAxis === 'y');
+                const after = spanning.filter(l => !before.includes(l));
+                orderedLines.push(...sortLines(before));
+                // 直書左右分欄：右欄先讀
+                if (vertical && splitAxis === 'x') orderedLines.push(...sortLines(second), ...sortLines(first));
+                else orderedLines.push(...sortLines(first), ...sortLines(second));
+                orderedLines.push(...sortLines(after));
+            });
+
+            const sectionRe = /^(?:第\s*[一二三四五六七八九十]{1,3}\s*大題|[一二三四五六七八九十]{1,3}\s*[、.．])/;
+            const questionRe = /^(?:[（(][\s　]*[)）][\s　]*)?(?:[（(]\s*\d{1,2}\s*[)）]|\d{1,2}\s*[.．、](?!\d))/;
+            const toBox = (b, pad = 4) => [
+                Math.max(0, Math.round(b.y0 / H * 1000) - pad), Math.max(0, Math.round(b.x0 / W * 1000) - pad),
+                Math.min(1000, Math.round(b.y1 / H * 1000) + pad), Math.min(1000, Math.round(b.x1 / W * 1000) + pad)
+            ];
+            const unionBox = list => list.reduce((acc, l) => ({
+                x0: Math.min(acc.x0, l.x0), y0: Math.min(acc.y0, l.y0), x1: Math.max(acc.x1, l.x1), y1: Math.max(acc.y1, l.y1)
+            }), { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity });
+
+            const sections = [];
+            let curSec = null, curQ = null;
+            const finishQ = () => {
+                if (!curQ || !curSec) return;
+                const display = curQ.lines.map(l => l.text).join('\n');
+                const numMatch = display.match(/\d{1,2}/);
+                const body = curQ.lines.map(l => l.text).join('').replace(questionRe, '').trim();
+                curSec.questions.push({
+                    questionNumber: numMatch ? `第 ${parseInt(numMatch[0], 10)} 題` : `第 ${curSec.questions.length + 1} 題`,
+                    displayText: display,
+                    spokenText: body,
+                    hasImage: false,
+                    imageBox: null,
+                    box_2d: toBox(unionBox(curQ.lines))
+                });
+                curQ = null;
+            };
+            const finishSec = () => {
+                finishQ();
+                if (!curSec) return;
+                if (curSec.refLines.length) {
+                    const t = curSec.refLines.map(l => l.text).join('\n');
+                    curSec.referenceBox = { displayText: t, spokenText: t.replace(/\n/g, ' '), box_2d: toBox(unionBox(curSec.refLines)) };
+                } else {
+                    curSec.referenceBox = null;
+                }
+                curSec.box_2d = toBox(unionBox(curSec.titleLines));
+                delete curSec.refLines; delete curSec.titleLines;
+                if (curSec.questions.length || curSec.referenceBox || curSec.sectionTitle) sections.push(curSec);
+                curSec = null;
+            };
+
+            orderedLines.forEach(ln => {
+                if (sectionRe.test(ln.text)) {
+                    finishSec();
+                    curSec = { sectionTitle: ln.text, questions: [], refLines: [], titleLines: [ln] };
+                } else if (questionRe.test(ln.text)) {
+                    if (!curSec) curSec = { sectionTitle: '題目', questions: [], refLines: [], titleLines: [ln] };
+                    finishQ();
+                    curQ = { lines: [ln] };
+                } else if (curQ) {
+                    curQ.lines.push(ln);
+                } else {
+                    if (!curSec) curSec = { sectionTitle: '考卷開頭與說明', questions: [], refLines: [], titleLines: [ln] };
+                    curSec.refLines.push(ln);
+                }
+            });
+            finishSec();
+
+            const layoutLabel = { auto: '自動偵測分欄', single: '整頁單區', 'top-bottom': '上下分欄', 'left-right': '左右分欄' }[layoutHint] || '自動偵測分欄';
+            return {
+                detectedLayout: `${layoutLabel}（PDF 文字直讀）`,
+                detectedDirection: vertical ? '直書（由右至左、由上至下）' : '橫書（由左至右、由上至下）',
+                subject: '考卷',
+                sections
+            };
+        }
+
+        async function extractPdfPageTextItems(page, vp) {
+            const tc = await page.getTextContent();
+            const out = [];
+            (tc.items || []).forEach(it => {
+                if (!it.str || !it.str.trim()) return;
+                const t = pdfjsLib.Util.transform(vp.transform, it.transform);
+                const fs = Math.hypot(t[2], t[3]) || Math.hypot(t[0], t[1]) || 10;
+                const vert = !!(tc.styles && tc.styles[it.fontName] && tc.styles[it.fontName].vertical);
+                let x0, y0, x1, y1;
+                if (vert) {
+                    const adv = (it.height || 0) * vp.scale || fs * it.str.length;
+                    x0 = t[4] - fs / 2; x1 = t[4] + fs / 2; y0 = t[5]; y1 = t[5] + adv;
+                } else {
+                    const w = (it.width || 0) * vp.scale || fs * it.str.length;
+                    x0 = t[4]; x1 = t[4] + w; y0 = t[5] - fs * 0.88; y1 = t[5] + fs * 0.15;
+                }
+                out.push({ s: it.str.replace(/[\u2E80-\u2FDF\uFE10-\uFE19\uFE30-\uFE4F]/g, ch => ch.normalize('NFKC')), x0, y0, x1, y1, fs, vert });
+            });
+            return out;
+        }
+
+        function updatePdfTextButton() {
+            const btn = document.getElementById('btn-pdf-text');
+            if (!btn) return;
+            const ok = !!(pdfTextLayer && pdfTextLayer.items.length >= 8);
+            btn.disabled = !ok;
+            btn.className = ok
+                ? "bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white cursor-pointer font-black text-sm px-4 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition"
+                : "bg-slate-300 text-slate-500 cursor-not-allowed font-black text-sm px-4 py-2.5 rounded-xl shadow flex items-center justify-center gap-2 transition";
+            btn.title = ok
+                ? "電腦打字轉成的 PDF 可直接讀出文字與位置，不需 AI"
+                : "目前沒有可直讀的 PDF 文字（掃描檔、圖片或拍照請改用 Gemini 解析）";
+        }
+
+        function runPdfTextParse() {
+            if (!pdfTextLayer || !pdfTextLayer.items.length) {
+                showToast("這份檔案沒有可直讀的文字（可能是掃描檔），請改用「Gemini 解析」。", "⚠️");
+                return;
+            }
+            stopSpeech();
+            try {
+                const layoutHint = document.getElementById('layout-mode').value;
+                const dirHint = document.getElementById('text-direction').value;
+                const parsed = parsePdfTextItemsToExam(pdfTextLayer.items, pdfTextLayer.W, pdfTextLayer.H, pdfTextLayer.pageRects, layoutHint, dirHint);
+                const qCount = parsed.sections.reduce((n, sec) => n + (sec.questions || []).length, 0);
+                if (!parsed.sections.length) throw new Error("找不到題目");
+                parsedExamData = parsed;
+                lastUsedGeminiModelLabel = "PDF 文字直讀";
+                parsedExamData._usedModelLabel = lastUsedGeminiModelLabel;
+                renderExamQuestions(parsedExamData);
+                enableSaveButton();
+                const missing = pdfTextLayer.totalPages - pdfTextLayer.pagesWithText;
+                if (missing > 0) {
+                    showToast(`已直讀 ${qCount} 題；有 ${missing} 頁沒有文字（掃描/圖片），那幾頁請改用 Gemini 解析。`, "⚠️");
+                } else {
+                    showToast(`已從 PDF 直接讀出 ${parsed.sections.length} 個大題、${qCount} 題！順序若不對，可調整「分欄結構／文字方向」後再按一次。`, "📄");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("PDF 文字整理失敗，請改用「Gemini 解析」。", "❌");
+            }
+        }
+
+        // ---------- Gemini 複製貼上流程 ----------
+        function buildGeminiCopyPrompt() {
+            const layoutHint = document.getElementById('layout-mode').value;
+            const dirHint = document.getElementById('text-direction').value;
+            return buildGeminiSystemInstruction(layoutHint, dirHint) +
+                "\n\n請解析我上傳的這張考卷圖片，嚴格禁止腦補（例如不可將泰國改為國家），並將引號「」內的標記字替換為「什麼」。只輸出 JSON，不要任何說明文字。";
+        }
+
+        function openGeminiPasteModal() {
+            if (!currentImageDataUrl) {
+                showToast("請先匯入考卷！", "⚠️");
+                return;
+            }
+            stopSpeech();
+            document.getElementById('gemini-prompt-text').value = buildGeminiCopyPrompt();
+            document.getElementById('gemini-paste-modal').classList.remove('hidden');
+        }
+
+        function closeGeminiPasteModal() {
+            document.getElementById('gemini-paste-modal').classList.add('hidden');
+        }
+
+        async function copyTextWithFallback(text, fallbackEl) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (e) {
+                if (fallbackEl) {
+                    fallbackEl.closest('details')?.setAttribute('open', '');
+                    fallbackEl.focus();
+                    fallbackEl.select();
+                    try { return document.execCommand('copy'); } catch (e2) { return false; }
+                }
+                return false;
+            }
+        }
+
+        async function copyGeminiPrompt() {
+            const text = buildGeminiCopyPrompt();
+            const el = document.getElementById('gemini-prompt-text');
+            el.value = text;
+            const ok = await copyTextWithFallback(text, el);
+            showToast(ok ? "提示詞已複製！請到 Gemini 貼上，並附上考卷圖片後送出。" : "無法自動複製，請在展開的文字框中全選後手動複製。", ok ? "📋" : "⚠️");
+        }
+
+        async function copyExamImageToClipboard() {
+            try {
+                if (!navigator.clipboard || typeof ClipboardItem === 'undefined') throw new Error("unsupported");
+                const img = new Image();
+                img.src = currentImageDataUrl;
+                await waitForImageReady(img);
+                const cvs = document.createElement('canvas');
+                cvs.width = img.naturalWidth;
+                cvs.height = img.naturalHeight;
+                cvs.getContext('2d').drawImage(img, 0, 0);
+                const blob = await new Promise(res => cvs.toBlob(res, 'image/png'));
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                showToast("考卷圖片已複製！到 Gemini 對話框按「貼上」即可。", "📋");
+            } catch (err) {
+                showToast("這個瀏覽器不支援複製圖片，請改按「下載考卷圖片」再上傳到 Gemini。", "⚠️");
+            }
+        }
+
+        function downloadExamImage() {
+            if (!currentImageDataUrl) return;
+            const a = document.createElement('a');
+            a.href = currentImageDataUrl;
+            a.download = `${(currentExamTitle || uploadedOriginalFileName || '考卷').replace(/[\\/:*?"<>|]/g, '_')}_給Gemini.jpg`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast("已下載考卷圖片，請上傳到 Gemini。", "⬇️");
+        }
+
+        function applyGeminiPastedResult() {
+            const raw = document.getElementById('gemini-paste-result').value.trim();
+            if (!raw) {
+                showToast("請先貼上 Gemini 的回覆。", "⚠️");
+                return;
+            }
+            try {
+                const parsed = cleanAndParseJsonResponse(raw);
+                if (!parsed || !Array.isArray(parsed.sections) || !parsed.sections.length) throw new Error("缺少 sections");
+                parsedExamData = parsed;
+                lastUsedGeminiModelLabel = "Gemini（複製貼上）";
+                parsedExamData._usedModelLabel = lastUsedGeminiModelLabel;
+                renderExamQuestions(parsedExamData);
+                enableSaveButton();
+                closeGeminiPasteModal();
+                document.getElementById('gemini-paste-result').value = '';
+                showToast("解析結果已套用！點擊考卷或右側卡片即可報讀。建議按「💾 儲存考卷」，下次免再解析。", "🎉");
+            } catch (err) {
+                console.error(err);
+                showToast("貼上的內容不是完整的解析結果，請確認有複製到 Gemini 的整段回覆（從 { 到 }）。", "❌");
+            }
+        }
+
+        // 綁定捲動容器拖曳平移與載入模型偏好
+        loadGeminiModelPref();
+        bindDragToPan(document.getElementById('struct-img-scroll-container'));
+        bindDragToPan(document.getElementById('interactive-scroll-container'), () => isCalibrationMode);
+        updatePdfTextButton();
+
+    </script>
+</body>
+</html>
