@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>弱視生上課網站｜造句・相似字</title>
+<style>
+:root{--fs:32px;--bg:#fffaf0;--card:#ffffff;--ink:#111;--sub:#333;--line:#222;--acc:#0a4fb4;--accSoft:#e3edff;--ok:#0b7a2c;--okSoft:#d9f5df;--bad:#c0201b;--badSoft:#ffe1df;--red:#c62a1e;--hl:#ffe45c;--blank:#fff4c2}
+body.hc{--bg:#000;--card:#111;--ink:#fff35c;--sub:#fff;--line:#fff35c;--acc:#7fd0ff;--accSoft:#002a40;--ok:#6dff8a;--okSoft:#003b10;--bad:#ff7a70;--badSoft:#420000;--red:#ff8a80;--hl:#7a5c00;--blank:#2a2a00}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC","Heiti TC",sans-serif;font-size:var(--fs);line-height:1.6;letter-spacing:.04em}
+button{font:inherit;color:inherit;cursor:pointer}
+.bar{position:sticky;top:0;z-index:10;display:flex;gap:.3em;align-items:center;flex-wrap:wrap;padding:.3em .5em;background:var(--card);border-bottom:4px solid var(--line)}
+.bar .ttl{flex:1;font-weight:900;font-size:.8em;min-width:6em}
+.tb{border:3px solid var(--line);background:var(--card);border-radius:.4em;padding:.1em .45em;font-size:.75em;font-weight:800;min-height:2.2em}
+.tb.on{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+main{max-width:1200px;margin:0 auto;padding:.6em .7em 7em}
+h1{font-size:1.35em;margin:.3em 0;line-height:1.35;display:flex;align-items:center;gap:.3em;flex-wrap:wrap}
+h2{font-size:1.1em;margin:.4em 0}
+.card{background:var(--card);border:4px solid var(--line);border-radius:.5em;padding:.5em .7em;margin:.5em 0}
+.row{display:flex;align-items:flex-start;gap:.4em}
+.row>.grow{flex:1}
+.spk{flex:none;border:3px solid var(--acc);background:var(--accSoft);color:var(--acc);border-radius:50%;width:2.1em;height:2.1em;font-size:.95em;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;padding:0}
+.spk.playing{background:var(--acc);color:var(--bg);animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.12)}}
+.label{display:inline-block;font-weight:900;color:var(--acc);margin-right:.3em}
+.big{font-size:1.15em;font-weight:700}
+.pic{display:block;max-width:100%;max-height:52vh;margin:.3em auto;border:4px solid var(--line);border-radius:.4em;cursor:zoom-in;background:#fff}
+.opts{display:flex;flex-wrap:wrap;gap:.5em;margin:.4em 0}
+.opt{border:4px solid var(--line);background:var(--card);border-radius:.5em;padding:.25em .7em;font-weight:800;min-height:2.4em}
+.opt.ok{background:var(--okSoft);border-color:var(--ok);color:var(--ok)}
+.opt.bad{background:var(--badSoft);border-color:var(--bad);color:var(--bad);animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.blank{display:inline-block;min-width:4.5em;min-height:1.6em;border:none;border-bottom:5px solid var(--line);background:var(--blank);border-radius:.2em .2em 0 0;padding:0 .3em;margin:0 .15em;font-weight:900;vertical-align:baseline;text-align:center}
+.blank.sel{outline:5px solid var(--acc);outline-offset:2px}
+.blank.ok{color:var(--ok);border-bottom-color:var(--ok);background:var(--okSoft)}
+.blank.bad{color:var(--bad);border-bottom-color:var(--bad);background:var(--badSoft)}
+.chips{display:flex;flex-wrap:wrap;gap:.4em;padding:.4em;border:4px dashed var(--acc);border-radius:.5em;margin:.4em 0}
+.chips .cap{width:100%;font-weight:900;color:var(--acc);font-size:.85em}
+.chip{border:4px solid var(--acc);background:var(--accSoft);color:var(--ink);border-radius:.4em;padding:.15em .55em;font-weight:800}
+.sent{font-size:1.1em;line-height:2.1}
+textarea{width:100%;min-height:5.5em;font:inherit;font-size:1.1em;padding:.4em;border:4px solid var(--line);border-radius:.4em;background:var(--card);color:var(--ink);line-height:1.6}
+.actions{display:flex;flex-wrap:wrap;gap:.5em;margin:.4em 0}
+.btn{border:4px solid var(--line);background:var(--card);border-radius:.5em;padding:.2em .7em;font-weight:900;min-height:2.3em}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+.msg{font-weight:900;margin:.3em 0;min-height:1.6em}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.chk{display:flex;align-items:center;gap:.5em;width:100%;text-align:left;border:4px solid var(--line);background:var(--card);border-radius:.5em;padding:.3em .5em;margin:.35em 0;font-weight:700}
+.chk .box{flex:none;width:1.5em;height:1.5em;border:4px solid var(--line);border-radius:.2em;display:flex;align-items:center;justify-content:center;font-weight:900}
+.chk.on{border-color:var(--ok);background:var(--okSoft)}.chk.on .box{border-color:var(--ok);color:var(--ok)}
+.nav{position:fixed;left:0;right:0;bottom:0;display:flex;gap:.5em;align-items:center;justify-content:space-between;padding:.4em .6em;background:var(--card);border-top:4px solid var(--line);z-index:10}
+.nav .btn{min-width:5.5em}
+.nav .pg{font-weight:900}
+.home{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13em),1fr));gap:.6em}
+.homeBtn{display:block;width:100%;text-align:left;border:5px solid var(--line);background:var(--card);border-radius:.6em;padding:.5em .7em;font-weight:900;font-size:1.05em}
+.homeBtn small{display:block;font-weight:600;font-size:.7em;color:var(--sub)}
+.charRow{display:flex;flex-wrap:wrap;gap:.6em;align-items:center;justify-content:center}
+.charRow img{width:min(42vw,360px);border:4px solid var(--line);border-radius:.4em;background:#fff;cursor:zoom-in}
+.bu{color:var(--red);font-weight:900;font-size:1.2em}
+.word{font-weight:900;font-size:1.6em}
+.ss{font-size:1.35em;line-height:2;word-break:break-all}
+.ss .c{display:inline-block;padding:0 .02em;border-radius:.15em}
+.ss .clue{font-weight:900;text-decoration:underline;text-decoration-thickness:.12em;text-underline-offset:.18em}
+.ss.self .c{cursor:pointer}
+.ss .c.mark{background:var(--hl);text-decoration:underline;text-decoration-thickness:.12em;text-underline-offset:.18em;font-weight:900}
+.ss .box{display:inline-block;width:1.4em;height:1.4em;line-height:1.3em;text-align:center;border:5px solid var(--line);border-radius:.15em;vertical-align:middle;background:var(--blank);font-weight:900}
+.ss .box.ok{border-color:var(--ok);color:var(--ok);background:var(--okSoft)}
+.charOpts{display:flex;gap:.7em;flex-wrap:wrap;justify-content:center;margin:.5em 0}
+.charOpt{display:flex;flex-direction:column;align-items:center;gap:.25em}
+.charOpt .opt{font-size:2.3em;line-height:1.2;min-width:1.8em;padding:.1em .3em}
+.ans{border:4px dashed var(--bad);background:var(--badSoft);border-radius:.5em;padding:.4em .6em;margin:.5em 0;font-size:.85em}
+.zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:50;display:flex;align-items:center;justify-content:center;cursor:zoom-out}
+.zoom img{max-width:98vw;max-height:96vh;background:#fff}
+.qrbox{background:#fff;border-radius:.5em;padding:.5em;display:inline-block}.qrbox svg{display:block;width:min(70vw,60vh);height:auto}
+.qrMini svg{width:min(40vw,260px)}
+.qrModal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4em;color:#fff;text-align:center}
+.cheer{font-size:2.5em;text-align:center}
+</style>
+</head>
+<body>
+<div class="bar">
+  <button class="tb" id="bHome" aria-label="回首頁">🏠 首頁</button>
+  <div class="ttl" id="ttl">弱視生上課網站</div>
+  <button class="tb" id="bSm" aria-label="字變小">A－</button>
+  <button class="tb" id="bLg" aria-label="字變大">A＋</button>
+  <button class="tb" id="bHc" aria-label="高對比">🌓 高對比</button>
+  <button class="tb" id="bRate" aria-label="報讀速度">🐢 慢</button>
+  <button class="tb" id="bAuto" aria-label="自動報讀">🔊 自動</button>
+  <button class="tb" id="bQr" aria-label="QR code">📱 QR</button>
+  <button class="tb" id="bAns" aria-label="老師答案">👩‍🏫 答案</button>
+</div>
+<main id="app"></main>
+<template id="qrSvg"><svg width="41mm" height="41mm" version="1.1" viewBox="0 0 41 41" xmlns="http://www.w3.org/2000/svg"><path d="M2,2H3V3H2zM3,2H4V3H3zM4,2H5V3H4zM5,2H6V3H5zM6,2H7V3H6zM7,2H8V3H7zM8,2H9V3H8zM12,2H13V3H12zM15,2H16V3H15zM23,2H24V3H23zM25,2H26V3H25zM26,2H27V3H26zM28,2H29V3H28zM32,2H33V3H32zM33,2H34V3H33zM34,2H35V3H34zM35,2H36V3H35zM36,2H37V3H36zM37,2H38V3H37zM38,2H39V3H38zM2,3H3V4H2zM8,3H9V4H8zM12,3H13V4H12zM18,3H19V4H18zM22,3H23V4H22zM23,3H24V4H23zM24,3H25V4H24zM26,3H27V4H26zM29,3H30V4H29zM32,3H33V4H32zM38,3H39V4H38zM2,4H3V5H2zM4,4H5V5H4zM5,4H6V5H5zM6,4H7V5H6zM8,4H9V5H8zM10,4H11V5H10zM11,4H12V5H11zM14,4H15V5H14zM16,4H17V5H16zM20,4H21V5H20zM23,4H24V5H23zM24,4H25V5H24zM25,4H26V5H25zM26,4H27V5H26zM28,4H29V5H28zM29,4H30V5H29zM30,4H31V5H30zM32,4H33V5H32zM34,4H35V5H34zM35,4H36V5H35zM36,4H37V5H36zM38,4H39V5H38zM2,5H3V6H2zM4,5H5V6H4zM5,5H6V6H5zM6,5H7V6H6zM8,5H9V6H8zM10,5H11V6H10zM11,5H12V6H11zM12,5H13V6H12zM13,5H14V6H13zM15,5H16V6H15zM16,5H17V6H16zM17,5H18V6H17zM19,5H20V6H19zM20,5H21V6H20zM24,5H25V6H24zM27,5H28V6H27zM30,5H31V6H30zM32,5H33V6H32zM34,5H35V6H34zM35,5H36V6H35zM36,5H37V6H36zM38,5H39V6H38zM2,6H3V7H2zM4,6H5V7H4zM5,6H6V7H5zM6,6H7V7H6zM8,6H9V7H8zM10,6H11V7H10zM12,6H13V7H12zM13,6H14V7H13zM14,6H15V7H14zM16,6H17V7H16zM18,6H19V7H18zM19,6H20V7H19zM20,6H21V7H20zM21,6H22V7H21zM22,6H23V7H22zM25,6H26V7H25zM28,6H29V7H28zM32,6H33V7H32zM34,6H35V7H34zM35,6H36V7H35zM36,6H37V7H36zM38,6H39V7H38zM2,7H3V8H2zM8,7H9V8H8zM10,7H11V8H10zM11,7H12V8H11zM14,7H15V8H14zM17,7H18V8H17zM18,7H19V8H18zM19,7H20V8H19zM22,7H23V8H22zM24,7H25V8H24zM26,7H27V8H26zM27,7H28V8H27zM28,7H29V8H28zM29,7H30V8H29zM30,7H31V8H30zM32,7H33V8H32zM38,7H39V8H38zM2,8H3V9H2zM3,8H4V9H3zM4,8H5V9H4zM5,8H6V9H5zM6,8H7V9H6zM7,8H8V9H7zM8,8H9V9H8zM10,8H11V9H10zM12,8H13V9H12zM14,8H15V9H14zM16,8H17V9H16zM18,8H19V9H18zM20,8H21V9H20zM22,8H23V9H22zM24,8H25V9H24zM26,8H27V9H26zM28,8H29V9H28zM30,8H31V9H30zM32,8H33V9H32zM33,8H34V9H33zM34,8H35V9H34zM35,8H36V9H35zM36,8H37V9H36zM37,8H38V9H37zM38,8H39V9H38zM10,9H11V10H10zM12,9H13V10H12zM15,9H16V10H15zM16,9H17V10H16zM17,9H18V10H17zM19,9H20V10H19zM20,9H21V10H20zM22,9H23V10H22zM23,9H24V10H23zM24,9H25V10H24zM26,9H27V10H26zM28,9H29V10H28zM2,10H3V11H2zM4,10H5V11H4zM5,10H6V11H5zM6,10H7V11H6zM7,10H8V11H7zM8,10H9V11H8zM11,10H12V11H11zM12,10H13V11H12zM14,10H15V11H14zM15,10H16V11H15zM16,10H17V11H16zM17,10H18V11H17zM18,10H19V11H18zM23,10H24V11H23zM25,10H26V11H25zM27,10H28V11H27zM29,10H30V11H29zM32,10H33V11H32zM33,10H34V11H33zM34,10H35V11H34zM35,10H36V11H35zM36,10H37V11H36zM2,11H3V12H2zM3,11H4V12H3zM4,11H5V12H4zM7,11H8V12H7zM9,11H10V12H9zM10,11H11V12H10zM11,11H12V12H11zM12,11H13V12H12zM16,11H17V12H16zM17,11H18V12H17zM19,11H20V12H19zM20,11H21V12H20zM22,11H23V12H22zM23,11H24V12H23zM25,11H26V12H25zM30,11H31V12H30zM33,11H34V12H33zM37,11H38V12H37zM3,12H4V13H3zM4,12H5V13H4zM5,12H6V13H5zM6,12H7V13H6zM8,12H9V13H8zM9,12H10V13H9zM11,12H12V13H11zM13,12H14V13H13zM14,12H15V13H14zM17,12H18V13H17zM18,12H19V13H18zM21,12H22V13H21zM29,12H30V13H29zM30,12H31V13H30zM31,12H32V13H31zM34,12H35V13H34zM37,12H38V13H37zM38,12H39V13H38zM2,13H3V14H2zM3,13H4V14H3zM4,13H5V14H4zM9,13H10V14H9zM11,13H12V14H11zM12,13H13V14H12zM13,13H14V14H13zM17,13H18V14H17zM21,13H22V14H21zM22,13H23V14H22zM23,13H24V14H23zM26,13H27V14H26zM29,13H30V14H29zM30,13H31V14H30zM32,13H33V14H32zM33,13H34V14H33zM38,13H39V14H38zM4,14H5V15H4zM5,14H6V15H5zM6,14H7V15H6zM7,14H8V15H7zM8,14H9V15H8zM9,14H10V15H9zM10,14H11V15H10zM11,14H12V15H11zM17,14H18V15H17zM19,14H20V15H19zM21,14H22V15H21zM26,14H27V15H26zM27,14H28V15H27zM30,14H31V15H30zM31,14H32V15H31zM32,14H33V15H32zM34,14H35V15H34zM36,14H37V15H36zM37,14H38V15H37zM38,14H39V15H38zM3,15H4V16H3zM6,15H7V16H6zM13,15H14V16H13zM14,15H15V16H14zM18,15H19V16H18zM20,15H21V16H20zM21,15H22V16H21zM22,15H23V16H22zM25,15H26V16H25zM27,15H28V16H27zM28,15H29V16H28zM30,15H31V16H30zM33,15H34V16H33zM3,16H4V17H3zM4,16H5V17H4zM6,16H7V17H6zM7,16H8V17H7zM8,16H9V17H8zM9,16H10V17H9zM12,16H13V17H12zM14,16H15V17H14zM17,16H18V17H17zM20,16H21V17H20zM24,16H25V17H24zM26,16H27V17H26zM28,16H29V17H28zM29,16H30V17H29zM30,16H31V17H30zM33,16H34V17H33zM34,16H35V17H34zM35,16H36V17H35zM37,16H38V17H37zM38,16H39V17H38zM3,17H4V18H3zM5,17H6V18H5zM6,17H7V18H6zM9,17H10V18H9zM10,17H11V18H10zM11,17H12V18H11zM12,17H13V18H12zM13,17H14V18H13zM14,17H15V18H14zM16,17H17V18H16zM28,17H29V18H28zM29,17H30V18H29zM31,17H32V18H31zM32,17H33V18H32zM33,17H34V18H33zM34,17H35V18H34zM38,17H39V18H38zM5,18H6V19H5zM7,18H8V19H7zM8,18H9V19H8zM9,18H10V19H9zM10,18H11V19H10zM12,18H13V19H12zM13,18H14V19H13zM14,18H15V19H14zM17,18H18V19H17zM20,18H21V19H20zM22,18H23V19H22zM23,18H24V19H23zM24,18H25V19H24zM26,18H27V19H26zM27,18H28V19H27zM28,18H29V19H28zM31,18H32V19H31zM32,18H33V19H32zM33,18H34V19H33zM34,18H35V19H34zM36,18H37V19H36zM37,18H38V19H37zM38,18H39V19H38zM2,19H3V20H2zM5,19H6V20H5zM9,19H10V20H9zM11,19H12V20H11zM12,19H13V20H12zM14,19H15V20H14zM17,19H18V20H17zM18,19H19V20H18zM25,19H26V20H25zM28,19H29V20H28zM31,19H32V20H31zM33,19H34V20H33zM35,19H36V20H35zM37,19H38V20H37zM2,20H3V21H2zM5,20H6V21H5zM8,20H9V21H8zM9,20H10V21H9zM10,20H11V21H10zM12,20H13V21H12zM14,20H15V21H14zM16,20H17V21H16zM22,20H23V21H22zM24,20H25V21H24zM26,20H27V21H26zM27,20H28V21H27zM29,20H30V21H29zM33,20H34V21H33zM34,20H35V21H34zM35,20H36V21H35zM36,20H37V21H36zM37,20H38V21H37zM38,20H39V21H38zM3,21H4V22H3zM4,21H5V22H4zM6,21H7V22H6zM7,21H8V22H7zM14,21H15V22H14zM18,21H19V22H18zM23,21H24V22H23zM30,21H31V22H30zM31,21H32V22H31zM32,21H33V22H32zM33,21H34V22H33zM35,21H36V22H35zM38,21H39V22H38zM2,22H3V23H2zM6,22H7V23H6zM7,22H8V23H7zM8,22H9V23H8zM10,22H11V23H10zM12,22H13V23H12zM13,22H14V23H13zM14,22H15V23H14zM16,22H17V23H16zM18,22H19V23H18zM19,22H20V23H19zM22,22H23V23H22zM24,22H25V23H24zM25,22H26V23H25zM27,22H28V23H27zM31,22H32V23H31zM32,22H33V23H32zM34,22H35V23H34zM35,22H36V23H35zM36,22H37V23H36zM2,23H3V24H2zM5,23H6V24H5zM7,23H8V24H7zM9,23H10V24H9zM11,23H12V24H11zM12,23H13V24H12zM13,23H14V24H13zM14,23H15V24H14zM18,23H19V24H18zM19,23H20V24H19zM21,23H22V24H21zM22,23H23V24H22zM23,23H24V24H23zM25,23H26V24H25zM28,23H29V24H28zM30,23H31V24H30zM35,23H36V24H35zM6,24H7V25H6zM7,24H8V25H7zM8,24H9V25H8zM10,24H11V25H10zM14,24H15V25H14zM17,24H18V25H17zM18,24H19V25H18zM19,24H20V25H19zM22,24H23V25H22zM23,24H24V25H23zM27,24H28V25H27zM29,24H30V25H29zM32,24H33V25H32zM33,24H34V25H33zM34,24H35V25H34zM35,24H36V25H35zM37,24H38V25H37zM38,24H39V25H38zM4,25H5V26H4zM5,25H6V26H5zM7,25H8V26H7zM10,25H11V26H10zM11,25H12V26H11zM12,25H13V26H12zM14,25H15V26H14zM15,25H16V26H15zM16,25H17V26H16zM17,25H18V26H17zM18,25H19V26H18zM19,25H20V26H19zM20,25H21V26H20zM21,25H22V26H21zM23,25H24V26H23zM24,25H25V26H24zM26,25H27V26H26zM28,25H29V26H28zM31,25H32V26H31zM33,25H34V26H33zM34,25H35V26H34zM37,25H38V26H37zM38,25H39V26H38zM3,26H4V27H3zM8,26H9V27H8zM9,26H10V27H9zM10,26H11V27H10zM12,26H13V27H12zM14,26H15V27H14zM15,26H16V27H15zM18,26H19V27H18zM23,26H24V27H23zM25,26H26V27H25zM26,26H27V27H26zM27,26H28V27H27zM28,26H29V27H28zM29,26H30V27H29zM31,26H32V27H31zM32,26H33V27H32zM33,26H34V27H33zM34,26H35V27H34zM36,26H37V27H36zM38,26H39V27H38zM2,27H3V28H2zM3,27H4V28H3zM5,27H6V28H5zM14,27H15V28H14zM16,27H17V28H16zM17,27H18V28H17zM19,27H20V28H19zM20,27H21V28H20zM22,27H23V28H22zM24,27H25V28H24zM25,27H26V28H25zM30,27H31V28H30zM33,27H34V28H33zM36,27H37V28H36zM2,28H3V29H2zM7,28H8V29H7zM8,28H9V29H8zM12,28H13V29H12zM16,28H17V29H16zM17,28H18V29H17zM18,28H19V29H18zM20,28H21V29H20zM21,28H22V29H21zM23,28H24V29H23zM27,28H28V29H27zM29,28H30V29H29zM30,28H31V29H30zM31,28H32V29H31zM33,28H34V29H33zM34,28H35V29H34zM36,28H37V29H36zM37,28H38V29H37zM38,28H39V29H38zM2,29H3V30H2zM4,29H5V30H4zM5,29H6V30H5zM6,29H7V30H6zM7,29H8V30H7zM10,29H11V30H10zM11,29H12V30H11zM12,29H13V30H12zM14,29H15V30H14zM16,29H17V30H16zM17,29H18V30H17zM20,29H21V30H20zM21,29H22V30H21zM22,29H23V30H22zM23,29H24V30H23zM24,29H25V30H24zM26,29H27V30H26zM28,29H29V30H28zM30,29H31V30H30zM33,29H34V30H33zM34,29H35V30H34zM38,29H39V30H38zM2,30H3V31H2zM5,30H6V31H5zM6,30H7V31H6zM7,30H8V31H7zM8,30H9V31H8zM10,30H11V31H10zM11,30H12V31H11zM12,30H13V31H12zM15,30H16V31H15zM16,30H17V31H16zM17,30H18V31H17zM19,30H20V31H19zM21,30H22V31H21zM22,30H23V31H22zM24,30H25V31H24zM25,30H26V31H25zM26,30H27V31H26zM27,30H28V31H27zM30,30H31V31H30zM31,30H32V31H31zM32,30H33V31H32zM33,30H34V31H33zM34,30H35V31H34zM35,30H36V31H35zM36,30H37V31H36zM37,30H38V31H37zM38,30H39V31H38zM10,31H11V32H10zM12,31H13V32H12zM13,31H14V32H13zM15,31H16V32H15zM20,31H21V32H20zM21,31H22V32H21zM22,31H23V32H22zM25,31H26V32H25zM27,31H28V32H27zM30,31H31V32H30zM34,31H35V32H34zM35,31H36V32H35zM2,32H3V33H2zM3,32H4V33H3zM4,32H5V33H4zM5,32H6V33H5zM6,32H7V33H6zM7,32H8V33H7zM8,32H9V33H8zM13,32H14V33H13zM14,32H15V33H14zM16,32H17V33H16zM17,32H18V33H17zM18,32H19V33H18zM20,32H21V33H20zM22,32H23V33H22zM24,32H25V33H24zM30,32H31V33H30zM32,32H33V33H32zM34,32H35V33H34zM36,32H37V33H36zM37,32H38V33H37zM38,32H39V33H38zM2,33H3V34H2zM8,33H9V34H8zM10,33H11V34H10zM11,33H12V34H11zM12,33H13V34H12zM13,33H14V34H13zM14,33H15V34H14zM16,33H17V34H16zM17,33H18V34H17zM18,33H19V34H18zM21,33H22V34H21zM22,33H23V34H22zM25,33H26V34H25zM28,33H29V34H28zM30,33H31V34H30zM34,33H35V34H34zM35,33H36V34H35zM37,33H38V34H37zM38,33H39V34H38zM2,34H3V35H2zM4,34H5V35H4zM5,34H6V35H5zM6,34H7V35H6zM8,34H9V35H8zM10,34H11V35H10zM11,34H12V35H11zM14,34H15V35H14zM16,34H17V35H16zM20,34H21V35H20zM21,34H22V35H21zM22,34H23V35H22zM23,34H24V35H23zM24,34H25V35H24zM26,34H27V35H26zM27,34H28V35H27zM28,34H29V35H28zM29,34H30V35H29zM30,34H31V35H30zM31,34H32V35H31zM32,34H33V35H32zM33,34H34V35H33zM34,34H35V35H34zM36,34H37V35H36zM37,34H38V35H37zM38,34H39V35H38zM2,35H3V36H2zM4,35H5V36H4zM5,35H6V36H5zM6,35H7V36H6zM8,35H9V36H8zM10,35H11V36H10zM11,35H12V36H11zM14,35H15V36H14zM17,35H18V36H17zM18,35H19V36H18zM25,35H26V36H25zM27,35H28V36H27zM31,35H32V36H31zM32,35H33V36H32zM34,35H35V36H34zM36,35H37V36H36zM38,35H39V36H38zM2,36H3V37H2zM4,36H5V37H4zM5,36H6V37H5zM6,36H7V37H6zM8,36H9V37H8zM10,36H11V37H10zM13,36H14V37H13zM14,36H15V37H14zM15,36H16V37H15zM16,36H17V37H16zM20,36H21V37H20zM22,36H23V37H22zM24,36H25V37H24zM27,36H28V37H27zM28,36H29V37H28zM29,36H30V37H29zM30,36H31V37H30zM35,36H36V37H35zM37,36H38V37H37zM38,36H39V37H38zM2,37H3V38H2zM8,37H9V38H8zM11,37H12V38H11zM12,37H13V38H12zM13,37H14V38H13zM14,37H15V38H14zM15,37H16V38H15zM16,37H17V38H16zM18,37H19V38H18zM23,37H24V38H23zM24,37H25V38H24zM29,37H30V38H29zM30,37H31V38H30zM34,37H35V38H34zM38,37H39V38H38zM2,38H3V39H2zM3,38H4V39H3zM4,38H5V39H4zM5,38H6V39H5zM6,38H7V39H6zM7,38H8V39H7zM8,38H9V39H8zM10,38H11V39H10zM12,38H13V39H12zM13,38H14V39H13zM14,38H15V39H14zM19,38H20V39H19zM25,38H26V39H25zM26,38H27V39H26zM27,38H28V39H27zM28,38H29V39H28zM31,38H32V39H31zM32,38H33V39H32zM34,38H35V39H34zM35,38H36V39H35zM36,38H37V39H36zM37,38H38V39H37zM38,38H39V39H38z" id="qr-path" fill="#000000" fill-opacity="1" fill-rule="nonzero" stroke="none"/></svg></template>
+<div class="nav" id="nav" hidden>
+  <button class="btn" id="prev">◀ 上一頁</button>
+  <span class="pg" id="pg"></span>
+  <button class="btn pri" id="next">下一頁 ▶</button>
+</div>
+<script>
+const D={"UI": {"correct": "答對了，好棒！", "wrong": "再想想看，可以按喇叭再聽一次。", "pickBlank": "先點一個空格，再點下面的詞語。", "done": "你完成了！給自己拍拍手。", "home": "弱視生上課網站。請選擇要練習的學習單。", "s7": "第七課，造句學習單。假設複句：要是……就……，即使……也……。", "sim": "六年級國語，相似字區辨。", "gGuo": "同樣有果，部首在哪裡？", "gJing": "同樣有巠，部首在哪裡？", "gJin": "同樣有堇，部首在哪裡？", "tapClue": "這一題，請自己找線索。點一點句子裡的字，把線索標出來，再選答案。", "clueHint": "前兩題看粗體線索，最後一題自己畫出線索。"}, "S7": [{"type": "info", "title": "🌸 句型一：要是……就……", "sayTitle": "句型一：要是……就……", "lines": [{"label": "意思", "text": "先「假設」一個情況，再說出這個情況會帶來的「結果」。", "say": "意思：先假設一個情況，再說出這個情況會帶來的結果。"}, {"label": "公式", "text": "要是＋〔假設的情況〕，就＋〔會有的結果〕。", "say": "公式：要是，加上假設的情況，就，加上會有的結果。"}, {"label": "例句", "text": "要是你有困難，就說出來，我們會盡力幫助你。", "say": "例句：要是你有困難，就說出來，我們會盡力幫助你。"}, {"label": "💡 小口訣", "text": "「要是」後面放「如果發生的事」，「就」後面放「會怎麼樣」。", "say": "小口訣：要是，後面放如果發生的事；就，後面放會怎麼樣。"}]}, {"type": "choice", "title": "✏️ 練習一　步驟1", "img": "z1.jpg", "sayTitle": "練習一，看情境，完成句子。步驟一，依虹給表妹什麼建議？請把正確答案圈起來。", "prompt": "依虹給表妹什麼建議？請把正確答案圈起來。", "items": [{"pre": "想讓書法更進步，要（", "post": "）。", "say": "想讓書法更進步，要，空格。", "opts": [{"t": "每天勤奮的練習", "say": "每天勤奮的練習"}, {"t": "一直看電視", "say": "一直看電視"}], "ans": 0, "sayDone": "想讓書法更進步，要每天勤奮的練習。"}]}, {"type": "blanks", "title": "✏️ 練習一　步驟2", "img": "z1.jpg", "sayTitle": "練習一，步驟二，把句子寫完整。", "prompt": "把句子寫完整：", "chips": ["要每天勤奮的練習", "寫出一手好字", "一直看電視"], "sents": [{"parts": ["要是你想讓書法更進步，就", 0, "。"], "say": "要是你想讓書法更進步，就，空格。", "sayDone": "要是你想讓書法更進步，就要每天勤奮的練習。"}, {"parts": ["要是每天都能勤練書法，就能", 1, "。"], "say": "要是每天都能勤練書法，就能，空格。", "sayDone": "要是每天都能勤練書法，就能寫出一手好字。"}], "answers": [["勤奮"], ["一手好字"]]}, {"type": "blanks", "title": "✏️ 練習二　看圖回答", "img": "z2.jpg", "sayTitle": "練習二，看圖造句。先看圖回答問題。", "prompt": "🔍 看圖回答：", "chips": ["下雨", "雨傘", "淋濕"], "sents": [{"q": "① 天空怎麼了？", "parts": ["快要（", 0, "）了。"], "say": "第一題，天空怎麼了？快要，空格，了。", "sayDone": "快要下雨了。"}, {"q": "② 媽媽給男孩什麼？", "parts": ["一把（", 1, "）。"], "say": "第二題，媽媽給男孩什麼？一把，空格。", "sayDone": "一把雨傘。"}, {"q": "③ 為什麼要帶它？", "parts": ["才不會被雨（", 2, "）。"], "say": "第三題，為什麼要帶它？才不會被雨，空格。", "sayDone": "才不會被雨淋濕。"}], "answers": [["下雨"], ["雨傘"], ["淋濕"]]}, {"type": "blanks", "title": "✏️ 練習二　看圖造句", "img": "z2.jpg", "sayTitle": "練習二，把答案放進句型裡。", "prompt": "把答案放進句型裡：", "chips": ["下雨", "雨傘", "淋濕", "帶雨傘出門"], "sents": [{"parts": ["要是等一下", 0, "，你就要", 1, "。"], "say": "要是等一下，空格，你就要，空格。", "sayDone": "要是等一下下雨，你就要帶雨傘出門。"}], "answers": [["下雨"], ["帶雨傘出門"]]}, {"type": "write", "title": "⭐ 挑戰：要是……就……", "sayTitle": "挑戰：用要是……就……，自己造一句。可以寫生活中的事。", "prompt": "用「要是……就……」自己造一句（可以寫生活中的事）", "hint": "提示：要是我考試考一百分，就……／要是明天放假，就……", "sayHint": "提示：要是我考試考一百分，就……。要是明天放假，就……。", "keys": ["要是", "就"]}, {"type": "info", "title": "🏃 句型二：即使……也……", "sayTitle": "句型二：即使……也……", "lines": [{"label": "意思", "text": "就算真的出現某種情況，結果「還是一樣」、不會改變。", "say": "意思：就算真的出現某種情況，結果還是一樣，不會改變。"}, {"label": "公式", "text": "即使＋〔就算有這種情況〕，也＋〔還是會這樣〕。", "say": "公式：即使，加上就算有這種情況，也，加上還是會這樣。"}, {"label": "例句", "text": "他們兄弟兩人感情很好，即使因工作分隔兩地，也不中斷聯絡。", "say": "例句：他們兄弟兩人感情很好，即使因工作分隔兩地，也不中斷聯絡。"}, {"label": "💡 小口訣", "text": "「即使」＝「就算」。前面說「不好的情況」，後面說「還是不放棄、不改變」。", "say": "小口訣：即使，就是就算。前面說不好的情況，後面說還是不放棄、不改變。"}]}, {"type": "choice", "title": "✏️ 練習三　步驟1", "img": "z3.jpg", "sayTitle": "練習三，看情境，完成句子。步驟一，圈圈看。", "prompt": "圈圈看：", "items": [{"pre": "不是選手的同學，有沒有回家？（", "post": "）", "say": "第一題，不是選手的同學，有沒有回家？", "opts": [{"t": "有回家", "say": "有回家"}, {"t": "留下來當啦啦隊", "say": "留下來當啦啦隊"}], "ans": 1, "sayDone": "不是選手的同學，留下來當啦啦隊。"}, {"pre": "練習很辛苦，同學們有沒有放棄？（", "post": "）", "say": "第二題，練習很辛苦，同學們有沒有放棄？", "opts": [{"t": "放棄了", "say": "放棄了"}, {"t": "不輕言放棄", "say": "不輕言放棄"}], "ans": 1, "sayDone": "練習很辛苦，同學們不輕言放棄。"}]}, {"type": "blanks", "title": "✏️ 練習三　步驟2", "img": "z3.jpg", "sayTitle": "練習三，步驟二，把句子寫完整。", "prompt": "把句子寫完整：", "chips": ["留下來當啦啦隊", "不輕言放棄，努力為接力賽做好準備", "回家休息"], "sents": [{"parts": ["即使不是選手，也一起", 0, "。"], "say": "即使不是選手，也一起，空格。", "sayDone": "即使不是選手，也一起留下來當啦啦隊。"}, {"parts": ["即使練習時很辛苦，同學們也", 1, "。"], "say": "即使練習時很辛苦，同學們也，空格。", "sayDone": "即使練習時很辛苦，同學們也不輕言放棄，努力為接力賽做好準備。"}], "answers": [["啦啦隊"], ["不輕言放棄"]]}, {"type": "blanks", "title": "✏️ 練習四　看圖回答", "img": "z4.jpg", "sayTitle": "練習四，看圖造句。先看圖回答問題。", "prompt": "🔍 看圖回答：", "chips": ["大雨", "準時", "上學"], "sents": [{"q": "① 外面的天氣怎麼樣？", "parts": ["正在下（", 0, "）。"], "say": "第一題，外面的天氣怎麼樣？正在下，空格。", "sayDone": "正在下大雨。"}, {"q": "② 女孩有遲到嗎？", "parts": ["沒有，她（", 1, "）到學校。"], "say": "第二題，女孩有遲到嗎？沒有，她，空格，到學校。", "sayDone": "沒有，她準時到學校。"}, {"q": "③ 她的心情怎麼樣？", "parts": ["很開心、很堅定。"], "say": "第三題，她的心情怎麼樣？很開心、很堅定。"}], "answers": [["大雨"], ["準時"]]}, {"type": "blanks", "title": "✏️ 練習四　看圖造句", "img": "z4.jpg", "sayTitle": "練習四，把答案放進句型裡。", "prompt": "把答案放進句型裡：", "chips": ["大雨", "準時", "上學"], "sents": [{"parts": ["即使外面下著", 0, "，她也", 1, "到學校上課。"], "say": "即使外面下著，空格，她也，空格，到學校上課。", "sayDone": "即使外面下著大雨，她也準時到學校上課。"}], "answers": [["大雨"], ["準時"]]}, {"type": "write", "title": "⭐ 挑戰：即使……也……", "sayTitle": "挑戰：用即使……也……，自己造一句。", "prompt": "用「即使……也……」自己造一句", "hint": "提示：即使很累，我也……／即使數學很難，我也……", "sayHint": "提示：即使很累，我也……。即使數學很難，我也……。", "keys": ["即使", "也"]}, {"type": "pair", "title": "🧩 練習五：選選看", "sayTitle": "練習五，選選看，填入正確的詞。要是、就，還是即使、也？", "prompt": "選選看，填入正確的詞：", "opts": [{"t": ["要是", "就"], "say": "要是，就"}, {"t": ["即使", "也"], "say": "即使，也"}], "items": [{"parts": ["", 0, "天氣很冷，爺爺", 1, "每天早上去公園運動。"], "say": "第一題，空格，天氣很冷，爺爺，空格，每天早上去公園運動。", "ans": 1, "sayDone": "即使天氣很冷，爺爺也每天早上去公園運動。"}, {"parts": ["", 0, "你每天早點睡，", 1, "不會上課打瞌睡。"], "say": "第二題，空格，你每天早點睡，空格，不會上課打瞌睡。", "ans": 0, "sayDone": "要是你每天早點睡，就不會上課打瞌睡。"}, {"parts": ["", 0, "比賽輸了，我們", 1, "要為自己加油。"], "say": "第三題，空格，比賽輸了，我們，空格，要為自己加油。", "ans": 1, "sayDone": "即使比賽輸了，我們也要為自己加油。"}]}, {"type": "check", "title": "✅ 我的自我檢查", "sayTitle": "我的自我檢查。", "lines": [{"text": "我有用對關鍵詞（要是／就、即使／也）。", "say": "我有用對關鍵詞，要是、就，即使、也。"}, {"text": "前後的意思合理、通順。", "say": "前後的意思合理、通順。"}, {"text": "句子有逗號「，」和句號「。」。", "say": "句子有逗號和句號。"}]}], "S7_ANS": ["練習一：步驟1 每天勤奮的練習；步驟2 ①要每天勤奮的練習 ②寫出一手好字", "練習二：下雨、雨傘、淋濕；要是等一下下雨，你就要帶雨傘出門。", "練習三：步驟1 留下來當啦啦隊、不輕言放棄；步驟2 ①留下來當啦啦隊 ②不輕言放棄，努力為接力賽做好準備", "練習四：大雨、準時；即使外面下著大雨，她也準時到學校上課。", "練習五：1. 即使、也　2. 要是、就　3. 即使、也", "挑戰題：答案不限，關鍵詞用對、前後語意合理即可。「要是」句後半為結果；「即使」句後半為不受影響的行動或結果。"], "SIM": [{"key": "guo", "title": "同樣有「果」，部首在哪裡？", "say": "同樣有果，部首在哪裡？", "chars": [{"img": "s0.jpg", "pic": "s1.jpg", "char": "棵", "bu": "木部", "word": "一棵樹", "exp": "木讓人想到樹。數樹時說「一棵」。", "say": "棵，木部，一棵樹。木讓人想到樹。數樹時說一棵。"}, {"img": "s2.jpg", "pic": "s3.jpg", "char": "課", "bu": "言部", "word": "上課", "exp": "言讓人想到說話。上課時，老師講解。", "say": "課，言部，上課。言讓人想到說話。上課時，老師講解。"}, {"img": "s4.jpg", "pic": "s5.jpg", "char": "踝", "bu": "足部", "word": "腳踝", "exp": "足就是腳。腳踝連著小腿和腳掌。", "say": "踝，足部，腳踝。足就是腳。腳踝連著小腿和腳掌。"}], "qs": [{"n": 1, "sent": "跑完接力賽，我的腳□腫了。", "clue": ["腳"], "opts": ["棵", "踝"], "ans": 1, "say": "第一題，跑完接力賽，我的腳，空格，腫了。線索是：腳。", "sayDone": "跑完接力賽，我的腳踝腫了。", "self": false}, {"n": 2, "sent": "我們在花圃旁種了一□樹。", "clue": ["樹"], "opts": ["課", "棵"], "ans": 1, "say": "第二題，我們在花圃旁種了一，空格，樹。線索是：樹。", "sayDone": "我們在花圃旁種了一棵樹。", "self": false}, {"n": 3, "sent": "這堂自然□，老師教我們用顯微鏡。", "clue": [], "opts": ["踝", "課", "棵"], "ans": 1, "say": "第三題，這堂自然，空格，老師教我們用顯微鏡。", "sayDone": "這堂自然課，老師教我們用顯微鏡。", "self": true}]}, {"key": "jing", "title": "同樣有「巠」，部首在哪裡？", "say": "同樣有巠，部首在哪裡？", "chars": [{"img": "s6.jpg", "pic": "s7.jpg", "char": "經", "bu": "糸部", "word": "經線", "exp": "糸讓人想到絲線。經線是縱向的線。", "say": "經，糸部，經線。糸讓人想到絲線。經線是縱向的線。"}, {"img": "s8.jpg", "pic": "s9.jpg", "char": "勁", "bu": "力部", "word": "幹勁", "exp": "右邊的力讓人想到力氣。幹勁就是做事的精神。", "say": "勁，力部，幹勁。右邊的力讓人想到力氣。幹勁就是做事的精神。"}, {"img": "s10.jpg", "pic": "s11.jpg", "char": "徑", "bu": "彳部", "word": "小徑", "exp": "彳讓人想到走路。小徑就是小路。", "say": "徑，雙人旁，彳部，小徑。彳讓人想到走路。小徑就是小路。"}], "qs": [{"n": 1, "sent": "隊員們搶著搬器材，個個幹□十足。", "clue": ["搶著搬"], "opts": ["勁", "徑"], "ans": 0, "say": "第一題，隊員們搶著搬器材，個個幹，空格，十足。線索是：搶著搬。", "sayDone": "隊員們搶著搬器材，個個幹勁十足。", "self": false}, {"n": 2, "sent": "我們沿著山間小□走到營地。", "clue": ["走"], "opts": ["經", "徑"], "ans": 1, "say": "第二題，我們沿著山間小，空格，走到營地。線索是：走。", "sayDone": "我們沿著山間小徑走到營地。", "self": false}, {"n": 3, "sent": "織布前，要先把縱向的□線拉直。", "clue": [], "opts": ["徑", "經", "勁"], "ans": 1, "say": "第三題，織布前，要先把縱向的，空格，線拉直。", "sayDone": "織布前，要先把縱向的經線拉直。", "self": true}]}, {"key": "jin", "title": "同樣有「堇」，部首在哪裡？", "say": "同樣有堇，部首在哪裡？", "chars": [{"img": "s12.jpg", "pic": "s13.jpg", "char": "勤", "bu": "力部", "word": "勤勞", "exp": "右邊是力。勤勞的人願意出力做事。", "say": "勤，力部，勤勞。右邊是力。勤勞的人願意出力做事。"}, {"img": "s14.jpg", "pic": "s15.jpg", "char": "僅", "bu": "人部", "word": "僅有", "exp": "左邊是亻。看圖，盒裡僅有一枝筆。", "say": "僅，人部，僅有。左邊是單人旁。看圖，盒裡僅有一枝筆。"}, {"img": "s16.jpg", "pic": "s17.jpg", "char": "謹", "bu": "言部", "word": "謹慎", "exp": "左邊是言。謹慎發言，就是想清楚再說。", "say": "謹，言部，謹慎。左邊是言。謹慎發言，就是想清楚再說。"}], "qs": [{"n": 1, "sent": "原有十個名額，現在□剩兩個。", "clue": ["剩兩個"], "opts": ["謹", "僅"], "ans": 1, "say": "第一題，原有十個名額，現在，空格，剩兩個。線索是：剩兩個。", "sayDone": "原有十個名額，現在僅剩兩個。", "self": false}, {"n": 2, "sent": "志工每天整理書架，十分□勞。", "clue": ["每天整理"], "opts": ["勤", "僅"], "ans": 0, "say": "第二題，志工每天整理書架，十分，空格，勞。線索是：每天整理。", "sayDone": "志工每天整理書架，十分勤勞。", "self": false}, {"n": 3, "sent": "班長發言前先查證，說話很□慎。", "clue": [], "opts": ["僅", "勤", "謹"], "ans": 2, "say": "第三題，班長發言前先查證，說話很，空格，慎。", "sayDone": "班長發言前先查證，說話很謹慎。", "self": true}]}], "OPT_SAY": {"棵": "棵，一棵樹的棵", "課": "課，上課的課", "踝": "踝，腳踝的踝", "經": "經，經線的經", "勁": "勁，幹勁的勁", "徑": "徑，小徑的徑", "勤": "勤，勤勞的勤", "僅": "僅，僅有的僅", "謹": "謹，謹慎的謹"}, "AUDIO": {"挑戰：用即使……也……，自己造一句。": "31072da263", "下雨": "060e263e4b", "例句：要是你有困難，就說出來，我們會盡力幫助你。": "be0c6e0772", "第一題，外面的天氣怎麼樣？正在下，空格。": "9a9c526307", "想讓書法更進步，要每天勤奮的練習。": "404cf51b03", "小口訣：即使，就是就算。前面說不好的情況，後面說還是不放棄、不改變。": "f9ff240460", "經，經線的經": "7147f44eb7", "志工每天整理書架，十分勤勞。": "8819f9d8a5", "練習一：步驟1 每天勤奮的練習；步驟2 ①要每天勤奮的練習 ②寫出一手好字": "132f3a3783", "第二題，空格，你每天早點睡，空格，不會上課打瞌睡。": "4631e5bce7", "大雨": "811a1ff8ac", "有回家": "87b5c016e0", "勤，勤勞的勤": "3b7c2cec72", "第一題，跑完接力賽，我的腳，空格，腫了。線索是：腳。": "359002cce4", "第二題，志工每天整理書架，十分，空格，勞。線索是：每天整理。": "dc9ba76570", "句子有逗號和句號。": "f73e7712de", "謹，謹慎的謹": "c0a3d500b7", "班長發言前先查證，說話很謹慎。": "7e9f880fd0", "徑，小徑的徑": "ae9ccc5e1a", "練習五，選選看，填入正確的詞。要是、就，還是即使、也？": "6bb15ef538", "第三題，她的心情怎麼樣？很開心、很堅定。": "0ce8771dfe", "提示：要是我考試考一百分，就……。要是明天放假，就……。": "46a877621d", "練習一，步驟二，把句子寫完整。": "e1a2268f09", "跑完接力賽，我的腳踝腫了。": "f32088d5e8", "要是，就": "4af9684e46", "第三題，織布前，要先把縱向的，空格，線拉直。": "49119bc7c3", "即使外面下著大雨，她也準時到學校上課。": "54a94a5804", "你完成了！給自己拍拍手。": "495320f378", "提示：即使很累，我也……。即使數學很難，我也……。": "fc5ce6a62c", "即使練習時很辛苦，同學們也不輕言放棄，努力為接力賽做好準備。": "462921be76", "第二題，我們沿著山間小，空格，走到營地。線索是：走。": "12b1d8717f", "練習一，看情境，完成句子。步驟一，依虹給表妹什麼建議？請把正確答案圈起來。": "d2b8945b49", "隊員們搶著搬器材，個個幹勁十足。": "a61e9ce541", "寫出一手好字": "2697cb9e87", "放棄了": "9efe4eb214", "公式：即使，加上就算有這種情況，也，加上還是會這樣。": "56db7b1a40", "不是選手的同學，留下來當啦啦隊。": "54dace0890", "練習三，步驟二，把句子寫完整。": "9f5fb469e7", "第一題，隊員們搶著搬器材，個個幹，空格，十足。線索是：搶著搬。": "8699c1a540", "第三題，空格，比賽輸了，我們，空格，要為自己加油。": "bbb2021474", "第二題，練習很辛苦，同學們有沒有放棄？": "6c3301d550", "雨傘": "5903113f3d", "挑戰：用要是……就……，自己造一句。可以寫生活中的事。": "52a5ec43f1", "即使不是選手，也一起留下來當啦啦隊。": "6fe0d85ceb", "想讓書法更進步，要，空格。": "6677069a61", "要是等一下，空格，你就要，空格。": "f1bcc1c865", "同樣有果，部首在哪裡？": "af8f509fb9", "前兩題看粗體線索，最後一題自己畫出線索。": "ac9f915172", "公式：要是，加上假設的情況，就，加上會有的結果。": "97104efcc0", "僅，僅有的僅": "81334d9d38", "回家休息": "688123ffcb", "練習很辛苦，同學們不輕言放棄。": "58020017ab", "弱視生上課網站。請選擇要練習的學習單。": "bc94b57666", "即使天氣很冷，爺爺也每天早上去公園運動。": "b8033f103c", "答對了，好棒！": "07f91f969a", "這一題，請自己找線索。點一點句子裡的字，把線索標出來，再選答案。": "a7c92f1864", "要是每天都能勤練書法，就能寫出一手好字。": "a5c328581e", "第三題，這堂自然，空格，老師教我們用顯微鏡。": "d42a6c55ce", "每天勤奮的練習": "4fce7b4596", "上學": "25562b9e79", "意思：就算真的出現某種情況，結果還是一樣，不會改變。": "3ca498f0f5", "留下來當啦啦隊": "103b768dec", "要是等一下下雨，你就要帶雨傘出門。": "fab80b2b3d", "即使比賽輸了，我們也要為自己加油。": "e68cd99a9b", "正在下大雨。": "5a57235d8a", "要是你想讓書法更進步，就，空格。": "d00fad0573", "課，上課的課": "e2c0c16306", "練習五：1. 即使、也　2. 要是、就　3. 即使、也": "16cbf04943", "不輕言放棄": "33f6267793", "這堂自然課，老師教我們用顯微鏡。": "77abea0304", "再想想看，可以按喇叭再聽一次。": "402c8f2ed5", "第三題，為什麼要帶它？才不會被雨，空格。": "43136fbbf2", "意思：先假設一個情況，再說出這個情況會帶來的結果。": "ab13e2166b", "要每天勤奮的練習": "0a4e0e6ab8", "練習四，把答案放進句型裡。": "4a9194bf71", "勁，幹勁的勁": "58b8817cf8", "棵，一棵樹的棵": "9304c9b6e1", "經，糸部，經線。糸讓人想到絲線。經線是縱向的線。": "b8eaad18a2", "第一題，不是選手的同學，有沒有回家？": "f0ced0a1eb", "踝，腳踝的踝": "e922cd4220", "先點一個空格，再點下面的詞語。": "a9fc67d2ce", "沒有，她準時到學校。": "1170730a19", "即使練習時很辛苦，同學們也，空格。": "da6b54bd22", "不輕言放棄，努力為接力賽做好準備": "7433d6d3cc", "前後的意思合理、通順。": "61c84afd51", "棵，木部，一棵樹。木讓人想到樹。數樹時說一棵。": "f973675976", "我有用對關鍵詞，要是、就，即使、也。": "8a12ad8cf6", "挑戰題：答案不限，關鍵詞用對、前後語意合理即可。「要是」句後半為結果；「即使」句後半為不受影響的行動或結果。": "9141aff956", "練習三，看情境，完成句子。步驟一，圈圈看。": "c7dad90d8a", "小口訣：要是，後面放如果發生的事；就，後面放會怎麼樣。": "bcc11f51dc", "僅，人部，僅有。左邊是單人旁。看圖，盒裡僅有一枝筆。": "4372b95d62", "勁，力部，幹勁。右邊的力讓人想到力氣。幹勁就是做事的精神。": "aafaacfeb2", "第七課，造句學習單。假設複句：要是……就……，即使……也……。": "feb1a8cd3b", "第二題，女孩有遲到嗎？沒有，她，空格，到學校。": "8067dc02b5", "句型一：要是……就……": "3d324663ae", "練習四：大雨、準時；即使外面下著大雨，她也準時到學校上課。": "2da5153e55", "原有十個名額，現在僅剩兩個。": "a33d69d4d4", "第一題，空格，天氣很冷，爺爺，空格，每天早上去公園運動。": "d5a4de409f", "即使外面下著，空格，她也，空格，到學校上課。": "2d7cdad532", "徑，雙人旁，彳部，小徑。彳讓人想到走路。小徑就是小路。": "4d0c13eaad", "織布前，要先把縱向的經線拉直。": "a64b6bd412", "才不會被雨淋濕。": "a05c313517", "第一題，天空怎麼了？快要，空格，了。": "5326ef68ba", "例句：他們兄弟兩人感情很好，即使因工作分隔兩地，也不中斷聯絡。": "0ea041d487", "淋濕": "86a8250d4e", "一把雨傘。": "c5e6a78be4", "我的自我檢查。": "1a40deb95a", "勤，力部，勤勞。右邊是力。勤勞的人願意出力做事。": "ead6e4672c", "即使不是選手，也一起，空格。": "ee94e5f7fb", "要是每天都能勤練書法，就能，空格。": "724c30d7b0", "一直看電視": "559fdb55d9", "練習三：步驟1 留下來當啦啦隊、不輕言放棄；步驟2 ①留下來當啦啦隊 ②不輕言放棄，努力為接力賽做好準備": "4427585bf0", "練習二：下雨、雨傘、淋濕；要是等一下下雨，你就要帶雨傘出門。": "cc8ec919bc", "句型二：即使……也……": "2ae86fd5dd", "同樣有堇，部首在哪裡？": "2a1e9f8071", "帶雨傘出門": "db1b02e0df", "同樣有巠，部首在哪裡？": "69036a0230", "練習二，看圖造句。先看圖回答問題。": "85b67dbf3d", "課，言部，上課。言讓人想到說話。上課時，老師講解。": "58355b5728", "踝，足部，腳踝。足就是腳。腳踝連著小腿和腳掌。": "d8783364b0", "練習四，看圖造句。先看圖回答問題。": "162f956f2a", "第一題，原有十個名額，現在，空格，剩兩個。線索是：剩兩個。": "987c7ea136", "我們沿著山間小徑走到營地。": "139b16dd9e", "第二題，我們在花圃旁種了一，空格，樹。線索是：樹。": "f43eebd80a", "六年級國語，相似字區辨。": "bfd4d36257", "要是你想讓書法更進步，就要每天勤奮的練習。": "b44e8fc6b2", "快要下雨了。": "e185a05538", "謹，言部，謹慎。左邊是言。謹慎發言，就是想清楚再說。": "121c45806e", "我們在花圃旁種了一棵樹。": "f181264b81", "準時": "e581c2a2dd", "第二題，媽媽給男孩什麼？一把，空格。": "4f864bf1a1", "要是你每天早點睡，就不會上課打瞌睡。": "99f55eca71", "練習二，把答案放進句型裡。": "dfdee80dd7", "即使，也": "95357d377e", "第三題，班長發言前先查證，說話很，空格，慎。": "a9f2508f16"}};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem('lvsite_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('lvsite_'+k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- 設定 ---------- */
+let fs=store.get('fs',32), hc=store.get('hc',false), rateIdx=store.get('rate',1), auto=store.get('auto',true), showAns=false;
+const RATES=[{r:.8,t:'🐢 很慢'},{r:1,t:'🐢 慢'},{r:1.25,t:'🐇 正常'}];
+function applySet(){document.documentElement.style.setProperty('--fs',fs+'px');document.body.classList.toggle('hc',hc);
+  $('#bHc').classList.toggle('on',hc);$('#bRate').textContent=RATES[rateIdx].t;$('#bAuto').classList.toggle('on',auto);$('#bAns').classList.toggle('on',showAns);}
+$('#bSm').onclick=()=>{fs=Math.max(22,fs-4);store.set('fs',fs);applySet()};
+$('#bLg').onclick=()=>{fs=Math.min(56,fs+4);store.set('fs',fs);applySet()};
+$('#bHc').onclick=()=>{hc=!hc;store.set('hc',hc);applySet()};
+$('#bRate').onclick=()=>{rateIdx=(rateIdx+1)%RATES.length;store.set('rate',rateIdx);applySet()};
+$('#bAuto').onclick=()=>{auto=!auto;store.set('auto',auto);applySet()};
+$('#bAns').onclick=()=>{showAns=!showAns;applySet();render()};
+const QR_URL='https://liniris1023.github.io/sped-exam-reader/lowvision-l7-similar/';
+function showQR(){const m=document.createElement('div');m.className='qrModal';m.innerHTML=`<div style="font-weight:900">📱 用平板掃描，打開上課網站</div><div class="qrbox">${$('#qrSvg').innerHTML}</div><div style="font-size:.6em;word-break:break-all">${QR_URL}</div><button class="btn pri" id="qrClose">✖ 關閉</button>`;document.body.appendChild(m);m.onclick=e=>{if(e.target===m||e.target.id==='qrClose')m.remove()}}
+$('#bQr').onclick=showQR;
+$('#bHome').onclick=()=>go('home',0);
+
+/* ---------- 報讀 ---------- */
+let cur=null,curBtn=null;
+function stopSpeak(){if(cur){cur.pause();cur=null}try{speechSynthesis.cancel()}catch(e){}if(curBtn){curBtn.classList.remove('playing');curBtn=null}}
+function tts(t,done){try{const u=new SpeechSynthesisUtterance(t);u.lang='zh-TW';u.rate=RATES[rateIdx].r*.9;const v=speechSynthesis.getVoices().find(v=>/zh[-_]TW/i.test(v.lang));if(v)u.voice=v;u.onend=done;speechSynthesis.speak(u)}catch(e){done&&done()}}
+function speak(t,btn,then){stopSpeak();if(!t)return;if(btn){curBtn=btn;btn.classList.add('playing')}
+  const fin=()=>{if(btn&&curBtn===btn){btn.classList.remove('playing');curBtn=null}then&&then()};
+  const id=D.AUDIO[t];
+  if(id){const a=new Audio('audio/'+id+'.mp3');a.playbackRate=RATES[rateIdx].r;cur=a;a.onended=fin;a.onerror=()=>{cur=null;tts(t,fin)};a.play().catch(()=>{cur=null;tts(t,fin)})}
+  else tts(t,fin);}
+function speakSeq(list){let i=0;const nx=()=>{if(i<list.length)speak(list[i++],null,nx)};nx()}
+const spk=t=>`<button class="spk" data-say="${esc(t)}" aria-label="報讀">🔊</button>`;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-say]');if(b){e.stopPropagation();speak(b.dataset.say,b)}
+  const im=e.target.closest('img[data-zoom]');if(im){const z=document.createElement('div');z.className='zoom';z.innerHTML=`<img src="${im.src}" alt="">`;z.onclick=()=>z.remove();document.body.appendChild(z)}});
+
+/* ---------- 路由 ---------- */
+let view='home',page=0;
+const st={}; // 作答狀態（只存在記憶體）
+function S(k,d){if(!(k in st))st[k]=d;return st[k]}
+function pages(){if(view==='s7')return D.S7.length;const g=D.SIM.find(g=>g.key===view);return g?6:0}
+function go(v,p){stopSpeak();view=v;page=p;render();window.scrollTo(0,0);if(auto)setTimeout(autoRead,250)}
+$('#prev').onclick=()=>{if(page>0)go(view,page-1)};
+$('#next').onclick=()=>{if(page<pages()-1)go(view,page+1);else go('home',0)};
+function autoRead(){if(view==='home')return speak(D.UI.home);
+  if(view==='s7'){const p=D.S7[page];return speak(p.sayTitle)}
+  const g=D.SIM.find(g=>g.key===view);
+  if(page<3)speak(g.chars[page].say);else{const q=g.qs[page-3];speak(q.say,null,q.self?()=>speak(D.UI.tapClue):null)}}
+
+function render(){const app=$('#app');const nav=$('#nav');
+  if(view==='home'){nav.hidden=true;$('#ttl').textContent='弱視生上課網站';app.innerHTML=homeHTML();bindHome();return}
+  nav.hidden=false;$('#pg').textContent=`${page+1} / ${pages()}`;$('#prev').disabled=page===0;$('#next').textContent=page===pages()-1?'完成 🏠':'下一頁 ▶';
+  if(view==='s7'){$('#ttl').textContent='第七課　造句學習單';renderS7(app)}else{renderSim(app)}}
+
+function homeHTML(){return `<h1>📚 今天要練習哪一份？ ${spk(D.UI.home)}</h1>
+ <div class="card"><h2>✏️ 第七課　造句學習單 ${spk(D.UI.s7)}</h2>
+  <div class="home"><button class="homeBtn" data-go="s7:0">🌸 句型一：要是……就……<small>練習一、二、挑戰</small></button>
+  <button class="homeBtn" data-go="s7:6">🏃 句型二：即使……也……<small>練習三、四、挑戰</small></button>
+  <button class="homeBtn" data-go="s7:12">🧩 練習五＋自我檢查<small>選選看，填入正確的詞</small></button></div></div>
+ <div class="card"><h2>🔍 六年級國語　相似字區辨 ${spk(D.UI.sim)}</h2>
+  <div class="home">${D.SIM.map(g=>`<button class="homeBtn" data-go="${g.key}:0">${esc(g.title.replace('，部首在哪裡？',''))}<small>${g.chars.map(c=>c.char).join('・')}</small></button>`).join('')}</div></div>
+ <div class="card row" style="align-items:center"><div class="grow"><h2>📱 掃描 QR code 打開網站</h2><div style="font-size:.75em">老師把 QR code 給學生用平板掃描；點 QR code 可以放大。</div></div><button class="qrbox qrMini" id="qrHome" style="border:0;cursor:zoom-in" aria-label="放大 QR code">${$('#qrSvg').innerHTML}</button></div>
+ <p style="font-size:.7em;color:var(--sub)">小提示：按 🔊 聽報讀；點圖片可以放大；上方可以調整字的大小、高對比和報讀速度。</p>`}
+function bindHome(){const q=$('#qrHome');if(q)q.onclick=showQR;document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const[v,p]=b.dataset.go.split(':');go(v,+p)})}
+
+/* ---------- 造句學習單 ---------- */
+function titleH(t,say){return `<h1>${esc(t)} ${spk(say)}</h1>`}
+function imgH(src){return src?`<img class="pic" src="img/${src}" data-zoom alt="情境圖">`:''}
+function renderS7(app){const p=D.S7[page];let h=titleH(p.title,p.sayTitle);const K='s7_'+page;
+  if(p.type==='info'){h+=p.lines.map(l=>`<div class="card row"><div class="grow"><span class="label">${esc(l.label)}</span><span class="big">${esc(l.text)}</span></div>${spk(l.say)}</div>`).join('')}
+  if(p.type==='choice'){h+=imgH(p.img)+`<div class="row"><div class="grow big">${esc(p.prompt)}</div></div>`;
+    p.items.forEach((it,i)=>{const sel=S(K+'_'+i,null);h+=`<div class="card"><div class="row"><div class="grow sent">${esc(it.pre)}<b>＿＿</b>${esc(it.post)}</div>${spk(it.say)}</div>
+     <div class="opts">${it.opts.map((o,j)=>`<span class="row" style="align-items:center"><button class="opt ${sel===j?(j===it.ans?'ok':'bad'):''}" data-ci="${i}" data-cj="${j}">${sel===j&&j===it.ans?'⭕ ':''}${esc(o.t)}</button>${spk(o.say)}</span>`).join('')}</div></div>`})}
+  if(p.type==='blanks'){const fills=S(K,p.answers.map(()=>''));const selB=S(K+'_sel',0);
+    h+=imgH(p.img)+`<div class="big">${esc(p.prompt)}</div>`;
+    h+=`<div class="chips"><span class="cap">📦 詞語小幫手：先點空格，再點詞語 ${spk(D.UI.pickBlank)}</span>${p.chips.map(c=>`<span class="row" style="align-items:center"><button class="chip" data-chip="${esc(c)}">${esc(c)}</button>${spk(c)}</span>`).join('')}</div>`;
+    p.sents.forEach(s=>{const allOk=s.parts.filter(x=>typeof x==='number').every(b=>okB(p,b,fills[b]));
+      h+=`<div class="card">${s.q?`<div class="big">${esc(s.q)}</div>`:''}<div class="row"><div class="grow sent">${s.parts.map(x=>typeof x==='number'?blankH(p,x,fills[x],selB):esc(x)).join('')}</div>${spk(s.say)}${s.sayDone&&allOk&&s.parts.some(x=>typeof x==='number')?`<button class="spk" data-say="${esc(s.sayDone)}" title="聽完整句子" style="border-color:var(--ok);color:var(--ok)">✔</button>`:''}</div></div>`});
+    h+=`<div class="actions"><button class="btn" id="clr">🧽 全部清除</button></div>`}
+  if(p.type==='write'){const v=S(K,'');h+=`<div class="card row"><div class="grow big">${esc(p.prompt)}</div>${spk(p.sayTitle)}</div>
+     <div class="card row"><div class="grow">💡 ${esc(p.hint)}</div>${spk(p.sayHint)}</div>
+     <textarea id="ta" placeholder="在這裡寫句子……">${esc(v)}</textarea>
+     <div class="actions"><button class="btn" id="readMine">🔊 唸我寫的句子</button><button class="btn pri" id="chkMine">✅ 檢查</button></div><div class="msg" id="msg"></div>`}
+  if(p.type==='pair'){h+=`<div class="big">${esc(p.prompt)}</div>`;
+    p.items.forEach((it,i)=>{const sel=S(K+'_'+i,null);const ok=sel===it.ans;
+     h+=`<div class="card"><div class="row"><div class="grow sent">${it.parts.map(x=>typeof x==='number'?`<span class="blank ${sel===null?'':(ok?'ok':'bad')}">${sel===null?'':esc(p.opts[sel].t[x])}</span>`:esc(x)).join('')}</div>${spk(it.say)}</div>
+      <div class="opts">${p.opts.map((o,j)=>`<span class="row" style="align-items:center"><button class="opt ${sel===j?(ok?'ok':'bad'):''}" data-pi="${i}" data-pj="${j}">${esc(o.t.join('……'))}……</button>${spk(o.say)}</span>`).join('')}</div></div>`})}
+  if(p.type==='check'){const ck=S(K,p.lines.map(()=>false));
+    h+=p.lines.map((l,i)=>`<div class="row" style="align-items:center"><button class="chk ${ck[i]?'on':''}" data-ck="${i}"><span class="box">${ck[i]?'✔':''}</span><span>${esc(l.text)}</span></button>${spk(l.say)}</div>`).join('');
+    if(ck.every(x=>x))h+=`<div class="cheer">🎉👏🌟</div>`}
+  if(showAns)h+=`<div class="ans"><b>👩‍🏫 教師用：參考答案</b>${D.S7_ANS.map(a=>`<div class="row"><div class="grow">${esc(a)}</div>${spk(a)}</div>`).join('')}</div>`;
+  app.innerHTML=h;bindS7(p,K)}
+function okB(p,b,v){return !!v&&p.answers[b].every(k=>v.includes(k))}
+function blankH(p,b,v,sel){return `<button class="blank ${sel===b?'sel':''} ${v?(okB(p,b,v)?'ok':'bad'):''}" data-blank="${b}">${v?esc(v):'　'}</button>`}
+function bindS7(p,K){
+  document.querySelectorAll('[data-ci]').forEach(b=>b.onclick=()=>{const i=+b.dataset.ci,j=+b.dataset.cj,it=p.items[i];st[K+'_'+i]=j;render();
+    if(j===it.ans)speak(D.UI.correct,null,()=>speak(it.sayDone));else speak(D.UI.wrong)});
+  document.querySelectorAll('[data-blank]').forEach(b=>b.onclick=()=>{st[K+'_sel']=+b.dataset.blank;render()});
+  document.querySelectorAll('[data-chip]').forEach(b=>b.onclick=()=>{const fills=st[K];const sb=st[K+'_sel'];fills[sb]=b.dataset.chip;
+    const good=okB(p,sb,fills[sb]);
+    const s=p.sents.find(s=>s.parts.includes(sb));const sentOk=s.parts.filter(x=>typeof x==='number').every(x=>okB(p,x,fills[x]));
+    const nxt=fills.findIndex((f,i)=>!okB(p,i,f));if(good&&nxt>=0)st[K+'_sel']=nxt;render();
+    if(!good)speak(D.UI.wrong);else if(sentOk&&s.sayDone)speak(D.UI.correct,null,()=>speak(s.sayDone));else speak(D.UI.correct)});
+  const clr=$('#clr');if(clr)clr.onclick=()=>{st[K]=p.answers.map(()=>'');st[K+'_sel']=0;render()};
+  const ta=$('#ta');if(ta){ta.oninput=()=>st[K]=ta.value;
+    $('#readMine').onclick=e=>{const t=ta.value.trim();if(t){stopSpeak();tts(t)}else speak(p.sayTitle)};
+    $('#chkMine').onclick=()=>{const t=ta.value.trim(),m=$('#msg');const miss=p.keys.filter(k=>!t.includes(k));let out=[];
+      if(!t)out.push('還沒寫句子喔。');else{if(miss.length)out.push('少了關鍵詞：'+miss.join('、')+'。');if(!t.includes('，'))out.push('記得加逗號「，」。');if(!/[。！]$/.test(t))out.push('句子最後要加句號「。」。')}
+      if(!out.length){m.className='msg ok';m.textContent='👍 關鍵詞用對了，標點也有！請老師看看意思通不通順。';speak(D.UI.correct)}else{m.className='msg bad';m.textContent=out.join('');stopSpeak();tts(out.join(''))}}}
+  document.querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>{const i=+b.dataset.pi,j=+b.dataset.pj,it=p.items[i];st[K+'_'+i]=j;render();
+    if(j===it.ans)speak(D.UI.correct,null,()=>speak(it.sayDone));else speak(D.UI.wrong)});
+  document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>{const ck=st[K];const i=+b.dataset.ck;ck[i]=!ck[i];render();if(ck.every(x=>x))speak(D.UI.done);else if(ck[i])speak(p.lines[i].say)});
+}
+
+/* ---------- 相似字 ---------- */
+function renderSim(app){const g=D.SIM.find(g=>g.key===view);$('#ttl').textContent='相似字區辨　'+g.title.match(/「.」/)[0];
+  let h=`<h1>${esc(g.title)} ${spk(g.say)}</h1>`;
+  if(page<3){const c=g.chars[page];
+    h+=`<div class="big">① 看圖讀詞，用手指出字的<span class="bu">紅色部首</span>。</div>
+    <div class="charRow"><img src="img/${c.img}" data-zoom alt="${esc(c.char)}"><img src="img/${c.pic}" data-zoom alt="${esc(c.word)}"></div>
+    <div class="card row"><div class="grow"><span class="bu">${esc(c.bu)}</span>　<span class="word">${esc(c.word)}</span><div class="big">${esc(c.exp)}</div></div>${spk(c.say)}</div>
+    <div class="opts" style="justify-content:center">${g.chars.map((x,i)=>`<button class="opt ${i===page?'ok':''}" data-jump="${i}" style="font-size:1.4em">${esc(x.char)}</button>`).join('')}</div>`}
+  else{const qi=page-3,q=g.qs[qi],K=view+'_q'+qi;const sel=S(K,null),marks=S(K+'_m',[]);const ok=sel===q.ans;
+    h+=`<div class="big">② 讀句子，圈出方格裡要放的字。 ${spk(D.UI.clueHint)}</div>`;
+    const clueIdx=new Set();q.clue.forEach(cw=>{const k=q.sent.indexOf(cw);if(k>=0)for(let i=0;i<cw.length;i++)clueIdx.add(k+i)});
+    const chars=[...q.sent];
+    h+=`<div class="card"><div class="row"><div class="grow ss ${q.self?'self':''}"><b>${q.n}</b>　${chars.map((c,i)=>c==='□'?`<span class="box ${ok?'ok':''}">${ok?esc(q.opts[q.ans]):''}</span>`:`<span class="c ${clueIdx.has(i)?'clue':''} ${marks.includes(i)?'mark':''}" data-ci="${i}">${esc(c)}</span>`).join('')}</div>${spk(q.say)}</div>
+      ${q.self?`<div class="row" style="align-items:center;font-size:.8em"><div class="grow">✍️ 點一點句子裡的字，畫出你找到的線索。</div>${spk(D.UI.tapClue)}</div>`:`<div style="font-size:.8em">🔎 線索：<b style="text-decoration:underline">${esc(q.clue.join('、'))}</b></div>`}</div>
+      <div class="charOpts">${q.opts.map((o,j)=>`<div class="charOpt"><button class="opt ${sel===j?(ok?'ok':'bad'):''}" data-oj="${j}">${esc(o)}</button>${spk(D.OPT_SAY[o])}</div>`).join('')}</div>
+      ${ok?`<div class="card row" style="border-color:var(--ok)"><div class="grow big" style="color:var(--ok)">⭕ ${esc(q.sayDone)}</div>${spk(q.sayDone)}</div>`:''}`;
+    if(showAns)h+=`<div class="ans"><b>👩‍🏫 參考答案：</b>${g.qs.map(x=>`${x.n}. ${esc(x.opts[x.ans])}`).join('　')}</div>`;
+    app.innerHTML=h;
+    document.querySelectorAll('[data-oj]').forEach(b=>b.onclick=()=>{const j=+b.dataset.oj;st[K]=j;render();if(j===q.ans)speak(D.UI.correct,null,()=>speak(q.sayDone));else speak(D.UI.wrong)});
+    if(q.self)document.querySelectorAll('.ss [data-ci]').forEach(s=>s.onclick=()=>{const i=+s.dataset.ci;const m=st[K+'_m'];const k=m.indexOf(i);if(k>=0)m.splice(k,1);else m.push(i);render()});
+    return}
+  if(showAns)h+=`<div class="ans"><b>👩‍🏫 參考答案：</b>${g.qs.map(x=>`${x.n}. ${esc(x.opts[x.ans])}`).join('　')}</div>`;
+  app.innerHTML=h;document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>go(view,+b.dataset.jump))}
+
+applySet();render();
+try{speechSynthesis.getVoices()}catch(e){}
+</script>
+</body>
+</html>
