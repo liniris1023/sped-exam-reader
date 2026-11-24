@@ -1,0 +1,2502 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>第七課　高第的魔法建築　閱讀測驗｜特教友善報讀網站</title>
+  <style>
+    /* ==========================================================================
+       1. 設計變數與字體系統（特教友善高對比、大字體、寬鬆留白）
+       ========================================================================== */
+    :root {
+      /* 色彩系統 */
+      --bg-page: #FFFDF7;
+      --bg-card: #FFFFFF;
+      --bg-bar: #FFFFFF;
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --border-soft: #CBD5E1;
+      --border-strong: #94A3B8;
+
+      /* 高對比按鈕語意色 */
+      --btn-start-bg: #15803D;
+      --btn-start-hover: #166534;
+      --btn-pause-bg: #D97706;
+      --btn-pause-hover: #B45309;
+      --btn-stop-bg: #DC2626;
+      --btn-stop-hover: #B91C1C;
+      --btn-qr-bg: #6D28D9;
+      --btn-qr-hover: #5B21B6;
+      --btn-speaker-bg: #1D4ED8;
+      --btn-speaker-hover: #1E40AF;
+      --btn-speaker-border: #F97316;
+      --btn-neutral-active: #0F172A;
+
+      /* 報讀高亮樣式（亮黃底 + 深橘粗框） */
+      --highlight-bg: #FEF08A;
+      --highlight-border: #EA580C;
+      --highlight-shadow: 0 0 0 4px rgba(234, 88, 12, 0.28);
+
+      /* 勾選作答樣式 */
+      --selected-bg: #EFF6FF;
+      --selected-border: #2563EB;
+
+      /* 教師解答樣式 */
+      --answer-bg: #ECFDF5;
+      --answer-border: #059669;
+      --answer-text: #065F46;
+
+      /* 指定字體優先序（無外部字型 CDN） */
+      --font-main: 'Bpmf Iansui', '注音芫荽', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+
+      /* 動態字級（預設：特大） */
+      --fs-title: 38px;
+      --fs-instruction: 26px;
+      --fs-question: 30px;
+      --fs-option: 26px;
+      --fs-badge: 24px;
+
+      /* 圓角與陰影 */
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --shadow-card: 0 4px 16px rgba(15, 23, 42, 0.07);
+      --shadow-bar: 0 6px 22px rgba(15, 23, 42, 0.11);
+    }
+
+    /* 字體級距：大 */
+    body.font-large {
+      --fs-title: 32px;
+      --fs-instruction: 22px;
+      --fs-question: 26px;
+      --fs-option: 22px;
+      --fs-badge: 20px;
+    }
+
+    /* 字體級距：特大（預設） */
+    body.font-xlarge {
+      --fs-title: 38px;
+      --fs-instruction: 26px;
+      --fs-question: 30px;
+      --fs-option: 26px;
+      --fs-badge: 24px;
+    }
+
+    /* 字體級距：超大 */
+    body.font-xxlarge {
+      --fs-title: 44px;
+      --fs-instruction: 30px;
+      --fs-question: 36px;
+      --fs-option: 31px;
+      --fs-badge: 28px;
+    }
+
+    /* ==========================================================================
+       2. 基礎排版與重置
+       ========================================================================== */
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      line-height: 1.85;
+      overflow-x: hidden;
+    }
+
+    button {
+      font-family: var(--font-main);
+      cursor: pointer;
+      border: none;
+      transition: transform 0.12s ease, background-color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    button:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 4px solid #2563EB;
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* ==========================================================================
+       3. 頂部固定報讀控制列（Sticky Control Bar）
+       ========================================================================== */
+    .control-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background-color: var(--bg-bar);
+      border-bottom: 3px solid var(--border-soft);
+      box-shadow: var(--shadow-bar);
+      padding: 14px 16px 12px;
+    }
+
+    .control-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* 主要播放與 QR Code 按鈕群 */
+    .playback-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .ctrl-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 56px;
+      padding: 12px 20px;
+      font-size: 20px;
+      font-weight: 800;
+      border-radius: var(--radius-md);
+      color: #FFFFFF;
+      letter-spacing: 0.04em;
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-start {
+      background-color: var(--btn-start-bg);
+    }
+    .btn-start:hover:not(:disabled) {
+      background-color: var(--btn-start-hover);
+    }
+
+    .btn-pause {
+      background-color: var(--btn-pause-bg);
+    }
+    .btn-pause:hover:not(:disabled) {
+      background-color: var(--btn-pause-hover);
+    }
+
+    .btn-stop {
+      background-color: var(--btn-stop-bg);
+    }
+    .btn-stop:hover:not(:disabled) {
+      background-color: var(--btn-stop-hover);
+    }
+
+    .btn-qr {
+      background-color: var(--btn-qr-bg);
+    }
+    .btn-qr:hover:not(:disabled) {
+      background-color: var(--btn-qr-hover);
+    }
+
+    /* 語速與字體設定群 */
+    .settings-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .setting-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background-color: #F8FAFC;
+      border: 2px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 5px 8px;
+    }
+
+    .setting-label {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-secondary);
+      padding: 0 4px;
+      white-space: nowrap;
+    }
+
+    .seg-btn {
+      min-height: 44px;
+      padding: 6px 12px;
+      font-size: 17px;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      background-color: transparent;
+      color: var(--text-primary);
+      border: 2px solid transparent;
+    }
+
+    .seg-btn:hover {
+      background-color: #E2E8F0;
+    }
+
+    .seg-btn.active {
+      background-color: var(--btn-neutral-active);
+      color: #FFFFFF;
+      border-color: var(--btn-neutral-active);
+    }
+
+    /* 報讀狀態指示條 */
+    .status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background-color: #F1F5F9;
+      border: 2px solid #CBD5E1;
+      border-radius: var(--radius-sm);
+      padding: 8px 16px;
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .status-bar.is-playing {
+      background-color: #FEF9C3;
+      border-color: #EA580C;
+      color: #9A3412;
+    }
+
+    .status-bar.is-paused {
+      background-color: #FFEDD5;
+      border-color: #D97706;
+      color: #92400E;
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background-color: #64748B;
+      flex-shrink: 0;
+    }
+
+    .status-bar.is-playing .status-dot {
+      background-color: #16A34A;
+      animation: pulseDot 1.2s infinite;
+    }
+
+    .status-bar.is-paused .status-dot {
+      background-color: #D97706;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.65; }
+    }
+
+    .voice-badge {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* ==========================================================================
+       4. 主內容區（試卷標題、作答說明、題目卡片）
+       ========================================================================== */
+    .main-container {
+      max-width: 1000px;
+      margin: 28px auto 72px;
+      padding: 0 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    /* 試卷標頭卡片 */
+    .exam-header {
+      background-color: var(--bg-card);
+      border: 3px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 28px 28px 24px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .exam-title-block {
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      border: 4px solid transparent;
+      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      scroll-margin-top: 200px;
+    }
+
+    .exam-title {
+      margin: 0;
+      font-size: var(--fs-title);
+      font-weight: 900;
+      color: #0F172A;
+      line-height: 1.5;
+      letter-spacing: 0.04em;
+    }
+
+    .exam-instruction-block {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background-color: #F8FAFC;
+      border: 3px solid #CBD5E1;
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      font-size: var(--fs-instruction);
+      font-weight: 700;
+      color: var(--text-primary);
+      scroll-margin-top: 200px;
+      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .instruction-tag {
+      flex-shrink: 0;
+      background-color: #0F172A;
+      color: #FFFFFF;
+      font-size: 0.78em;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 8px;
+      margin-top: 4px;
+    }
+
+    /* 題目卡片清單 */
+    .questions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .question-card {
+      background-color: var(--bg-card);
+      border: 3px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 26px 28px 28px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    /* 題幹區：題號徽章 + 題目文字（後方直接緊接放大喇叭按鈕） */
+    .question-stem-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      border: 4px solid transparent;
+      scroll-margin-top: 200px;
+      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .q-number-badge {
+      flex-shrink: 0;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-color: #1D4ED8;
+      color: #FFFFFF;
+      font-size: var(--fs-badge);
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 8px rgba(29, 78, 216, 0.3);
+      margin-top: 4px;
+    }
+
+    .question-stem-heading {
+      margin: 0;
+      flex: 1;
+      font-size: var(--fs-question);
+      font-weight: 800;
+      line-height: 1.75;
+      color: #0F172A;
+    }
+
+    .question-stem-text {
+      vertical-align: middle;
+    }
+
+    /* 核心調整 1：放大喇叭按鍵直接緊接在題目文字後方（至少 56px × 56px） */
+    .btn-read-question {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      min-width: 60px;
+      height: 60px;
+      padding: 0 14px;
+      margin-left: 14px;
+      font-size: 30px;
+      line-height: 1;
+      color: #FFFFFF;
+      background-color: var(--btn-speaker-bg);
+      border: 3px solid var(--btn-speaker-border);
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(29, 78, 216, 0.28);
+    }
+
+    .btn-read-question:hover {
+      background-color: var(--btn-speaker-hover);
+      box-shadow: 0 6px 14px rgba(234, 88, 12, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn-read-question:active {
+      transform: scale(0.94);
+    }
+
+    /* 選項列表 */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      border: 3px solid #CBD5E1;
+      background-color: #FFFFFF;
+      cursor: pointer;
+      scroll-margin-top: 200px;
+      transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .option-item:hover {
+      border-color: #64748B;
+      background-color: #F8FAFC;
+    }
+
+    /* 學生模擬勾選狀態 */
+    .option-item.is-selected {
+      background-color: var(--selected-bg);
+      border-color: var(--selected-border);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+
+    /* 大大的打勾方框 */
+    .option-checkbox {
+      flex-shrink: 0;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      border: 3px solid #475569;
+      background-color: #FFFFFF;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 900;
+      color: #FFFFFF;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .option-item.is-selected .option-checkbox {
+      background-color: #2563EB;
+      border-color: #1D4ED8;
+    }
+
+    .option-content {
+      flex: 1;
+      min-width: 0;
+      font-size: var(--fs-option);
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.65;
+      word-break: break-word;
+    }
+
+    .option-letter {
+      font-weight: 900;
+      color: #1D4ED8;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    .option-text {
+      vertical-align: middle;
+    }
+
+    /* 選項文字後方獨立放大喇叭按鈕（至少 44px × 44px，設為 48px × 48px） */
+    .btn-read-option {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      min-width: 48px;
+      height: 48px;
+      margin-left: 12px;
+      border-radius: 14px;
+      background-color: #EFF6FF;
+      border: 3px solid #2563EB;
+      color: #1D4ED8;
+      font-size: 24px;
+      line-height: 1;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.18);
+    }
+
+    .btn-read-option:hover {
+      background-color: #DBEAFE;
+      border-color: #EA580C;
+      transform: translateY(-1px);
+    }
+
+    /* ==========================================================================
+       5. 報讀中醒目高亮框（亮黃底 + 深橘粗邊框）
+       ========================================================================== */
+    .reading-highlight {
+      background-color: var(--highlight-bg) !important;
+      border-color: var(--highlight-border) !important;
+      border-width: 4px !important;
+      box-shadow: var(--highlight-shadow) !important;
+    }
+
+    /* ==========================================================================
+       6. 教師用解答區塊（預設隱藏，二次確認後開啟）
+       ========================================================================== */
+    .teacher-answer-banner {
+      display: none;
+      margin-top: 4px;
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      background-color: var(--answer-bg);
+      border: 3px solid var(--answer-border);
+      color: var(--answer-text);
+      font-size: 21px;
+      font-weight: 800;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    body.show-teacher-answers .teacher-answer-banner {
+      display: flex;
+    }
+
+    body.show-teacher-answers .option-item.is-correct-answer {
+      border-color: var(--answer-border);
+      background-color: #F0FDF4;
+    }
+
+    .ability-pill {
+      display: inline-block;
+      background-color: #059669;
+      color: #FFFFFF;
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .teacher-footer {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 2px dashed var(--border-soft);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .btn-teacher-toggle {
+      padding: 14px 24px;
+      font-size: 19px;
+      font-weight: 800;
+      color: #334155;
+      background-color: #F1F5F9;
+      border: 2px solid #CBD5E1;
+      border-radius: var(--radius-md);
+    }
+
+    .btn-teacher-toggle:hover {
+      background-color: #E2E8F0;
+      color: #0F172A;
+    }
+
+    .teacher-summary-box {
+      display: none;
+      width: 100%;
+      background-color: #FFFFFF;
+      border: 3px solid var(--answer-border);
+      border-radius: var(--radius-lg);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-card);
+    }
+
+    body.show-teacher-answers .teacher-summary-box {
+      display: block;
+    }
+
+    .teacher-summary-title {
+      margin: 0 0 14px;
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--answer-text);
+    }
+
+    .teacher-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .summary-item {
+      background-color: #F0FDF4;
+      border: 2px solid #A7F3D0;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 19px;
+      font-weight: 700;
+      color: #064E3B;
+    }
+
+    /* ==========================================================================
+       7. 共用彈出視窗（教師二次確認 & 學生掃描 QR Code 視窗）
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background-color: rgba(15, 23, 42, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .modal-backdrop.is-open {
+      display: flex;
+    }
+
+    .modal-dialog {
+      width: 100%;
+      max-width: 480px;
+      background-color: #FFFFFF;
+      border: 4px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      padding: 26px 24px;
+      box-shadow: 0 24px 50px rgba(15, 23, 42, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: auto;
+    }
+
+    .modal-dialog.qr-modal-dialog {
+      max-width: 600px;
+      border-color: var(--btn-qr-bg);
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 900;
+      color: #0F172A;
+      text-align: center;
+    }
+
+    .modal-desc {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      text-align: center;
+    }
+
+    /* QR Code 投影畫布外框 */
+    .qr-canvas-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #F8FAFC;
+      border: 3px solid #E2E8F0;
+      border-radius: var(--radius-md);
+      padding: 20px;
+      gap: 10px;
+    }
+
+    #qrCanvas {
+      width: 300px;
+      height: 300px;
+      max-width: 100%;
+      height: auto;
+      background-color: #FFFFFF;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+      image-rendering: pixelated;
+    }
+
+    .qr-error-msg {
+      display: none;
+      color: #B91C1C;
+      background-color: #FEE2E2;
+      border: 2px solid #F87171;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 17px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .qr-error-msg.is-visible {
+      display: block;
+    }
+
+    /* 網址輸入與更新列 */
+    .qr-url-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .qr-url-input {
+      flex: 1 1 260px;
+      min-height: 50px;
+      padding: 10px 14px;
+      font-family: var(--font-main);
+      font-size: 17px;
+      font-weight: 600;
+      color: #0F172A;
+      background-color: #FFFFFF;
+      border: 3px solid #CBD5E1;
+      border-radius: var(--radius-sm);
+    }
+
+    .btn-qr-update {
+      min-height: 50px;
+      padding: 10px 18px;
+      font-size: 18px;
+      font-weight: 800;
+      color: #FFFFFF;
+      background-color: #1D4ED8;
+      border-radius: var(--radius-sm);
+    }
+
+    .btn-qr-update:hover {
+      background-color: #1E40AF;
+    }
+
+    /* 本機預覽友善提示 */
+    .qr-local-notice {
+      display: none;
+      background-color: #FEF3C7;
+      border: 3px solid #F59E0B;
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-size: 17px;
+      font-weight: 700;
+      color: #92400E;
+      line-height: 1.6;
+    }
+
+    .qr-local-notice.is-visible {
+      display: block;
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .modal-actions.space-between {
+      justify-content: space-between;
+    }
+
+    .modal-btn {
+      min-height: 50px;
+      padding: 10px 22px;
+      font-size: 19px;
+      font-weight: 800;
+      border-radius: var(--radius-sm);
+    }
+
+    .modal-btn-cancel {
+      background-color: #E2E8F0;
+      color: #0F172A;
+    }
+    .modal-btn-cancel:hover {
+      background-color: #CBD5E1;
+    }
+
+    .modal-btn-confirm {
+      background-color: #059669;
+      color: #FFFFFF;
+    }
+    .modal-btn-confirm:hover {
+      background-color: #047857;
+    }
+
+    .modal-btn-download {
+      background-color: #6D28D9;
+      color: #FFFFFF;
+    }
+    .modal-btn-download:hover {
+      background-color: #5B21B6;
+    }
+
+    /* ==========================================================================
+       8. 響應式微調（平板與手機）
+       ========================================================================== */
+    @media (max-width: 768px) {
+      .control-bar {
+        padding: 10px 12px;
+      }
+
+      .ctrl-btn {
+        flex: 1 1 auto;
+        min-height: 52px;
+        padding: 10px 14px;
+        font-size: 18px;
+      }
+
+      .setting-box {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .seg-btn {
+        flex: 1;
+        padding: 6px 8px;
+        font-size: 16px;
+      }
+
+      .question-card {
+        padding: 20px 16px 22px;
+      }
+
+      .exam-header {
+        padding: 20px 16px;
+      }
+
+      .exam-title-block,
+      .exam-instruction-block,
+      .question-stem-wrap,
+      .option-item {
+        scroll-margin-top: 280px;
+      }
+
+      #qrCanvas {
+        width: 280px;
+      }
+    }
+  </style>
+</head>
+<body class="font-xlarge">
+
+  <!-- ========================================================================
+       頂部固定報讀控制列
+       ======================================================================== -->
+  <header class="control-bar" aria-label="語音報讀與掃描控制列">
+    <div class="control-inner">
+      <div class="control-row">
+        <!-- 播放、暫停、停止、學生掃描 QR Code 按鍵 -->
+        <div class="playback-group">
+          <button type="button" id="btnStart" class="ctrl-btn btn-start" aria-label="開始報讀">
+            <span aria-hidden="true">▶</span>
+            <span id="btnStartText">開始報讀</span>
+          </button>
+          <button type="button" id="btnPause" class="ctrl-btn btn-pause" disabled aria-label="暫停報讀">
+            <span aria-hidden="true">⏸</span>
+            <span>暫停</span>
+          </button>
+          <button type="button" id="btnStop" class="ctrl-btn btn-stop" disabled aria-label="停止報讀">
+            <span aria-hidden="true">⏹</span>
+            <span>停止</span>
+          </button>
+          <button type="button" id="btnOpenQr" class="ctrl-btn btn-qr" aria-label="開啟學生掃描 QR Code 視窗">
+            <span aria-hidden="true">📱</span>
+            <span>學生掃描 QR Code</span>
+          </button>
+        </div>
+
+        <!-- 語速與字體大小切換 -->
+        <div class="settings-group">
+          <div class="setting-box" role="group" aria-label="語速調整">
+            <span class="setting-label">語速</span>
+            <button type="button" class="seg-btn" data-rate="0.7">慢速 0.7x</button>
+            <button type="button" class="seg-btn active" data-rate="0.9">適中 0.9x</button>
+            <button type="button" class="seg-btn" data-rate="1.05">正常 1.05x</button>
+          </div>
+
+          <div class="setting-box" role="group" aria-label="字體大小調整">
+            <span class="setting-label">字體</span>
+            <button type="button" class="seg-btn" data-font="font-large">大</button>
+            <button type="button" class="seg-btn active" data-font="font-xlarge">特大</button>
+            <button type="button" class="seg-btn" data-font="font-xxlarge">超大</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 報讀狀態指示條 -->
+      <div id="statusBar" class="status-bar" role="status" aria-live="polite">
+        <div class="status-indicator">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="statusText">待命：請按「開始報讀」或點擊題目後方的 🔊 喇叭</span>
+        </div>
+        <span id="voiceInfo" class="voice-badge">語音引擎載入中...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       試卷主要內容區（由 QUIZ_DATA 動態產生）
+       ======================================================================== -->
+  <main class="main-container">
+    <!-- 試卷標題與作答說明 -->
+    <section class="exam-header" aria-label="測驗標題與說明">
+      <div id="seg-title" class="exam-title-block">
+        <h1 id="examTitleText" class="exam-title"></h1>
+      </div>
+      <div id="seg-instruction" class="exam-instruction-block">
+        <span class="instruction-tag">作答說明</span>
+        <span id="examInstructionText"></span>
+      </div>
+    </section>
+
+    <!-- 題目卡片容器 -->
+    <section id="questionsContainer" class="questions-list" aria-label="閱讀測驗題目">
+      <!-- 由 UIRenderer 動態產生 -->
+    </section>
+
+    <!-- 教師用解答開關與總表 -->
+    <footer class="teacher-footer">
+      <button type="button" id="btnTeacherToggle" class="btn-teacher-toggle">
+        🔒 教師用：顯示／隱藏解答
+      </button>
+
+      <div id="teacherSummaryBox" class="teacher-summary-box" aria-label="教師用答案與能力指標總表">
+        <h2 class="teacher-summary-title">📋 教師用｜答案與能力指標</h2>
+        <div id="teacherSummaryGrid" class="teacher-summary-grid">
+          <!-- 由 UIRenderer 動態產生 -->
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ========================================================================
+       教師解答二次確認對話框（防止學生誤觸）
+       ======================================================================== -->
+  <div id="confirmModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="modal-dialog">
+      <h3 id="confirmModalTitle" class="modal-title">確認顯示教師解答？</h3>
+      <p class="modal-desc">
+        此功能僅供老師對答案使用。確定要在畫面上顯示所有題目的正確答案與能力指標嗎？
+      </p>
+      <div class="modal-actions">
+        <button type="button" id="btnConfirmCancel" class="modal-btn modal-btn-cancel">取消</button>
+        <button type="button" id="btnConfirmOk" class="modal-btn modal-btn-confirm">確定顯示</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       學生掃描 QR Code 投影視窗（100% 原生 JS 產生，零外部套件）
+       ======================================================================== -->
+  <div id="qrModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+    <div class="modal-dialog qr-modal-dialog">
+      <h3 id="qrModalTitle" class="modal-title">📱 學生掃描 QR Code</h3>
+      <p class="modal-desc">請學生使用平板或手機相機掃描下方條碼，即可直接開啟本報讀測驗。</p>
+
+      <div class="qr-canvas-stage">
+        <canvas id="qrCanvas" width="360" height="360" aria-label="測驗網址 QR Code"></canvas>
+        <div id="qrErrorMsg" class="qr-error-msg" role="alert"></div>
+      </div>
+
+      <div class="qr-url-row">
+        <input
+          type="url"
+          id="qrUrlInput"
+          class="qr-url-input"
+          placeholder="請貼上公開網址（例如 https://...）"
+          aria-label="QR Code 網址輸入框"
+        />
+        <button type="button" id="btnQrUpdate" class="btn-qr-update">更新 QR Code</button>
+      </div>
+
+      <div id="qrLocalNotice" class="qr-local-notice" role="note">
+        目前為本機預覽，請上傳網頁（如 GitHub Pages）後，將公開網址貼在上方即可產生學生可掃描的 QR Code
+      </div>
+
+      <div class="modal-actions space-between">
+        <button type="button" id="btnQrDownload" class="modal-btn modal-btn-download">
+          💾 下載 QR Code 圖片（PNG）
+        </button>
+        <button type="button" id="btnQrClose" class="modal-btn modal-btn-cancel">
+          ✕ 關閉
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ==========================================================================
+     * 模組一：題庫資料區（QUIZ_DATA，老師日後只需替換此處即可製作下一課）
+     * ==========================================================================
+     */
+    const QUIZ_META = {
+      title: '第七課　高第的魔法建築　閱讀測驗',
+      titleSpeech: '第七課，高第的魔法建築，閱讀測驗。',
+      instruction: '讀一讀題目，選出一個正確答案，在 □ 裡打勾。',
+      instructionSpeech: '作答說明：讀一讀題目，選出一個正確答案，在框框裡打勾。'
+    };
+
+    const QUIZ_DATA = [
+      {
+        id: 1,
+        stem: '作者在哪一個城市看見高第的建築？',
+        options: [
+          { label: 'A', text: '臺灣的臺北' },
+          { label: 'B', text: '西班牙的巴塞隆納' },
+          { label: 'C', text: '日本的東京' },
+          { label: 'D', text: '法國的巴黎' }
+        ],
+        answer: 'B',
+        ability: '擷取訊息'
+      },
+      {
+        id: 2,
+        stem: '高第的建築設計常從哪裡找靈感？',
+        options: [
+          { label: 'A', text: '大自然' },
+          { label: 'B', text: '電腦遊戲' },
+          { label: 'C', text: '交通工具' },
+          { label: 'D', text: '運動比賽' }
+        ],
+        answer: 'A',
+        ability: '擷取訊息'
+      },
+      {
+        id: 3,
+        stem: '米拉之家的牆面像什麼形狀？',
+        options: [
+          { label: 'A', text: '正方形' },
+          { label: 'B', text: '三角形' },
+          { label: 'C', text: '波浪狀' },
+          { label: 'D', text: '直直的線' }
+        ],
+        answer: 'C',
+        ability: '擷取訊息'
+      },
+      {
+        id: 4,
+        stem: '巴特羅之家屋頂上的五彩磁磚像什麼？',
+        options: [
+          { label: 'A', text: '巨龍的鱗片' },
+          { label: 'B', text: '白色的糖霜' },
+          { label: 'C', text: '高大的樹木' },
+          { label: 'D', text: '海底的海帶' }
+        ],
+        answer: 'A',
+        ability: '譬喻理解'
+      },
+      {
+        id: 5,
+        stem: '奎爾公園門口的房子像什麼？',
+        options: [
+          { label: 'A', text: '冰淇淋店' },
+          { label: 'B', text: '薑餅屋' },
+          { label: 'C', text: '大城堡' },
+          { label: 'D', text: '小木船' }
+        ],
+        answer: 'B',
+        ability: '擷取訊息'
+      },
+      {
+        id: 6,
+        stem: '奎爾公園的大蜥蜴「張牙舞爪」，意思是？',
+        options: [
+          { label: 'A', text: '很安靜的樣子' },
+          { label: 'B', text: '正在睡覺的樣子' },
+          { label: 'C', text: '露出牙齒和爪子的樣子' },
+          { label: 'D', text: '開心跳舞的樣子' }
+        ],
+        answer: 'C',
+        ability: '詞語理解'
+      },
+      {
+        id: 7,
+        stem: '聖家堂的灰白色石柱讓作者想到什麼？',
+        options: [
+          { label: 'A', text: '參天巨木' },
+          { label: 'B', text: '彩色氣球' },
+          { label: 'C', text: '海上帆船' },
+          { label: 'D', text: '一排書本' }
+        ],
+        answer: 'A',
+        ability: '譬喻理解'
+      },
+      {
+        id: 8,
+        stem: '陽光穿過聖家堂的彩繪玻璃後，會出現什麼？',
+        options: [
+          { label: 'A', text: '黑色的煙霧' },
+          { label: 'B', text: '美麗的彩色光影' },
+          { label: 'C', text: '大雨和閃電' },
+          { label: 'D', text: '真正的森林' }
+        ],
+        answer: 'B',
+        ability: '因果關係'
+      },
+      {
+        id: 9,
+        stem: '高第常用彎曲的線條，是為了讓建築呈現什麼感覺？',
+        options: [
+          { label: 'A', text: '沒有窗戶' },
+          { label: 'B', text: '整齊的方格' },
+          { label: 'C', text: '充滿生命力' },
+          { label: 'D', text: '全部同一個模樣' }
+        ],
+        answer: 'C',
+        ability: '推論理解'
+      },
+      {
+        id: 10,
+        stem: '讀完課文，哪一句最能說明作者的想法？',
+        options: [
+          { label: 'A', text: '高第只會設計一種房子' },
+          { label: 'B', text: '高第的建築很普通' },
+          { label: 'C', text: '作者不喜歡參觀建築' },
+          { label: 'D', text: '作者佩服高第用心又獨特的設計' }
+        ],
+        answer: 'D',
+        ability: '文章主旨'
+      }
+    ];
+
+    /**
+     * ==========================================================================
+     * 模組二：Web Audio API 音效模組（PlaySound，免外部 mp3）
+     * ==========================================================================
+     */
+    const PlaySound = (() => {
+      let audioCtx = null;
+
+      function getAudioContext() {
+        try {
+          if (!audioCtx) {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return null;
+            audioCtx = new Ctx();
+          }
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          return audioCtx;
+        } catch (err) {
+          return null;
+        }
+      }
+
+      function scheduleTone(ctx, freq, startOffset, duration, volume = 0.11, wave = 'sine') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const now = ctx.currentTime + startOffset;
+
+        osc.type = wave;
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(volume, now + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+      }
+
+      /**
+       * 播放溫和清脆的回饋音效
+       * @param {'click'|'check'|'start'|'pause'|'open'|'complete'} type
+       */
+      return function play(type) {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+
+        try {
+          switch (type) {
+            case 'click':
+              scheduleTone(ctx, 560, 0, 0.075, 0.09, 'sine');
+              break;
+            case 'check':
+              scheduleTone(ctx, 620, 0, 0.07, 0.09, 'sine');
+              scheduleTone(ctx, 820, 0.06, 0.09, 0.09, 'sine');
+              break;
+            case 'start':
+              scheduleTone(ctx, 523.25, 0, 0.11, 0.11, 'sine');     // C5
+              scheduleTone(ctx, 659.25, 0.09, 0.15, 0.11, 'sine');  // E5
+              break;
+            case 'pause':
+              scheduleTone(ctx, 587.33, 0, 0.10, 0.10, 'sine');     // D5
+              scheduleTone(ctx, 440.0, 0.09, 0.14, 0.10, 'sine');   // A4
+              break;
+            case 'open':
+              scheduleTone(ctx, 493.88, 0, 0.08, 0.09, 'triangle'); // B4
+              scheduleTone(ctx, 659.25, 0.07, 0.12, 0.10, 'triangle'); // E5
+              break;
+            case 'complete':
+              scheduleTone(ctx, 523.25, 0, 0.12, 0.11, 'triangle');     // C5
+              scheduleTone(ctx, 659.25, 0.11, 0.12, 0.11, 'triangle');  // E5
+              scheduleTone(ctx, 783.99, 0.22, 0.28, 0.12, 'triangle');  // G5
+              break;
+            default:
+              scheduleTone(ctx, 520, 0, 0.08, 0.08, 'sine');
+          }
+        } catch (err) {
+          // 忽略裝置音訊權限限制
+        }
+      };
+    })();
+
+    /**
+     * ==========================================================================
+     * 模組三：純原生 JavaScript QR Code 編碼引擎（ISO/IEC 18004）
+     * - 支援 Byte Mode（含 UTF-8 網址）
+     * - 自動選擇版本（Version 1 ~ 14，Error Correction Level M，最高支援 362 bytes）
+     * - 完整 Reed-Solomon 錯誤更正、8 組 Mask 最佳化、高解析 Canvas 繪製與靜默區
+     * ==========================================================================
+     */
+    const NativeQRCode = (() => {
+      // Error Correction Level M (format bits = 00)
+      // 每個版本參數：[totalCodewords, ecCodewordsPerBlock, numBlocks, alignmentPositions]
+      const VERSION_SPECS_M = {
+        1:  [26,  10, 1, []],
+        2:  [44,  16, 1, [6, 18]],
+        3:  [70,  26, 1, [6, 22]],
+        4:  [100, 18, 2, [6, 26]],
+        5:  [134, 24, 2, [6, 30]],
+        6:  [172, 16, 4, [6, 34]],
+        7:  [196, 18, 4, [6, 22, 38]],
+        8:  [242, 22, 4, [6, 24, 42]],
+        9:  [292, 22, 5, [6, 26, 46]],
+        10: [346, 26, 5, [6, 28, 50]],
+        11: [404, 30, 5, [6, 30, 54]],
+        12: [466, 22, 8, [6, 32, 58]],
+        13: [532, 22, 9, [6, 34, 62]],
+        14: [581, 24, 9, [6, 26, 46, 66]]
+      };
+
+      // 將字串轉為 UTF-8 位元組陣列
+      function stringToUtf8Bytes(text) {
+        if (typeof TextEncoder !== 'undefined') {
+          return Array.from(new TextEncoder().encode(text));
+        }
+        const utf8 = unescape(encodeURIComponent(text));
+        const bytes = [];
+        for (let i = 0; i < utf8.length; i++) {
+          bytes.push(utf8.charCodeAt(i));
+        }
+        return bytes;
+      }
+
+      // GF(256) 乘法（原始多項式 0x11D）
+      function gfMul(x, y) {
+        let z = 0;
+        for (let i = 7; i >= 0; i--) {
+          z = (z << 1) ^ ((z >> 7) * 0x11D);
+          z ^= ((y >> i) & 1) * x;
+        }
+        return z;
+      }
+
+      // 計算 Reed-Solomon 生成多項式（省略最高次係數 1）
+      function rsComputeDivisor(degree) {
+        const result = new Uint8Array(degree);
+        result[degree - 1] = 1;
+        let root = 1;
+        for (let i = 0; i < degree; i++) {
+          for (let j = 0; j < result.length; j++) {
+            result[j] = gfMul(result[j], root);
+            if (j + 1 < result.length) {
+              result[j] ^= result[j + 1];
+            }
+          }
+          root = gfMul(root, 0x02);
+        }
+        return result;
+      }
+
+      // 計算 Reed-Solomon 餘數（錯誤更正碼）
+      function rsComputeRemainder(data, divisor) {
+        const result = new Uint8Array(divisor.length);
+        for (let i = 0; i < data.length; i++) {
+          const factor = data[i] ^ result[0];
+          for (let j = 0; j < result.length - 1; j++) {
+            result[j] = result[j + 1];
+          }
+          result[result.length - 1] = 0;
+          for (let j = 0; j < divisor.length; j++) {
+            result[j] ^= gfMul(divisor[j], factor);
+          }
+        }
+        return result;
+      }
+
+      // 選擇可容納該長度資料的最小版本
+      function selectVersion(byteLength) {
+        for (let v = 1; v <= 14; v++) {
+          const [totalCw, ecPerBlock, numBlocks] = VERSION_SPECS_M[v];
+          const dataCapacityBytes = totalCw - ecPerBlock * numBlocks;
+          const countBits = v <= 9 ? 8 : 16;
+          const requiredBits = 4 + countBits + byteLength * 8;
+          if (requiredBits <= dataCapacityBytes * 8) {
+            return v;
+          }
+        }
+        return -1;
+      }
+
+      // 封裝 Byte Mode 資料位元與補齊位元組
+      function encodeDataCodewords(bytes, version, dataCapacityBytes) {
+        const bits = [];
+        const pushBits = (val, len) => {
+          for (let i = len - 1; i >= 0; i--) {
+            bits.push((val >> i) & 1);
+          }
+        };
+
+        // Byte Mode 識別碼：0100
+        pushBits(0b0100, 4);
+        // 字元長度（V1-9 為 8 位元，V10+ 為 16 位元）
+        pushBits(bytes.length, version <= 9 ? 8 : 16);
+        // 資料位元組
+        for (const b of bytes) {
+          pushBits(b, 8);
+        }
+
+        const totalDataBits = dataCapacityBytes * 8;
+        // 終止碼（最多 4 個 0）
+        const terminatorLen = Math.min(4, totalDataBits - bits.length);
+        pushBits(0, terminatorLen);
+        // 補齊至 8 的倍數
+        while (bits.length % 8 !== 0) {
+          bits.push(0);
+        }
+
+        const codewords = [];
+        for (let i = 0; i < bits.length; i += 8) {
+          let byteVal = 0;
+          for (let j = 0; j < 8; j++) {
+            byteVal = (byteVal << 1) | bits[i + j];
+          }
+          codewords.push(byteVal);
+        }
+
+        // 交替補齊 0xEC 與 0x11
+        let padToggle = true;
+        while (codewords.length < dataCapacityBytes) {
+          codewords.push(padToggle ? 0xEC : 0x11);
+          padToggle = !padToggle;
+        }
+        return codewords;
+      }
+
+      // 分塊計算 Reed-Solomon 並交錯排列所有碼字
+      function interleaveBlocks(dataCodewords, version) {
+        const [totalCw, ecPerBlock, numBlocks] = VERSION_SPECS_M[version];
+        const numShortBlocks = numBlocks - (totalCw % numBlocks);
+        const shortBlockTotal = Math.floor(totalCw / numBlocks);
+        const shortBlockData = shortBlockTotal - ecPerBlock;
+        const divisor = rsComputeDivisor(ecPerBlock);
+
+        const dataBlocks = [];
+        const ecBlocks = [];
+        let offset = 0;
+
+        for (let i = 0; i < numBlocks; i++) {
+          const dataLen = shortBlockData + (i < numShortBlocks ? 0 : 1);
+          const blockData = dataCodewords.slice(offset, offset + dataLen);
+          offset += dataLen;
+          dataBlocks.push(blockData);
+          ecBlocks.push(rsComputeRemainder(blockData, divisor));
+        }
+
+        const finalCodewords = [];
+        const maxDataLen = shortBlockData + (numShortBlocks < numBlocks ? 1 : 0);
+
+        for (let col = 0; col < maxDataLen; col++) {
+          for (let b = 0; b < numBlocks; b++) {
+            if (col < dataBlocks[b].length) {
+              finalCodewords.push(dataBlocks[b][col]);
+            }
+          }
+        }
+        for (let col = 0; col < ecPerBlock; col++) {
+          for (let b = 0; b < numBlocks; b++) {
+            finalCodewords.push(ecBlocks[b][col]);
+          }
+        }
+        return finalCodewords;
+      }
+
+      // 建立 QR Code 矩陣並繪製功能圖案
+      function createMatrix(version, allCodewords) {
+        const size = version * 4 + 17;
+        const modules = Array.from({ length: size }, () => new Uint8Array(size));
+        const isFunction = Array.from({ length: size }, () => new Uint8Array(size));
+
+        const setFunctionModule = (r, c, isDark) => {
+          if (r >= 0 && r < size && c >= 0 && c < size) {
+            modules[r][c] = isDark ? 1 : 0;
+            isFunction[r][c] = 1;
+          }
+        };
+
+        // 1. 繪製三個定位圖案（Finder Patterns）與白色分隔邊
+        const drawFinder = (centerR, centerC) => {
+          for (let dr = -4; dr <= 4; dr++) {
+            for (let dc = -4; dc <= 4; dc++) {
+              const dist = Math.max(Math.abs(dr), Math.abs(dc));
+              const r = centerR + dr;
+              const c = centerC + dc;
+              if (r >= 0 && r < size && c >= 0 && c < size) {
+                setFunctionModule(r, c, dist !== 2 && dist !== 4);
+              }
+            }
+          }
+        };
+        drawFinder(3, 3);
+        drawFinder(3, size - 4);
+        drawFinder(size - 4, 3);
+
+        // 2. 繪製校準圖案（Alignment Patterns）
+        const alignPos = VERSION_SPECS_M[version][3];
+        for (let i = 0; i < alignPos.length; i++) {
+          for (let j = 0; j < alignPos.length; j++) {
+            const isTopLeft = i === 0 && j === 0;
+            const isTopRight = i === 0 && j === alignPos.length - 1;
+            const isBottomLeft = i === alignPos.length - 1 && j === 0;
+            if (isTopLeft || isTopRight || isBottomLeft) continue;
+
+            const cr = alignPos[i];
+            const cc = alignPos[j];
+            for (let dr = -2; dr <= 2; dr++) {
+              for (let dc = -2; dc <= 2; dc++) {
+                const dist = Math.max(Math.abs(dr), Math.abs(dc));
+                setFunctionModule(cr + dr, cc + dc, dist !== 1);
+              }
+            }
+          }
+        }
+
+        // 3. 繪製時序圖案（Timing Patterns）
+        for (let i = 0; i < size; i++) {
+          if (!isFunction[6][i]) setFunctionModule(6, i, i % 2 === 0);
+          if (!isFunction[i][6]) setFunctionModule(i, 6, i % 2 === 0);
+        }
+
+        // 4. 預留格式資訊區域（Format Info）與固定深色點（Dark Module）
+        const drawFormatBits = (maskPattern) => {
+          // EC Level M = 00
+          const data = (0b00 << 3) | maskPattern;
+          let rem = data << 10;
+          for (let i = 14; i >= 10; i--) {
+            if ((rem >> i) & 1) rem ^= (0x537 << (i - 10));
+          }
+          const bits = ((data << 10) | rem) ^ 0x5412;
+
+          // 左上角周圍
+          for (let i = 0; i <= 5; i++) setFunctionModule(8, i, ((bits >> (14 - i)) & 1) !== 0);
+          setFunctionModule(8, 7, ((bits >> 8) & 1) !== 0);
+          setFunctionModule(8, 8, ((bits >> 7) & 1) !== 0);
+          setFunctionModule(7, 8, ((bits >> 6) & 1) !== 0);
+          for (let i = 9; i < 15; i++) setFunctionModule(14 - i, 8, ((bits >> (14 - i)) & 1) !== 0);
+
+          // 左下與右上
+          for (let i = 0; i < 7; i++) setFunctionModule(size - 1 - i, 8, ((bits >> (14 - i)) & 1) !== 0);
+          for (let i = 7; i < 15; i++) setFunctionModule(8, size - 15 + i, ((bits >> (14 - i)) & 1) !== 0);
+
+          // Dark module
+          setFunctionModule(size - 8, 8, true);
+        };
+        drawFormatBits(0);
+
+        // 5. 版本資訊（Version >= 7）
+        if (version >= 7) {
+          let rem = version << 12;
+          for (let i = 17; i >= 12; i--) {
+            if ((rem >> i) & 1) rem ^= (0x1F25 << (i - 12));
+          }
+          const vBits = (version << 12) | rem;
+          for (let i = 0; i < 18; i++) {
+            const bit = ((vBits >> i) & 1) !== 0;
+            const a = size - 11 + (i % 3);
+            const b = Math.floor(i / 3);
+            setFunctionModule(a, b, bit);
+            setFunctionModule(b, a, bit);
+          }
+        }
+
+        // 6. 依蛇形路徑填入所有資料與錯誤更正位元
+        let bitIndex = 0;
+        const totalBits = allCodewords.length * 8;
+        let upward = true;
+
+        for (let right = size - 1; right >= 1; right -= 2) {
+          if (right === 6) right = 5;
+          for (let step = 0; step < size; step++) {
+            const r = upward ? size - 1 - step : step;
+            for (let j = 0; j < 2; j++) {
+              const c = right - j;
+              if (!isFunction[r][c]) {
+                let dark = false;
+                if (bitIndex < totalBits) {
+                  dark = ((allCodewords[bitIndex >> 3] >> (7 - (bitIndex & 7))) & 1) !== 0;
+                  bitIndex++;
+                }
+                modules[r][c] = dark ? 1 : 0;
+              }
+            }
+          }
+          upward = !upward;
+        }
+
+        // 7. 測試 8 種遮罩（Mask Pattern）並選出懲罰分數最低者
+        const applyMask = (mask) => {
+          for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+              if (isFunction[r][c]) continue;
+              let invert = false;
+              switch (mask) {
+                case 0: invert = (r + c) % 2 === 0; break;
+                case 1: invert = r % 2 === 0; break;
+                case 2: invert = c % 3 === 0; break;
+                case 3: invert = (r + c) % 3 === 0; break;
+                case 4: invert = (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0; break;
+                case 5: invert = ((r * c) % 2) + ((r * c) % 3) === 0; break;
+                case 6: invert = (((r * c) % 2) + ((r * c) % 3)) % 2 === 0; break;
+                case 7: invert = (((r + c) % 2) + ((r * c) % 3)) % 2 === 0; break;
+              }
+              if (invert) modules[r][c] ^= 1;
+            }
+          }
+        };
+
+        const computePenalty = () => {
+          let penalty = 0;
+          // 規則 1：同行或同列連續 5 個以上相同顏色
+          for (let r = 0; r < size; r++) {
+            let runColor = modules[r][0];
+            let runLen = 1;
+            for (let c = 1; c < size; c++) {
+              if (modules[r][c] === runColor) {
+                runLen++;
+                if (runLen === 5) penalty += 3;
+                else if (runLen > 5) penalty += 1;
+              } else {
+                runColor = modules[r][c];
+                runLen = 1;
+              }
+            }
+          }
+          for (let c = 0; c < size; c++) {
+            let runColor = modules[0][c];
+            let runLen = 1;
+            for (let r = 1; r < size; r++) {
+              if (modules[r][c] === runColor) {
+                runLen++;
+                if (runLen === 5) penalty += 3;
+                else if (runLen > 5) penalty += 1;
+              } else {
+                runColor = modules[r][c];
+                runLen = 1;
+              }
+            }
+          }
+          // 規則 2：2x2 相同顏色方塊
+          for (let r = 0; r < size - 1; r++) {
+            for (let c = 0; c < size - 1; c++) {
+              const color = modules[r][c];
+              if (
+                color === modules[r][c + 1] &&
+                color === modules[r + 1][c] &&
+                color === modules[r + 1][c + 1]
+              ) {
+                penalty += 3;
+              }
+            }
+          }
+          // 規則 4：深淺比例平衡
+          let darkCount = 0;
+          for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+              if (modules[r][c]) darkCount++;
+            }
+          }
+          const ratioDiff = Math.abs(darkCount * 20 - size * size * 10);
+          penalty += Math.floor(ratioDiff / (size * size)) * 10;
+          return penalty;
+        };
+
+        let bestMask = 0;
+        let minPenalty = Infinity;
+
+        for (let m = 0; m < 8; m++) {
+          applyMask(m);
+          drawFormatBits(m);
+          const p = computePenalty();
+          if (p < minPenalty) {
+            minPenalty = p;
+            bestMask = m;
+          }
+          applyMask(m); // 還原
+        }
+
+        applyMask(bestMask);
+        drawFormatBits(bestMask);
+        return modules;
+      }
+
+      // 公開方法：將文字編碼並渲染至高解析度 Canvas（保留充足白色靜默區 Quiet Zone）
+      function renderToCanvas(canvas, text) {
+        const bytes = stringToUtf8Bytes(text);
+        if (bytes.length === 0) {
+          throw new Error('網址不可為空白，請輸入有效網址。');
+        }
+
+        const version = selectVersion(bytes.length);
+        if (version === -1) {
+          throw new Error('網址過長（超過 362 位元組），請使用較短的公開網址。');
+        }
+
+        const [totalCw, ecPerBlock, numBlocks] = VERSION_SPECS_M[version];
+        const dataCapacity = totalCw - ecPerBlock * numBlocks;
+        const dataCodewords = encodeDataCodewords(bytes, version, dataCapacity);
+        const allCodewords = interleaveBlocks(dataCodewords, version);
+        const matrix = createMatrix(version, allCodewords);
+
+        const moduleCount = matrix.length;
+        const quietZone = 4; // 標準 4 模組白色靜默區
+        const totalModules = moduleCount + quietZone * 2;
+
+        // 計算整數像素縮放倍率，確保掃描邊緣銳利無模糊（輸出約 420~560px）
+        const scale = Math.max(6, Math.floor(480 / totalModules));
+        const pixelSize = totalModules * scale;
+
+        canvas.width = pixelSize;
+        canvas.height = pixelSize;
+
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, pixelSize, pixelSize);
+
+        ctx.fillStyle = '#000000';
+        for (let r = 0; r < moduleCount; r++) {
+          for (let c = 0; c < moduleCount; c++) {
+            if (matrix[r][c]) {
+              ctx.fillRect(
+                (c + quietZone) * scale,
+                (r + quietZone) * scale,
+                scale,
+                scale
+              );
+            }
+          }
+        }
+      }
+
+      return { renderToCanvas };
+    })();
+
+    /**
+     * ==========================================================================
+     * 模組四：語音報讀控制器（Web Speech API + 穩定暫停／接續機制）
+     * ==========================================================================
+     */
+    const SpeechController = (() => {
+      const synth = window.speechSynthesis || null;
+
+      const state = {
+        segments: [],
+        queueEndIndex: -1,
+        currentIndex: 0,
+        status: 'idle', // 'idle' | 'playing' | 'paused'
+        rate: 0.9,      // 預設語速：適中 0.9x
+        selectedVoice: null,
+        sessionToken: 0,
+        pauseTimerId: null,
+        activeUtterance: null
+      };
+
+      // 建立全卷報讀片段（標題 → 作答說明 → 第 1~10 題題幹與選項）
+      function buildSegments(meta, questions) {
+        const list = [];
+
+        list.push({
+          elementId: 'seg-title',
+          speechText: meta.titleSpeech || meta.title,
+          statusLabel: '測驗標題',
+          pauseAfterMs: 650
+        });
+
+        list.push({
+          elementId: 'seg-instruction',
+          speechText: meta.instructionSpeech || meta.instruction,
+          statusLabel: '作答說明',
+          pauseAfterMs: 850
+        });
+
+        questions.forEach((q, qIdx) => {
+          list.push({
+            elementId: `q-${q.id}-stem`,
+            speechText: `第 ${q.id} 題，${q.stem}`,
+            statusLabel: `第 ${q.id} 題 題目`,
+            pauseAfterMs: 480,
+            questionId: q.id
+          });
+
+          q.options.forEach((opt, optIdx) => {
+            const isLastOption = optIdx === q.options.length - 1;
+            const isLastQuestion = qIdx === questions.length - 1;
+
+            list.push({
+              elementId: `q-${q.id}-opt-${opt.label}`,
+              speechText: `選項 ${opt.label}，${opt.text}`,
+              statusLabel: `第 ${q.id} 題 選項 ${opt.label}`,
+              pauseAfterMs: isLastOption ? (isLastQuestion ? 320 : 900) : 400,
+              questionId: q.id
+            });
+          });
+        });
+
+        state.segments = list;
+        state.queueEndIndex = list.length - 1;
+      }
+
+      // 自動優先選取台灣繁體中文語音（zh-TW）
+      function loadPreferredVoice() {
+        if (!synth) {
+          UIRenderer.updateVoiceInfo('此瀏覽器不支援語音報讀');
+          return;
+        }
+
+        const voices = synth.getVoices();
+        if (!voices || voices.length === 0) return;
+
+        const priorityRules = [
+          (v) => /zh[-_]TW/i.test(v.lang) && /HsiaoChen|曉臻/i.test(v.name),
+          (v) => /zh[-_]TW/i.test(v.lang) && /Google/i.test(v.name),
+          (v) => /zh[-_]TW/i.test(v.lang) && /Yating|雅婷|Hanhan|涵涵|Mei-Jia|美佳|YunJhe/i.test(v.name),
+          (v) => /zh[-_]TW/i.test(v.lang),
+          (v) => /zh[-_]Hant/i.test(v.lang),
+          (v) => /^zh/i.test(v.lang)
+        ];
+
+        let chosen = null;
+        for (const rule of priorityRules) {
+          chosen = voices.find(rule);
+          if (chosen) break;
+        }
+
+        state.selectedVoice = chosen || null;
+        UIRenderer.updateVoiceInfo(chosen ? `語音：${chosen.name}` : '使用系統預設中文語音');
+      }
+
+      function clearPendingTimer() {
+        if (state.pauseTimerId !== null) {
+          clearTimeout(state.pauseTimerId);
+          state.pauseTimerId = null;
+        }
+      }
+
+      // 朗讀目前索引片段
+      function speakCurrentSegment() {
+        if (!synth) {
+          UIRenderer.updateStatus('idle', '您的瀏覽器不支援語音報讀功能');
+          return;
+        }
+
+        if (state.currentIndex > state.queueEndIndex || state.currentIndex >= state.segments.length) {
+          finishReading();
+          return;
+        }
+
+        const seg = state.segments[state.currentIndex];
+        const myToken = ++state.sessionToken;
+
+        clearPendingTimer();
+        synth.cancel();
+
+        state.status = 'playing';
+        UIRenderer.highlightElement(seg.elementId);
+        UIRenderer.updateStatus('playing', `報讀中：${seg.statusLabel}`);
+        UIRenderer.syncControls(state.status);
+
+        const utterance = new SpeechSynthesisUtterance(seg.speechText);
+        utterance.lang = 'zh-TW';
+        utterance.rate = state.rate;
+        utterance.pitch = 1.0;
+
+        if (state.selectedVoice) {
+          utterance.voice = state.selectedVoice;
+        }
+
+        state.activeUtterance = utterance;
+
+        utterance.onend = () => {
+          if (myToken !== state.sessionToken) return;
+
+          if (state.currentIndex >= state.queueEndIndex) {
+            finishReading();
+            return;
+          }
+
+          state.pauseTimerId = setTimeout(() => {
+            if (myToken !== state.sessionToken) return;
+            state.currentIndex += 1;
+            speakCurrentSegment();
+          }, seg.pauseAfterMs);
+        };
+
+        utterance.onerror = (event) => {
+          if (myToken !== state.sessionToken) return;
+          if (event.error === 'canceled' || event.error === 'interrupted') return;
+
+          state.pauseTimerId = setTimeout(() => {
+            if (myToken !== state.sessionToken) return;
+            state.currentIndex += 1;
+            speakCurrentSegment();
+          }, 300);
+        };
+
+        try {
+          synth.speak(utterance);
+        } catch (err) {
+          state.status = 'idle';
+          UIRenderer.updateStatus('idle', '語音播放發生錯誤，請再試一次');
+          UIRenderer.syncControls(state.status);
+        }
+      }
+
+      function finishReading() {
+        state.sessionToken += 1;
+        clearPendingTimer();
+        state.status = 'idle';
+        state.currentIndex = 0;
+        state.queueEndIndex = state.segments.length - 1;
+        state.activeUtterance = null;
+
+        UIRenderer.clearHighlight();
+        UIRenderer.updateStatus('idle', '待命：報讀完成！可重按「開始報讀」或點擊題目後方 🔊 喇叭');
+        UIRenderer.syncControls(state.status);
+        PlaySound('complete');
+      }
+
+      function startOrResume() {
+        if (!synth) return;
+
+        PlaySound('start');
+        if (state.status === 'paused') {
+          speakCurrentSegment();
+        } else {
+          state.currentIndex = 0;
+          state.queueEndIndex = state.segments.length - 1;
+          speakCurrentSegment();
+        }
+      }
+
+      // 穩定暫停：記錄片段索引 + cancel()，解決 Windows / iPad / Android 卡頓
+      function pause() {
+        if (state.status !== 'playing') return;
+
+        state.sessionToken += 1;
+        clearPendingTimer();
+        if (synth) synth.cancel();
+
+        state.status = 'paused';
+        const seg = state.segments[state.currentIndex];
+        const label = seg ? seg.statusLabel : '';
+
+        UIRenderer.updateStatus('paused', `已暫停：${label}（按「繼續報讀」可接續）`);
+        UIRenderer.syncControls(state.status);
+        PlaySound('pause');
+      }
+
+      function stop() {
+        state.sessionToken += 1;
+        clearPendingTimer();
+        if (synth) synth.cancel();
+
+        state.status = 'idle';
+        state.currentIndex = 0;
+        state.queueEndIndex = state.segments.length - 1;
+        state.activeUtterance = null;
+
+        UIRenderer.clearHighlight();
+        UIRenderer.updateStatus('idle', '待命：已停止報讀');
+        UIRenderer.syncControls(state.status);
+        PlaySound('click');
+      }
+
+      // 報讀單題（題幹 + 該題四個選項）
+      function playQuestion(questionId) {
+        const startIdx = state.segments.findIndex((s) => s.elementId === `q-${questionId}-stem`);
+        if (startIdx === -1) return;
+
+        let endIdx = startIdx;
+        for (let i = startIdx + 1; i < state.segments.length; i++) {
+          if (state.segments[i].questionId === questionId) {
+            endIdx = i;
+          } else {
+            break;
+          }
+        }
+
+        PlaySound('start');
+        state.currentIndex = startIdx;
+        state.queueEndIndex = endIdx;
+        speakCurrentSegment();
+      }
+
+      // 單獨報讀某一個選項
+      function playOption(questionId, optionLabel) {
+        const idx = state.segments.findIndex((s) => s.elementId === `q-${questionId}-opt-${optionLabel}`);
+        if (idx === -1) return;
+
+        PlaySound('click');
+        state.currentIndex = idx;
+        state.queueEndIndex = idx;
+        speakCurrentSegment();
+      }
+
+      // 即時切換語速
+      function setRate(newRate) {
+        state.rate = parseFloat(newRate);
+        PlaySound('click');
+        if (state.status === 'playing') {
+          speakCurrentSegment();
+        }
+      }
+
+      function init(meta, questions) {
+        buildSegments(meta, questions);
+        if (synth) {
+          loadPreferredVoice();
+          if (typeof synth.onvoiceschanged !== 'undefined') {
+            synth.onvoiceschanged = loadPreferredVoice;
+          }
+        } else {
+          UIRenderer.updateVoiceInfo('瀏覽器不支援語音報讀');
+        }
+      }
+
+      return {
+        init,
+        startOrResume,
+        pause,
+        stop,
+        playQuestion,
+        playOption,
+        setRate
+      };
+    })();
+
+    /**
+     * ==========================================================================
+     * 模組五：QR Code 投影視窗控制器
+     * ==========================================================================
+     */
+    const QrModalController = (() => {
+      const els = {
+        btnOpenQr: document.getElementById('btnOpenQr'),
+        qrModal: document.getElementById('qrModal'),
+        qrCanvas: document.getElementById('qrCanvas'),
+        qrUrlInput: document.getElementById('qrUrlInput'),
+        btnQrUpdate: document.getElementById('btnQrUpdate'),
+        qrLocalNotice: document.getElementById('qrLocalNotice'),
+        qrErrorMsg: document.getElementById('qrErrorMsg'),
+        btnQrDownload: document.getElementById('btnQrDownload'),
+        btnQrClose: document.getElementById('btnQrClose')
+      };
+
+      // 判斷是否為本機檔案或非公開預覽網址
+      function isLocalOrNonPublicUrl(urlStr) {
+        const trimmed = (urlStr || '').trim().toLowerCase();
+        if (!trimmed) return true;
+        if (
+          trimmed.startsWith('file://') ||
+          trimmed.startsWith('about:') ||
+          trimmed.startsWith('blob:') ||
+          trimmed.startsWith('data:')
+        ) {
+          return true;
+        }
+        try {
+          const parsed = new URL(trimmed);
+          const host = parsed.hostname;
+          if (
+            host === 'localhost' ||
+            host === '127.0.0.1' ||
+            host === '0.0.0.0' ||
+            host.endsWith('.local')
+          ) {
+            return true;
+          }
+        } catch (err) {
+          return true;
+        }
+        return false;
+      }
+
+      function renderQr(urlStr) {
+        const trimmed = (urlStr || '').trim();
+        els.qrLocalNotice.classList.toggle('is-visible', isLocalOrNonPublicUrl(trimmed));
+
+        try {
+          NativeQRCode.renderToCanvas(els.qrCanvas, trimmed);
+          els.qrErrorMsg.textContent = '';
+          els.qrErrorMsg.classList.remove('is-visible');
+          els.btnQrDownload.disabled = false;
+        } catch (err) {
+          els.qrErrorMsg.textContent = err.message || '無法產生 QR Code，請確認網址格式。';
+          els.qrErrorMsg.classList.add('is-visible');
+          els.btnQrDownload.disabled = true;
+        }
+      }
+
+      function openModal() {
+        PlaySound('open');
+        const currentHref = window.location.href || '';
+        els.qrUrlInput.value = currentHref;
+        renderQr(currentHref);
+        els.qrModal.classList.add('is-open');
+      }
+
+      function closeModal() {
+        PlaySound('click');
+        els.qrModal.classList.remove('is-open');
+      }
+
+      function downloadPng() {
+        PlaySound('click');
+        try {
+          const dataUrl = els.qrCanvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.download = '第七課_高第的魔法建築_報讀測驗_QRCode.png';
+          link.href = dataUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (err) {
+          els.qrErrorMsg.textContent = '下載圖片失敗，請長按或右鍵另存 QR Code 圖片。';
+          els.qrErrorMsg.classList.add('is-visible');
+        }
+      }
+
+      function init() {
+        els.btnOpenQr.addEventListener('click', openModal);
+        els.btnQrClose.addEventListener('click', closeModal);
+        els.btnQrDownload.addEventListener('click', downloadPng);
+
+        els.btnQrUpdate.addEventListener('click', () => {
+          PlaySound('click');
+          renderQr(els.qrUrlInput.value);
+        });
+
+        els.qrUrlInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            PlaySound('click');
+            renderQr(els.qrUrlInput.value);
+          }
+        });
+
+        els.qrModal.addEventListener('click', (e) => {
+          if (e.target === els.qrModal) closeModal();
+        });
+      }
+
+      return { init };
+    })();
+
+    /**
+     * ==========================================================================
+     * 模組六：UI 渲染與測驗互動控制器
+     * ==========================================================================
+     */
+    const UIRenderer = (() => {
+      const els = {
+        examTitleText: document.getElementById('examTitleText'),
+        examInstructionText: document.getElementById('examInstructionText'),
+        questionsContainer: document.getElementById('questionsContainer'),
+        teacherSummaryGrid: document.getElementById('teacherSummaryGrid'),
+        btnStart: document.getElementById('btnStart'),
+        btnStartText: document.getElementById('btnStartText'),
+        btnPause: document.getElementById('btnPause'),
+        btnStop: document.getElementById('btnStop'),
+        statusBar: document.getElementById('statusBar'),
+        statusText: document.getElementById('statusText'),
+        voiceInfo: document.getElementById('voiceInfo'),
+        btnTeacherToggle: document.getElementById('btnTeacherToggle'),
+        confirmModal: document.getElementById('confirmModal'),
+        btnConfirmCancel: document.getElementById('btnConfirmCancel'),
+        btnConfirmOk: document.getElementById('btnConfirmOk')
+      };
+
+      let currentHighlightEl = null;
+      let answersVisible = false;
+      const studentSelections = {};
+
+      // 渲染整份測驗與教師解答總表
+      function renderQuiz(meta, questions) {
+        els.examTitleText.textContent = meta.title;
+        els.examInstructionText.textContent = meta.instruction;
+
+        const fragment = document.createDocumentFragment();
+        const summaryFragment = document.createDocumentFragment();
+
+        questions.forEach((q) => {
+          const card = document.createElement('article');
+          card.className = 'question-card';
+          card.setAttribute('aria-label', `第 ${q.id} 題`);
+
+          // 題幹區：題號圓形徽章 + 題目文字 + 緊接在題目文字後方的放大喇叭按鈕
+          const stemWrap = document.createElement('div');
+          stemWrap.id = `q-${q.id}-stem`;
+          stemWrap.className = 'question-stem-wrap';
+
+          const badge = document.createElement('span');
+          badge.className = 'q-number-badge';
+          badge.textContent = q.id;
+          badge.setAttribute('aria-hidden', 'true');
+
+          const stemHeading = document.createElement('h2');
+          stemHeading.className = 'question-stem-heading';
+
+          const stemTextSpan = document.createElement('span');
+          stemTextSpan.className = 'question-stem-text';
+          stemTextSpan.textContent = q.stem;
+
+          // 放大喇叭按鍵直接緊接在題目文字後方（inline-flex）
+          const btnReadQ = document.createElement('button');
+          btnReadQ.type = 'button';
+          btnReadQ.className = 'btn-read-question';
+          btnReadQ.innerHTML = '<span aria-hidden="true">🔊</span>';
+          btnReadQ.title = `報讀第 ${q.id} 題`;
+          btnReadQ.setAttribute('aria-label', `報讀第 ${q.id} 題`);
+          btnReadQ.addEventListener('click', () => {
+            SpeechController.playQuestion(q.id);
+          });
+
+          stemHeading.appendChild(stemTextSpan);
+          stemHeading.appendChild(btnReadQ);
+
+          stemWrap.appendChild(badge);
+          stemWrap.appendChild(stemHeading);
+          card.appendChild(stemWrap);
+
+          // 選項區（A, B, C, D）
+          const optionsGrid = document.createElement('div');
+          optionsGrid.className = 'options-grid';
+
+          q.options.forEach((opt) => {
+            const optItem = document.createElement('div');
+            optItem.id = `q-${q.id}-opt-${opt.label}`;
+            optItem.className = 'option-item';
+            optItem.setAttribute('role', 'checkbox');
+            optItem.setAttribute('aria-checked', 'false');
+            optItem.setAttribute('tabindex', '0');
+
+            if (opt.label === q.answer) {
+              optItem.classList.add('is-correct-answer');
+            }
+
+            const checkbox = document.createElement('span');
+            checkbox.className = 'option-checkbox';
+            checkbox.setAttribute('aria-hidden', 'true');
+
+            // 選項文字 + 緊接在選項文字後方的獨立放大喇叭按鈕
+            const optContent = document.createElement('div');
+            optContent.className = 'option-content';
+
+            const letterSpan = document.createElement('span');
+            letterSpan.className = 'option-letter';
+            letterSpan.textContent = `${opt.label}.`;
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'option-text';
+            textSpan.textContent = opt.text;
+
+            const btnSpeakOpt = document.createElement('button');
+            btnSpeakOpt.type = 'button';
+            btnSpeakOpt.className = 'btn-read-option';
+            btnSpeakOpt.innerHTML = '<span aria-hidden="true">🔊</span>';
+            btnSpeakOpt.title = `重聽選項 ${opt.label}`;
+            btnSpeakOpt.setAttribute('aria-label', `重聽第 ${q.id} 題選項 ${opt.label}`);
+            btnSpeakOpt.addEventListener('click', (e) => {
+              e.stopPropagation(); // 單獨重聽選項，不觸發打勾
+              SpeechController.playOption(q.id, opt.label);
+            });
+
+            optContent.appendChild(letterSpan);
+            optContent.appendChild(textSpan);
+            optContent.appendChild(btnSpeakOpt);
+
+            // 點擊選項本體切換打勾模擬作答（不觸發誤報讀）
+            const handleToggleOption = () => {
+              toggleOptionSelection(q.id, opt.label, optionsGrid);
+            };
+
+            optItem.addEventListener('click', handleToggleOption);
+            optItem.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleToggleOption();
+              }
+            });
+
+            optItem.appendChild(checkbox);
+            optItem.appendChild(optContent);
+            optionsGrid.appendChild(optItem);
+          });
+
+          card.appendChild(optionsGrid);
+
+          // 教師用解答橫幅（預設隱藏）
+          const correctOpt = q.options.find((o) => o.label === q.answer);
+          const answerBanner = document.createElement('div');
+          answerBanner.className = 'teacher-answer-banner';
+          answerBanner.innerHTML = `
+            <span>✔ 正確答案：${q.answer}. ${correctOpt ? correctOpt.text : ''}</span>
+            <span class="ability-pill">能力指標：${q.ability}</span>
+          `;
+          card.appendChild(answerBanner);
+
+          fragment.appendChild(card);
+
+          // 教師用總表項目
+          const summaryItem = document.createElement('div');
+          summaryItem.className = 'summary-item';
+          summaryItem.textContent = `${q.id}. ${q.answer}（${q.ability}）`;
+          summaryFragment.appendChild(summaryItem);
+        });
+
+        els.questionsContainer.appendChild(fragment);
+        els.teacherSummaryGrid.appendChild(summaryFragment);
+      }
+
+      // 切換學生模擬作答打勾狀態
+      function toggleOptionSelection(questionId, optionLabel, optionsGrid) {
+        PlaySound('check');
+        const prev = studentSelections[questionId];
+        const next = prev === optionLabel ? null : optionLabel;
+        studentSelections[questionId] = next;
+
+        const items = optionsGrid.querySelectorAll('.option-item');
+        items.forEach((item) => {
+          const isMatch = next !== null && item.id === `q-${questionId}-opt-${next}`;
+          item.classList.toggle('is-selected', isMatch);
+          item.setAttribute('aria-checked', isMatch ? 'true' : 'false');
+          const box = item.querySelector('.option-checkbox');
+          if (box) box.textContent = isMatch ? '✓' : '';
+        });
+      }
+
+      // 高亮目前報讀區塊並自動平滑捲動至畫面中央
+      function highlightElement(elementId) {
+        clearHighlight();
+        const target = document.getElementById(elementId);
+        if (!target) return;
+
+        target.classList.add('reading-highlight');
+        currentHighlightEl = target;
+
+        try {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (err) {
+          target.scrollIntoView();
+        }
+      }
+
+      function clearHighlight() {
+        if (currentHighlightEl) {
+          currentHighlightEl.classList.remove('reading-highlight');
+          currentHighlightEl = null;
+        }
+      }
+
+      function updateStatus(status, message) {
+        els.statusBar.classList.remove('is-playing', 'is-paused');
+        if (status === 'playing') els.statusBar.classList.add('is-playing');
+        else if (status === 'paused') els.statusBar.classList.add('is-paused');
+        els.statusText.textContent = message;
+      }
+
+      function updateVoiceInfo(text) {
+        els.voiceInfo.textContent = text;
+      }
+
+      function syncControls(status) {
+        if (status === 'playing') {
+          els.btnStart.disabled = true;
+          els.btnStartText.textContent = '報讀中...';
+          els.btnPause.disabled = false;
+          els.btnStop.disabled = false;
+        } else if (status === 'paused') {
+          els.btnStart.disabled = false;
+          els.btnStartText.textContent = '繼續報讀';
+          els.btnPause.disabled = true;
+          els.btnStop.disabled = false;
+        } else {
+          els.btnStart.disabled = false;
+          els.btnStartText.textContent = '開始報讀';
+          els.btnPause.disabled = true;
+          els.btnStop.disabled = true;
+        }
+      }
+
+      function setTeacherAnswers(show) {
+        answersVisible = show;
+        document.body.classList.toggle('show-teacher-answers', show);
+        els.btnTeacherToggle.textContent = show
+          ? '🔓 教師用：隱藏解答'
+          : '🔒 教師用：顯示／隱藏解答';
+      }
+
+      function bindEvents() {
+        els.btnStart.addEventListener('click', () => SpeechController.startOrResume());
+        els.btnPause.addEventListener('click', () => SpeechController.pause());
+        els.btnStop.addEventListener('click', () => SpeechController.stop());
+
+        // 三段語速切換
+        const rateButtons = document.querySelectorAll('[data-rate]');
+        rateButtons.forEach((btn) => {
+          btn.addEventListener('click', () => {
+            rateButtons.forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+            SpeechController.setRate(btn.dataset.rate);
+          });
+        });
+
+        // 三段字體大小切換
+        const fontButtons = document.querySelectorAll('[data-font]');
+        fontButtons.forEach((btn) => {
+          btn.addEventListener('click', () => {
+            PlaySound('click');
+            fontButtons.forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.body.classList.remove('font-large', 'font-xlarge', 'font-xxlarge');
+            document.body.classList.add(btn.dataset.font);
+          });
+        });
+
+        // 教師解答開關與二次確認
+        els.btnTeacherToggle.addEventListener('click', () => {
+          if (answersVisible) {
+            PlaySound('click');
+            setTeacherAnswers(false);
+          } else {
+            PlaySound('open');
+            els.confirmModal.classList.add('is-open');
+          }
+        });
+
+        els.btnConfirmCancel.addEventListener('click', () => {
+          PlaySound('click');
+          els.confirmModal.classList.remove('is-open');
+        });
+
+        els.btnConfirmOk.addEventListener('click', () => {
+          PlaySound('click');
+          els.confirmModal.classList.remove('is-open');
+          setTeacherAnswers(true);
+        });
+
+        els.confirmModal.addEventListener('click', (e) => {
+          if (e.target === els.confirmModal) {
+            PlaySound('click');
+            els.confirmModal.classList.remove('is-open');
+          }
+        });
+
+        // 按下 Esc 關閉所有視窗
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            els.confirmModal.classList.remove('is-open');
+            document.getElementById('qrModal').classList.remove('is-open');
+          }
+        });
+
+        // 離開頁面自動停止語音
+        window.addEventListener('beforeunload', () => {
+          if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+          }
+        });
+      }
+
+      function init(meta, questions) {
+        renderQuiz(meta, questions);
+        bindEvents();
+        syncControls('idle');
+      }
+
+      return {
+        init,
+        highlightElement,
+        clearHighlight,
+        updateStatus,
+        updateVoiceInfo,
+        syncControls
+      };
+    })();
+
+    /**
+     * ==========================================================================
+     * 應用程式啟動入口
+     * ==========================================================================
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+      UIRenderer.init(QUIZ_META, QUIZ_DATA);
+      SpeechController.init(QUIZ_META, QUIZ_DATA);
+      QrModalController.init();
+    });
+  </script>
+</body>
+</html>
