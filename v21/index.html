@@ -556,7 +556,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
 <script>
 /* 自動更新：平板開著舊版時，發現網站有新版就自動重新載入一次 */
-const BUILD = '20261124v21a';
+const BUILD = '20261124v21b';
 /* v2.1：網站放在 /v21/，考卷 tests/ 在上一層 */
 const ROOT = '../';
 function rootUrl(p){ return /^(https?:|blob:|data:|\/)/i.test(p) ? p : ROOT + p.replace(/^\.\//, ''); }
@@ -1769,7 +1769,7 @@ async function analyze(i, token){
     if(!blocks) blocks = finishBlocks(await tessPage(cv, S.dir), tdir(S.dir));
   }
   if(token !== S.renderToken) return;
-  try{ await v21Refine(blocks, {ai: !!blocks._ai, saved: !!blocks._saved}); }catch(e){ console.error('v2.1 定位失敗', e); }
+  try{ await v21Refine(blocks, {ai: !!blocks._ai, saved: !!blocks._saved, items: pg.kind === 'pdf' ? pg.items : null}); }catch(e){ console.error('v2.1 定位失敗', e); }
   if(token !== S.renderToken) return;
   S.cache.set(key, blocks);
   S.blocks = blocks;
@@ -2336,7 +2336,7 @@ async function geminiRead(canvas, isCrop, part, opts){
   else if(!isCrop && S.curRule) lineHint = `這張圖在大約 ${Math.round(S.curRule.y / canvas.height * 100)}% 高度的地方有一條橫的分隔線，把考卷分成上下兩半：上半全部讀完才讀下半，上下兩半的字絕對不能合成同一題。`;
   else if(!isCrop && S.curVRule) lineHint = `這張圖在大約 ${Math.round(S.curVRule.x / canvas.width * 100)}% 寬度的地方有一條直的分隔線，把考卷分成左右兩邊：左右兩邊的字絕對不能合成同一題。`;
   const layoutHint = (!isCrop && !dirHint && !part) ? `請先看整張考卷的版面再決定閱讀順序，常見的有：(1) 直式（國語直排）整頁：每一行由上到下、行與行由右到左；(2) 直式、中間一條橫線分成上下兩半：先把上半由右到左讀完，再讀下半；(3) 橫式、中間一條直線分成左右兩欄：先讀完左欄再讀右欄；(4) 橫式上下兩半：先上後下。一張考卷也可能上半直式、下半橫式。` : '';
-  const gridHint = opts.grid ? '這張圖是考卷裡「一整個大題」的裁切圖，這一大題是密集的國字注音格子（例如看注音寫國字、寫注音），格子很多、字很小。請一格一格仔細看：大題名稱一個項目，每一小題一個項目，依照題號順序。格子裡空白要學生寫的地方寫成「（　）」，不要自己填答案。' : '';
+  const gridHint = opts.grid ? '這張圖是考卷裡「一整個大題」的裁切圖，這一大題是密集的國字注音格子（例如看注音寫國字、寫注音），格子很多、字很小。請一格一格仔細看：大題名稱一個項目，每一小題一個項目，依照題號順序。格子裡的東西（不管是印好的國字、注音，或空白）一律只寫一個「□」代表一個要作答的格子，絕對不要輸出格子裡的字或注音，也不要自己填答案；格子外面的文字照原樣輸出。' : '';
   const prompt = `這是台灣國小考卷${isCrop?'中被框選起來的一小塊區域':opts.grid?'的一部分':'的照片（可能有點歪、有陰影）'}，要用來報讀給有學習障礙的學生聽，文字一定要正確。${gridHint}${part || opts.grid ? '' : dirHint}${layoutHint}${lineHint}
 請找出圖中要唸的文字，依照正確的閱讀順序輸出：
 1. 橫式文字：由左到右、由上到下。直式文字（國語直排）：每一行由上到下，行與行由右到左；若頁面上下分成好幾個區塊，先讀上面的區塊再讀下面的。
@@ -2454,12 +2454,15 @@ async function geminiCall(parts, label){
    5) 檢查：框在空白處、跟別題重疊、順序怪怪的 → 退回整題框 */
 function inkMask(c){
   const W = c.width, H = c.height, d = c.getContext('2d', {willReadFrequently:true}).getImageData(0, 0, W, H).data, thr = darkThr(d);
-  const m = new Uint8Array(W*H);
+  const m = new Uint8Array(W*H), l = new Uint8Array(W*H), thr2 = Math.min(640, thr*1.8);
   for(let i = 0, p = 0; p < m.length; i += 4, p++){
     const r = d[i], g = d[i+1], b = d[i+2];
-    if(r + g + b < thr && !(r > 140 && r > g*1.5 && r > b*1.5)) m[p] = 1;   // 紅筆不算字
+    if(r > 140 && r > g*1.5 && r > b*1.5) continue;   // 紅筆不算字
+    const sum = r + g + b;
+    if(sum < thr) m[p] = 1;
+    if(sum < thr2) l[p] = 1;   // 比較淡的細線（格子框線）
   }
-  return {m, W, H};
+  return {m, l, W, H};
 }
 function profileIn(M, x0, y0, x1, y1){
   x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0)); x1 = Math.min(M.W, Math.ceil(x1)); y1 = Math.min(M.H, Math.ceil(y1));
@@ -2556,28 +2559,73 @@ function longRun(M, x0, y0, len, horiz){
   return best;
 }
 function clusterCount(idx, tol){ let n = 0, last = -1e9; idx.forEach(i => { if(i - last > tol) n++; last = i; }); return n; }
-function gridScore(M, R){
+function gridSegs(M, R){
   const x0 = Math.max(0, Math.round(R.x)), y0 = Math.max(0, Math.round(R.y)), w = Math.min(M.W - x0, Math.round(R.w)), h = Math.min(M.H - y0, Math.round(R.h));
-  if(w < 40 || h < 20) return {h:0, v:0, strong:false, weak:false};
-  // 橫線：一列裡「長線段」加起來超過寬度的 25%（格子常常一組一組分開，不一定連成一條）
-  const segMin = Math.max(24, w*0.04), hr = [];
-  for(let y = y0; y < y0 + h; y++){
-    let tot = 0, cur = 0, miss = 0; const o = y*M.W;
-    for(let x = x0; x < x0 + w; x++){
-      if(M.m[o + x]){ cur += 1 + miss; miss = 0; }
-      else if(++miss > 2){ if(cur >= segMin) tot += cur; cur = 0; miss = 0; }
+  if(w < 40 || h < 20) return {V:[], H:[], L:0};
+  // 格子的框線比一般字的筆畫長：超過頁寬 3% 的直線段／橫線段才算（字大約只有頁寬 1.5～2.2%）
+  const L = Math.max(24, Math.round(M.W*0.03));
+  const segs = (vert) => {
+    const out = [];
+    const A = vert ? w : h, B = vert ? h : w;
+    for(let a = 0; a < A; a++){
+      let start = -1, miss = 0, last = -1;
+      for(let t = 0; t <= B; t++){
+        const x = vert ? x0 + a : x0 + t, y = vert ? y0 + t : y0 + a;
+        const on = t < B && (M.l || M.m)[y*M.W + x];
+        if(on){ if(start < 0) start = t; last = t; miss = 0; }
+        else if(start >= 0 && (++miss > 2 || t === B)){ if(last - start + 1 >= L) out.push([a, start, last]); start = -1; miss = 0; }
+      }
     }
-    if(cur >= segMin) tot += cur;
-    if(tot > w*0.25) hr.push(y);
+    // 同一條線（相鄰幾個像素寬、而且重疊）只算一次；座標換回整張圖
+    const lines = [];
+    out.forEach(([a, s0, s1]) => {
+      const hit = lines.find(l => a - l.a1 <= 4 && a >= l.a0 && overlap1d(s0, s1, l.s0, l.s1) > 0.5*Math.min(s1 - s0, l.s1 - l.s0));
+      if(hit){ hit.a1 = a; hit.s0 = Math.min(hit.s0, s0); hit.s1 = Math.max(hit.s1, s1); } else lines.push({a0:a, a1:a, s0, s1});
+    });
+    return lines.map(l => vert ? {a:x0 + (l.a0 + l.a1)/2, s0:y0 + l.s0, s1:y0 + l.s1} : {a:y0 + (l.a0 + l.a1)/2, s0:x0 + l.s0, s1:x0 + l.s1});
+  };
+  return {V: segs(true), H: segs(false), L};
+}
+function gridScore(M, R){
+  const g = gridSegs(M, R), nv = g.V.length, nh = g.H.length;
+  return {h:nh, v:nv, strong: nv >= 8 && nh >= 4, weak: nv >= 4 && nh >= 2, segs:g};
+}
+// 這個點是不是在格子裡：要找到「同一個框」的上、下兩條橫線，和左右兩條把這兩條橫線接起來的直線
+function inCell(cx, cy, g){
+  const D = g.L*2.6, spans = (l, v) => v >= l.s0 - 3 && v <= l.s1 + 3;
+  const ups = g.H.filter(l => l.a < cy && cy - l.a < D && spans(l, cx)), dns = g.H.filter(l => l.a > cy && l.a - cy < D && spans(l, cx));
+  for(const u of ups) for(const d of dns){
+    const hh = d.a - u.a; if(hh < g.L*0.6) continue;
+    const okV = l => overlap1d(l.s0, l.s1, u.a, d.a) > 0.7*hh;
+    const lf = g.V.some(l => l.a < cx && l.a >= Math.max(u.s0, d.s0) - 4 && okV(l));
+    const rt = g.V.some(l => l.a > cx && l.a <= Math.min(u.s1, d.s1) + 4 && okV(l));
+    if(lf && rt) return true;
   }
-  const nh = clusterCount(hr, 3);
-  // 直線至少要有一格那麼高：用橫線間距估計格子高度
-  let cell = h*0.5;
-  if(nh >= 2){ const ys = []; let last = -1e9; hr.forEach(y => { if(y - last > 3) ys.push(y); last = y; }); const gaps = ys.slice(1).map((y, i) => y - ys[i]).filter(g => g > 8).sort((a, b) => a - b); if(gaps.length) cell = gaps[Math.floor(gaps.length/2)]; }
-  const need = Math.max(14, cell*0.7), vc = [];
-  for(let x = x0; x < x0 + w; x++){ let best = 0; for(let y = y0; y < y0 + h; y += Math.max(4, Math.round(need/3))){ best = Math.max(best, longRun(M, x, y, Math.round(need*1.4), false)); if(best >= need) break; } if(best >= need) vc.push(x); }
-  const nv = clusterCount(vc, 3);
-  return {h:nh, v:nv, strong: nh >= 2 && nv >= 8, weak: nh >= 1 && nv >= 4};
+  return false;
+}
+// PDF：格子裡的字（要寫的國字、要寫注音的國字、PDF 裡藏的答案）一律換成「□」，唸成「方格」，不會洩漏答案或字音
+function maskZoneText(kids, g, items){
+  if(!items || !items.length) return 0;
+  let n = 0;
+  for(const b of kids){
+    const pad = 4, inb = items.filter(it => { const cx = it.x + it.w/2, cy = it.y + it.h/2; return cx >= b.x - pad && cx <= b.x + b.w + pad && cy >= b.y - pad && cy <= b.y + b.h + pad; });
+    if(!inb.length) continue;
+    const pieces = [];
+    inb.forEach(it => {
+      const cs = Array.from(it.str), vert = it.h > it.w*1.3 && cs.length > 1;
+      cs.forEach((c, t) => {
+        const p = vert ? {x:it.x, y:it.y + it.h*t/cs.length, w:it.w, h:it.h/cs.length} : {x:it.x + it.w*t/cs.length, y:it.y, w:it.w/cs.length, h:it.h};
+        const boxed = c.trim() && inCell(p.x + p.w/2, p.y + p.h/2, g);
+        pieces.push(boxed ? {str:'□', x:p.x, y:p.y, w:p.w, h:p.h, boxed:true} : {str:c, x:p.x, y:p.y, w:p.w, h:p.h, fs:it.fs});
+      });
+    });
+    const nb = pieces.filter(q => q.boxed).length;
+    if(!nb) continue;
+    const clean = dropRuby(pieces.filter(q => q.boxed || !ZY_ONLY.test(q.str)));
+    const t = orderAndMerge(itemsToLines(clean, b.dir || 'h'), b.dir || 'h').map(x => x.text).join('').replace(/□(\s*□)+/g, '□');
+    if(/□/.test(t)){ b.text = t; b.orig = t; b.masked = nb; n += nb; }
+  }
+  return n;
 }
 const GRID_WORDS = /國字|注音|字音|字形|拼音|寫字/;
 async function v21Zones(blocks, opt){
@@ -2596,7 +2644,7 @@ async function v21Zones(blocks, opt){
     const nameHit = h.sec === 'zhuyin' || h.sec === 'shape' || GRID_WORDS.test(h.orig || h.text);
     if(!nameHit && !h.gridHint) continue;
     const g = M ? gridScore(M, R0) : {strong:false, weak:false};
-    const isGrid = (g.strong && nameHit) || (h.gridHint && (g.weak || nameHit));
+    const isGrid = (g.strong && nameHit) || (h.gridHint && g.weak);   // AI 說是格子，程式也要看到一些格線才算
     if(!isGrid) continue;
     const pad = 6, R = {x:Math.max(0, R0.x - pad), y:Math.max(0, R0.y - pad), w:R0.w + 2*pad, h:R0.h + 2*pad};
     aiLog('▦ 第' + (h.headNo || '?') + '大題是格線大題（橫線 ' + g.h + '、直線 ' + g.v + (h.gridHint ? '、AI 也標記' : '') + '），改用整區辨識');
@@ -2618,6 +2666,10 @@ async function v21Zones(blocks, opt){
       }catch(e){ aiLog('格線大題整區辨識失敗，保留原本結果：' + e.message); }
     }
     h.zone = R;
+    if(!opt.saved && opt.items){
+      const n = maskZoneText(kids, g.segs || gridSegs(M, R), opt.items);
+      if(n) aiLog('🔒 第' + (h.headNo || '?') + '大題：格子裡的 ' + n + ' 個字改唸「方格」（不洩漏答案和字音）');
+    }
   }
 }
 async function v21Refine(blocks, opt){
@@ -2821,6 +2873,7 @@ document.addEventListener('pointerdown', unlockSpeech, {once:true, capture:true}
 function toSpeech(t){
   t = cleanText(t);
   t = t.replace(/〓+/g, '');
+  t = t.replace(/[□☐▢]+/g, '，方格，');
   if(S.skipZy) t = t.replace(/[ㄅ-ㄯㆠ-ㆿˊˇˋ˙]+/g, '');
   t = t.replace(/[①-⑳]/g, c => '，選項' + (c.charCodeAt(0) - 0x245F) + '，');
   if(S.mathWords){
