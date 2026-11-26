@@ -73,7 +73,7 @@ const unlocked=l=>RESIDENTS.filter(x=>l>=x.need);
 /* ================= 語音 ================= */
 const AU={rate:LS.get('rate',1),token:0,cur:null,over:{},missing:new Set()};
 const symKey=c=>'sym_'+hex(c), sylKey=zy=>'syl_'+hex(zy), toneKey=t=>'tone_'+t, picKey=ch=>'pic_'+hex(ch);
-const AV='2';
+const AV='3';
 function aurl(k){return AU.over[k]||('audio/'+k+'.mp3?v='+AV)}
 /* 音檔預先載入（存在記憶體）＋單一播放器，平板上播放較穩定 */
 const ACACHE=new Map();
@@ -462,7 +462,7 @@ function showQ(){
     <div class="speed">🐢<input type="range" id="rate" min="0.6" max="1.3" step="0.1" value="${AU.rate}">🐇</div></div>
    <div class="noteRow"><div class="stepnote" id="qNote"></div><div class="msg" id="qMsg"></div></div>
    <div class="work3">
-    <div class="ctlL"><button class="big y" id="qPlay">🔊 播放題目</button>
+    <div class="ctlL"><button class="big y" id="qPlay">🔊 再聽一次題目</button>
      ${sc.slow?'<button class="big g" id="qSlow">🐢 慢速拼讀</button>':''}
      ${sc.hintBtn?'<button class="big" id="qHint">💡 提示</button>':''}
      <button class="big" id="qMine">👂 拼讀我的答案</button></div>
