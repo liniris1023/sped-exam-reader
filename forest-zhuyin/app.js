@@ -198,7 +198,7 @@ function goFree(){SLOT_OFF=470;
   $$('#fMode button').forEach(b=>{b.classList.toggle('on',b.dataset.m===FREE.mode);b.onclick=()=>{FREE.mode=b.dataset.m;goFree()}});
   $('#rate').oninput=e=>{AU.rate=+e.target.value;LS.set('rate',AU.rate)};
   view.querySelectorAll('.key[data-s]').forEach(k=>k.onclick=()=>freeKey(k.dataset.s,k));
-  view.querySelectorAll('.key[data-t]').forEach(k=>k.onclick=()=>{FREE.tone=+k.dataset.t;say(toneKey(FREE.tone));freeRender()});
+  view.querySelectorAll('.key[data-t]').forEach(k=>k.onclick=()=>{FREE.tone=+k.dataset.t;freeRender();freeAuto(()=>say(toneKey(FREE.tone)))});
   $('#fSlow').onclick=()=>freePlay(true);$('#fFull').onclick=()=>freePlay(false);$('#fRep').onclick=()=>FREE.last?seq(FREE.last):freePlay(false);
   $('#fBack').onclick=()=>{const filled=FREE.slots.map((s,i)=>s?i:-1).filter(i=>i>=0);if(FREE.tone){FREE.tone=0}else if(filled.length){const k=filled.pop();FREE.slots[k]='';FREE.act=FREE.mode==='free'?k:k}freeRender()};
   $('#fClr').onclick=()=>{stopAudio();freeReset();freeRender()};
@@ -214,7 +214,12 @@ function freeKey(s,el){
   if(FREE.mode==='2'&&k>=FREE.slots.length){$('#fMsg').textContent='格子滿了，點格子可以修改喔';$('#fMsg').className='msg warn';say(symKey(s));return}
   FREE.slots[k]=s;
   if(FREE.mode==='2'){const nx=FREE.slots.findIndex(x=>!x);FREE.act=nx<0?FREE.slots.length:nx}
-  say(symKey(s));freeRender();
+  freeRender();freeAuto(()=>say(symKey(s)));
+}
+function freeAuto(otherwise){
+  const p=freeParse();const need=FREE.mode==='free'?1:FREE.slots.length;
+  const ok=p&&FREE.tone&&FREE.slots.filter(Boolean).length>=need&&BASE[p.i+p.m+p.f]&&BASE[p.i+p.m+p.f].includes(FREE.tone);
+  if(ok)freePlay(true);else otherwise();
 }
 function freeParse(){
   let i='',m='',f='';
@@ -453,9 +458,10 @@ function playMine(){
   const Q=R.Q;const items=[];const els=()=>$$('#qVz .slot');
   Q.ans.forEach((s,k)=>{if(s)items.push({k:symKey(s),on:()=>{clearLit();els()[k]&&els()[k].classList.add('lit')},gap:320})});
   const p=curParse();
+  if(p&&Q.tone&&Q.tone!==1&&BYZY[zyOf(p.i,p.m,p.f,Q.tone)])items.push({k:toneKey(Q.tone),on:()=>{clearLit();const t=$('#qVz [data-tone]');t&&t.classList.add('lit')},gap:320});
   if(p&&Q.tone){const zy=zyOf(p.i,p.m,p.f,Q.tone);if(BYZY[zy])items.push({k:sylKey(zy),on:()=>{clearLit();els().forEach(e=>e.classList.add('lit'))},off:clearLit});
     else{$('#qMsg').className='msg warn';$('#qMsg').textContent='這樣拼沒有這個音喔，再想想看'}}
-  if(items.length)seq(items);
+  return items.length?seq(items):Promise.resolve(true);
 }
 function needTone(){const Q=R.Q;return !Q.toneGiven}
 function stepNow(){
@@ -514,24 +520,30 @@ function inputSym(s,el){
   const Q=R.Q;if(Q.done||(el&&el.classList.contains('wrongx'))){say(symKey(s));return}
   if(Q.input==='opts'){
     const k=Q.act,right=Q.comps[k][1];
-    if(s===right){Q.ans[k]=s;Q.opts=null;say(symKey(s));Q.act=Q.ans.findIndex((a,i)=>!a&&!Q.given[i]);renderQ();
-      const st=stepNow();if(st==='done')setTimeout(()=>submit(),700);else if(st==='t')setTimeout(()=>say('ins_pick_t'),900)}
+    if(s===right){Q.ans[k]=s;Q.opts=null;Q.act=Q.ans.findIndex((a,i)=>!a&&!Q.given[i]);renderQ();
+      const st=stepNow();if(st==='done'){Q.lock=true;playMine().then(()=>{Q.lock=false;submit()})}else{say(symKey(s));if(st==='t')setTimeout(()=>say('ins_pick_t'),900)}}
     else{wrongPick(k+s,s,Q.comps[k][0])}
     return;
   }
   if(Q.flex){const k=Q.act>=0&&Q.act<3?Q.act:Q.ans.findIndex(a=>!a);if(k<0){say(symKey(s));return}Q.ans[k]=s;Q.act=Q.ans.findIndex(a=>!a);}
   else{let k=Q.act;if(k<0||Q.given[k]){k=Q.ans.findIndex((a,i)=>!a&&!Q.given[i])}if(k<0){say(symKey(s));$('#qMsg').textContent='點格子可以修改喔';return}
     Q.ans[k]=s;Q.act=Q.ans.findIndex((a,i)=>!a&&!Q.given[i]);}
-  say(symKey(s));renderQ();
+  renderQ();autoSpell(()=>say(symKey(s)));
+}
+/* 學生拼完全部注音（含聲調）後，自動拼讀一次 */
+function autoSpell(otherwise){
+  const Q=R.Q;
+  if(Q.flex){const p=curParse();if(Q.tone&&p&&Q.ans.some(Boolean)&&BYZY[zyOf(p.i,p.m,p.f,Q.tone)])playMine();else otherwise();return}
+  if(stepNow()==='done'&&Q.ans.every(Boolean)&&Q.tone)playMine();else otherwise();
 }
 function inputTone(t,el){
   const Q=R.Q;if(Q.done||Q.toneGiven||(el&&el.classList.contains('wrongx'))){say(toneKey(t));return}
   if(Q.input==='opts'){
-    if(t===Q.b.t){Q.tone=t;say(toneKey(t));renderQ();setTimeout(()=>submit(),700)}
+    if(t===Q.b.t){Q.tone=t;renderQ();Q.lock=true;playMine().then(()=>{Q.lock=false;submit()})}
     else wrongPick('t'+t,null,'t',t);
     return;
   }
-  Q.tone=t;say(toneKey(t));renderQ();
+  Q.tone=t;renderQ();autoSpell(()=>say(toneKey(t)));
 }
 function wrongPick(key,s,c,t){
   const Q=R.Q;Q.first=false;Q.elim[key]=true;Q.wrongs.push(c==='t'?'聲調':s);
@@ -539,7 +551,7 @@ function wrongPick(key,s,c,t){
   renderQ();seq([c==='t'?toneKey(t):symKey(s),250,pick(['try1','try2']),200,...targetKeys()]);
 }
 function submit(){
-  const Q=R.Q;if(Q.done)return;
+  const Q=R.Q;if(Q.done||Q.lock)return;
   const p=curParse();
   if(!p||(!Q.tone)){ $('#qMsg').className='msg warn';$('#qMsg').textContent=!Q.tone?'還沒選聲調喔':'還沒拼完喔';return}
   const ok=p.i===Q.b.i&&p.m===Q.b.m&&p.f===Q.b.f&&Q.tone===Q.b.t;
