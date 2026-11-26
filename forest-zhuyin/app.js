@@ -368,9 +368,9 @@ function showSeed(){
   setTimeout(()=>seq(R.idx===0?['ins_find',250,symKey(sym)]:[symKey(sym)]),250);
 }
 async function seedPick(x,el){
-  const Q=R.Q;if(Q.done)return;
+  const Q=R.Q;if(Q.done||el.classList.contains('wrongx')){say(symKey(x));return}
   if(x!==Q.sym){Q.first=false;Q.wrongs.push(x);el.classList.add('wrongx');$('#qMsg').className='msg warn';$('#qMsg').textContent='沒關係，再聽一次！';
-    seq([pick(['try1','try2']),150,symKey(Q.sym)]);return}
+    seq([symKey(x),250,pick(['try1','try2']),150,symKey(Q.sym)]);return}
   Q.done=true;const c=$('#seedCard');c.textContent=x;c.className='seedcard ok '+cat(x);
   $$('#qInput .key').forEach(k=>{if(k!==el)k.classList.add('off')});el.classList.add('sel');
   $('#qMsg').className='msg';$('#qMsg').textContent=pick(['答對了！🍃','好棒喔！🍃','太厲害了！🍃']);
@@ -379,7 +379,7 @@ async function seedPick(x,el){
   if(Q.first)R.streak++;else R.streak=0;let fruit=false;if(R.streak>0&&R.streak%3===0){addReward('fruits',1);fruit=true}
   $('.ctlR').innerHTML=`<button class="big g" id="qNext">${R.idx+1<R.items.length?'➡️ 下一題':'🏁 看成果'}</button>`;
   $('#qNext').onclick=()=>{stopAudio();R.idx++;R.idx<R.items.length?showQ():finishRound()};
-  await seq([pick(['good1','good2','good3']),150,symKey(Q.sym)]);
+  await seq([symKey(Q.sym),200,pick(['good1','good2','good3']),150,symKey(Q.sym)]);
   if(fruit){popCard(`<span style="font-size:80px">${pick(FRUITS)}</span>連續答對三題！`,1600);await say('fruit')}
   if(unlock){const r=rw();const nu=unlocked(r.leaves).slice(-1)[0];popCard(`<img src="${nu.img}" alt="">${nu.name} 搬來森林了！`,2000);await say('unlock')}
 }
@@ -511,7 +511,7 @@ function makeOptions(right,c,cross){
   return shuffle([right,...d]);
 }
 function inputSym(s,el){
-  const Q=R.Q;if(Q.done)return;
+  const Q=R.Q;if(Q.done||(el&&el.classList.contains('wrongx'))){say(symKey(s));return}
   if(Q.input==='opts'){
     const k=Q.act,right=Q.comps[k][1];
     if(s===right){Q.ans[k]=s;Q.opts=null;say(symKey(s));Q.act=Q.ans.findIndex((a,i)=>!a&&!Q.given[i]);renderQ();
@@ -524,8 +524,8 @@ function inputSym(s,el){
     Q.ans[k]=s;Q.act=Q.ans.findIndex((a,i)=>!a&&!Q.given[i]);}
   say(symKey(s));renderQ();
 }
-function inputTone(t){
-  const Q=R.Q;if(Q.done||Q.toneGiven)return;
+function inputTone(t,el){
+  const Q=R.Q;if(Q.done||Q.toneGiven||(el&&el.classList.contains('wrongx'))){say(toneKey(t));return}
   if(Q.input==='opts'){
     if(t===Q.b.t){Q.tone=t;say(toneKey(t));renderQ();setTimeout(()=>submit(),700)}
     else wrongPick('t'+t,null,'t',t);
@@ -536,7 +536,7 @@ function inputTone(t){
 function wrongPick(key,s,c,t){
   const Q=R.Q;Q.first=false;Q.elim[key]=true;Q.wrongs.push(c==='t'?'聲調':s);
   $('#qMsg').className='msg warn';$('#qMsg').textContent='沒關係，再聽一次！';
-  renderQ();seq([pick(['try1','try2']),200,...targetKeys()]);
+  renderQ();seq([c==='t'?toneKey(t):symKey(s),250,pick(['try1','try2']),200,...targetKeys()]);
 }
 function submit(){
   const Q=R.Q;if(Q.done)return;
@@ -762,8 +762,21 @@ function tTask(){
 function showTaskQR(id){
   const t=getTasks().find(x=>x.id===id);if(!t)return;const url=taskURL(t);
   modal(`<div style="text-align:center"><div class="sign">📱 ${esc(t.name)}</div><p style="font-size:20px">給：${t.students.map(esc).join('、')}<br>學生用平板掃描，任務就會出現在學生端</p>
-   <div class="taskqr">${qrSVG(url,420)}</div><div class="center"><button class="sbtn" id="cpUrl">複製任務連結</button><button class="big g" onclick="closeModal()">關閉</button></div></div>`);
+   <div class="taskqr">${qrSVG(url,420)}</div><div class="center"><button class="big y" id="dlQR">⬇ 下載 QR 圖片</button><button class="sbtn" id="cpUrl">複製任務連結</button><button class="big g" onclick="closeModal()">關閉</button></div></div>`);
+  $('#dlQR').onclick=()=>downloadTaskQR(t,url);
   $('#cpUrl').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(url).then(()=>alert('已複製'))};
+}
+function downloadTaskQR(t,url){
+  const q=qrcode(0,'L');q.addData(url);q.make();const n=q.getModuleCount();
+  const cell=Math.max(6,Math.floor(720/(n+8))),qs=cell*(n+8),W=Math.max(qs,760),H=qs+230;
+  const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+  g.fillStyle='#fffaf0';g.fillRect(0,0,W,H);
+  g.fillStyle='#6d4826';g.font='bold 44px WK, "Microsoft JhengHei", sans-serif';g.textAlign='center';g.fillText('📮 '+t.name,W/2,64);
+  g.font='30px WK, "Microsoft JhengHei", sans-serif';g.fillStyle='#3b3227';g.fillText('給：'+t.students.join('、')+'　'+LV_NAMES[t.level]+'・'+Object.values(t.items)[0].length+' 題',W/2,112);
+  const ox=(W-qs)/2,oy=140;g.fillStyle='#fff';g.fillRect(ox,oy,qs,qs);g.fillStyle='#000';
+  for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))g.fillRect(ox+(k+4)*cell,oy+(r+4)*cell,cell,cell);
+  g.fillStyle='#8a7b66';g.font='24px WK, "Microsoft JhengHei", sans-serif';g.fillText('森林注音拼拼樂・用平板掃描，任務就會出現在學生端',W/2,oy+qs+50);
+  c.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=(t.name.replace(/[\\/:*?"<>|]/g,'_'))+'_任務QR.png';document.body.appendChild(a);a.click();a.remove()},'image/png');
 }
 function pct(a,b){return b?Math.round(a/b*100)+'%':'—'}
 function tRec(){
