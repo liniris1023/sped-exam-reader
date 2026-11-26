@@ -43,7 +43,8 @@ const DEFCFG=()=>({inis:INI.slice(),noIni:true,types:[2],meds:MED.slice(),fins:F
 let CFG=Object.assign(DEFCFG(),LS.get('cfg',{}));
 ['low','mid','high'].forEach(l=>{CFG.scaf[l]=Object.assign({...PRESET[l]},(CFG.scaf||{})[l]||{})});
 const saveCfg=()=>LS.set('cfg',CFG);
-let STUDENTS=LS.get('students',['宣軒','粲鈞','登輝']);
+let STUDENTS=LS.get('students',['宣軒','粲鈞','登輝','測試者']);
+if(!LS.get('addTester',false)){if(!STUDENTS.includes('測試者'))STUDENTS.push('測試者');LS.set('students',STUDENTS);LS.set('addTester',true)}
 let ME=null; // 目前學生
 let FIXED=LS.get('fixed',null); // 老師固定題單 {level, items:[{zy,mode}]}
 const SCAF_NAMES={pic:'圖片提示',partial:'部分注音提示',four:'四個注音選項',catkb:'分類注音鍵盤',fullkb:'完整注音鍵盤',giveTone:'直接提供聲調',toneHint:'聲調選項提示（只出現存在的聲調）',slow:'慢速拼讀按鈕',hintBtn:'按鍵式提示',errPos:'錯誤位置提示',review:'錯題複習',showSlots:'顯示定位格數量'};
