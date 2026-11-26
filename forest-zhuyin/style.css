@@ -174,3 +174,18 @@ input[type=text],input[type=number],select{font-family:inherit;font-size:22px;pa
   .slot{width:92px;height:92px;font-size:68px}
   .key{min-width:56px;min-height:56px;font-size:36px}
 }
+
+.work{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;margin-top:6px}
+.work .stage{flex-wrap:nowrap;align-items:flex-start}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ctl .big{white-space:nowrap}
+.slot{width:100px;height:100px;font-size:76px}
+.vzwrap{min-width:180px;padding:12px 16px}
+.ctl{min-width:210px}
+.work .kb .key:not(.t){min-width:58px;min-height:58px;font-size:36px}
+.work .picbox{width:170px;height:170px}.work .picbox img{max-width:140px;max-height:140px}
+.key.t svg{margin-bottom:2px}
+.dot{height:40px;display:flex;justify-content:center}
+.tonebox{width:56px;min-height:100px}
+@media (max-width:1000px){.work{grid-template-columns:1fr}.work .stage{flex-wrap:wrap}}
+@media (max-width:640px){.slot{width:92px;height:92px;font-size:68px}}

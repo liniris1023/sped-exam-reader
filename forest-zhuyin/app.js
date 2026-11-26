@@ -14,6 +14,11 @@ const INI_ROWS=['ㄅㄆㄇㄈ','ㄉㄊㄋㄌ','ㄍㄎㄏ','ㄐㄑㄒ','ㄓㄔㄕ
 const TM={1:'',2:'ˊ',3:'ˇ',4:'ˋ',5:'˙'};
 const TNAME={1:'一聲',2:'二聲',3:'三聲',4:'四聲',5:'輕聲'};
 const TSHOW={1:'ˉ',2:'ˊ',3:'ˇ',4:'ˋ',5:'˙'};
+function toneSVG(t,sz=60,col='#b2306b'){const w=sz,h=sz,sw=Math.max(4,sz/9);
+  const p={1:`<line x1="${w*.15}" y1="${h*.5}" x2="${w*.85}" y2="${h*.5}"/>`,2:`<line x1="${w*.25}" y1="${h*.8}" x2="${w*.75}" y2="${h*.2}"/>`,
+   3:`<polyline fill="none" points="${w*.22},${h*.25} ${w*.5},${h*.78} ${w*.78},${h*.25}"/>`,4:`<line x1="${w*.25}" y1="${h*.2}" x2="${w*.75}" y2="${h*.8}"/>`,
+   5:`<circle cx="${w/2}" cy="${h/2}" r="${sz/8}" fill="${col}" stroke="none"/>`}[t];
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`}
 const CATN={i:'聲母',m:'介音',f:'韻母',t:'聲調'};
 const cat=c=>INI.includes(c)?'i':MED.includes(c)?'m':FIN.includes(c)?'f':'';
 const hex=s=>[...s].map(c=>c.codePointAt(0).toString(16).padStart(4,'0')).join('');
@@ -114,7 +119,7 @@ function modal(html){$('#modal').innerHTML=`<div class="panel">${html}</div>`;$(
 function closeModal(){$('#modal').classList.add('hide');$('#modal').innerHTML=''}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
 function keyHTML(c,extra=''){const k=cat(c);return `<button class="key ${k} ${extra}" data-s="${c}">${c}</button>`}
-function toneKeyHTML(t,extra=''){return `<button class="key t ${extra}" data-t="${t}">${TSHOW[t]}<small>${TNAME[t]}</small></button>`}
+function toneKeyHTML(t,extra=''){return `<button class="key t ${extra}" data-t="${t}">${toneSVG(t,34)}<small>${TNAME[t]}</small></button>`}
 function fullKeyboard(opts={}){
   const row=(lab,arr,cls)=>`<div class="kbrow"><div class="lab">${lab}</div>${arr.map(c=>keyHTML(c,cls&&cls(c)||'')).join('')}</div>`;
   let h='<div class="kb">';
@@ -125,12 +130,13 @@ function fullKeyboard(opts={}){
   return h+'</div>';
 }
 /* 直式注音：slots=[{s,c,cls,idx}], tone */
-function vzHTML(slots,tone,o={}){
-  const dot=tone===5?`<div class="dot ${o.toneCls||''}" data-tone="1">˙</div>`:'';
+let SLOTH=106;
+function vzHTML(slots,tone,o={}){SLOTH=window.innerWidth<640?98:106;
+  const dot=tone===5?`<div class="dot ${o.toneCls||''}" data-tone="1">${toneSVG(5,40)}</div>`:'';
   const col=slots.map((x,k)=>`<div class="slot ${x.c||''} ${x.s?'fill':''} ${x.cls||''}" data-idx="${k}">${x.s||''}${o.tags&&!x.s&&x.c?`<span class="tag">${CATN[x.c]}</span>`:''}</div>`).join('');
   let tn='';
-  if(tone&&tone!==1&&tone!==5){tn=`<div class="tonebox ${o.toneCls||''}" data-tone="1" style="margin-top:${(slots.length-1)*118}px">${TM[tone]}</div>`}
-  else if(o.toneEmpty){tn=`<div class="tonebox empty" data-tone="1" style="margin-top:${Math.max(0,slots.length-1)*118}px">調</div>`}
+  if(tone&&tone!==1&&tone!==5){tn=`<div class="tonebox ${o.toneCls||''}" data-tone="1" style="margin-top:${(slots.length-1)*SLOTH}px">${toneSVG(tone,52)}</div>`}
+  else if(o.toneEmpty){tn=`<div class="tonebox empty" data-tone="1" style="margin-top:${Math.max(0,slots.length-1)*SLOTH}px">調</div>`}
   else tn=`<div class="tonebox"></div>`;
   return `<div class="vz"><div class="col">${dot}${col}</div><div class="tn">${tn}</div></div>`;
 }
@@ -177,11 +183,11 @@ function goFree(){
    <div class="row" style="justify-content:space-between"><div class="seg" id="fMode"><button data-m="2">二拼</button><button data-m="3">三拼</button><button data-m="free">自由拼音</button></div>
    <div class="speed">🐢<input type="range" id="rate" min="0.6" max="1.3" step="0.1" value="${AU.rate}">🐇</div></div>
    <div class="msg" id="fMsg"></div>
-   <div class="stage"><div class="vzwrap" id="fVz"></div>
+   <div class="work"><div class="stage"><div class="vzwrap" id="fVz"></div>
      <div class="ctl"><button class="big g" id="fSlow">🐢 慢速拼讀</button><button class="big y" id="fFull">🔊 完整拼讀</button><button class="big" id="fRep">🔁 重複播放</button>
-     <div class="row"><button class="big" id="fBack" style="flex:1">⌫ 退格</button><button class="big" id="fClr" style="flex:1">🧹 清除</button></div>
+     <div class="row2"><button class="big" id="fBack">⌫ 退格</button><button class="big" id="fClr">🧹 清除</button></div>
      <button class="big w" id="fRe">🌱 重新拼音</button><div class="example" id="fEx"></div></div></div>
-   <div style="margin-top:14px">${fullKeyboard({tones:[1,2,3,4,5]})}</div></div>`;
+   <div>${fullKeyboard({tones:[1,2,3,4,5]})}</div></div></div>`;
   $$('#fMode button').forEach(b=>{b.classList.toggle('on',b.dataset.m===FREE.mode);b.onclick=()=>{FREE.mode=b.dataset.m;goFree()}});
   $('#rate').oninput=e=>{AU.rate=+e.target.value;LS.set('rate',AU.rate)};
   view.querySelectorAll('.key[data-s]').forEach(k=>k.onclick=()=>freeKey(k.dataset.s,k));
@@ -323,17 +329,15 @@ function showQ(){
    <div class="qhead"><span class="sign" style="font-size:22px;padding:6px 16px">${R.isReview?'錯題複習':LV_NAMES[R.level]}</span><div class="prog"><i style="width:${pct}%"></i></div><b style="font-size:26px">第 ${R.idx+1} / ${R.items.length} 題</b>
     <div class="speed">🐢<input type="range" id="rate" min="0.6" max="1.3" step="0.1" value="${AU.rate}">🐇</div></div>
    <div class="stepnote" id="qNote"></div>
-   <div class="stage">
-    ${showPic&&pp?`<div class="picbox"><img src="pic/w_${pp.ch}.webp" alt=""><div class="ch">${it.mode==='pic'?'':''}</div></div>`:''}
+   <div class="work"><div class="stage">
     <div class="vzwrap" id="qVz"></div>
     <div class="ctl"><button class="big y" id="qPlay">🔊 播放題目</button>
      ${sc.slow?'<button class="big g" id="qSlow">🐢 慢速拼讀</button>':''}
      ${sc.hintBtn?'<button class="big" id="qHint">💡 提示</button>':''}
      <button class="big" id="qMine">👂 拼讀我的答案</button>
-     ${Q.input!=='opts'?'<div class="row"><button class="big" id="qBack" style="flex:1">⌫ 退格</button><button class="big" id="qClr" style="flex:1">🧹 重來</button></div>':''}
+     ${Q.input!=='opts'?'<div class="row2"><button class="big" id="qBack">⌫ 退格</button><button class="big" id="qClr">🧹 重來</button></div>':''}
      <button class="big g" id="qOk">✅ 確定答案</button></div></div>
-   <div class="msg" id="qMsg"></div>
-   <div id="qInput" style="margin-top:8px"></div></div>`;
+   <div><div class="center" id="qPicSlot">${showPic&&pp?`<div class="picbox"><img src="pic/w_${pp.ch}.webp" alt=""></div>`:''}</div><div class="msg" id="qMsg"></div><div id="qInput"></div></div></div></div>`;
   $('#rate').oninput=e=>{AU.rate=+e.target.value;LS.set('rate',AU.rate)};
   $('#qPlay').onclick=()=>playTarget();
   if($('#qSlow'))$('#qSlow').onclick=()=>slowTarget(false);
@@ -513,7 +517,7 @@ function doHint(){
   const st=stepNow();const msg=$('#qMsg');msg.className='msg';
   const pp=PICBY[Q.b.zy];
   if(Q.hints===1){msg.textContent='💡 仔細聽，慢慢念';const old=AU.rate;AU.rate=.75;seq(targetKeys()).then(()=>{AU.rate=old});
-    if(pp&&!$('.picbox')){$('.stage').insertAdjacentHTML('afterbegin',`<div class="picbox"><img src="pic/w_${pp[0].ch}.webp" alt=""></div>`)}return}
+    if(pp&&!$('.picbox')){$('#qPicSlot').insertAdjacentHTML('afterbegin',`<div class="picbox"><img src="pic/w_${pp[0].ch}.webp" alt=""></div>`)}return}
   if(st==='t'){msg.textContent=`💡 是「${TNAME[Q.b.t]}」喔`;say(toneKey(Q.b.t));return}
   if(st==='any'||st==='done'){const k=Q.comps[0];msg.textContent=`💡 第一個音是「${k[1]}」`;say(symKey(k[1]));return}
   const right=Q.comps[Q.act][1];msg.textContent=`💡 聽聽看這個${CATN[st]}`;say(symKey(right));
