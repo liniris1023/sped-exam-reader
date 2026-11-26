@@ -189,3 +189,4 @@ input[type=text],input[type=number],select{font-family:inherit;font-size:22px;pa
 .tonebox{width:56px;min-height:100px}
 @media (max-width:1000px){.work{grid-template-columns:1fr}.work .stage{flex-wrap:wrap}}
 @media (max-width:640px){.slot{width:92px;height:92px;font-size:68px}}
+#who:empty{display:none}
