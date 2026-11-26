@@ -55,8 +55,8 @@ body{background:linear-gradient(var(--sky) 0 76%,var(--grass) 76% 78%,#6abf4b 78
 .lv.lock{font-size:22px;letter-spacing:1px;background:#e6e6e6;box-shadow:0 5px 0 #bbb;color:#aaa}
 .lv.done{background:#d6f5c9;box-shadow:0 5px 0 #7ccb5b}
 .lv .st{display:block;font-size:15px;letter-spacing:1px;color:#e0a800}
-.steps{display:flex;flex-direction:column;gap:10px;margin-top:6px}
-.step{display:flex;align-items:center;gap:12px;border:none;background:#fff;border-radius:22px;padding:10px 14px;font-size:calc(22px*var(--k));font-weight:900;font-family:inherit;color:var(--ink);box-shadow:0 5px 0 #0002;text-align:left}
+.steps{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.step{display:flex;align-items:center;gap:12px;border:none;background:#fff;border-radius:22px;padding:8px 14px;font-size:calc(22px*var(--k));font-weight:900;font-family:inherit;color:var(--ink);box-shadow:0 5px 0 #0002;text-align:left}
 .step .n{width:46px;height:46px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;flex:none}
 .step.ok .n{background:var(--grass-d)}
 .step .chk{margin-left:auto;font-size:17px;color:#e0a800;white-space:nowrap}
@@ -117,6 +117,34 @@ body{background:linear-gradient(var(--sky) 0 76%,var(--grass) 76% 78%,#6abf4b 78
 .mole .sign{position:absolute;left:4px;right:4px;top:34px;bottom:8px;background:#fffdf6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:calc(44px*var(--k));border:2px solid #6b431f;color:var(--ink)}
 .mole.hit .body{background:#ffcf66}.mole.bonk{animation:shake .4s}
 .mole.bonk .sign{background:#ffd6d6}
+/* 送字回家 */
+.houses{display:grid;grid-template-columns:repeat(3,1fr);gap:34px 10px;margin-top:30px}
+.house{position:relative;background:#fff;border-radius:18px 18px 14px 14px;padding:22px 4px 6px;box-shadow:0 5px 0 #0002;text-align:center;min-height:118px;border:4px solid #fff}
+.house::before{content:"";position:absolute;left:-4px;right:-4px;top:-22px;height:26px;background:#e8735a;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.house img{max-height:62px;max-width:86%}
+.house .slot{height:46px;margin:4px auto 0;width:60px;border:3px dashed #ffc58a;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:calc(36px*var(--k))}
+.house.lit{background:#fff7c2;border-color:#ffd23f}.house.lit .slot{border:3px solid var(--grass-d);background:#e3f8d8}
+.house.hover{border-color:var(--orange)}
+.tray{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:22px;min-height:96px;background:#fff8;border-radius:22px;padding:12px}
+.tile{width:82px;height:82px;border-radius:18px;background:#fffdf6;border:4px solid #ffb347;box-shadow:0 5px 0 #e08a3a;display:flex;align-items:center;justify-content:center;font-size:calc(52px*var(--k));touch-action:none;cursor:grab}
+.tile.drag{position:fixed;z-index:40;pointer-events:none;transform:scale(1.12);box-shadow:0 12px 18px #0003}
+.tile.ghost{opacity:.25}
+/* 火眼金睛 */
+.eyeq{display:flex;align-items:center;gap:12px;justify-content:center}
+.eyeq img{height:110px}
+.eyeopts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.eo{border:none;background:#fff;border-radius:22px;aspect-ratio:1;box-shadow:0 6px 0 #0002;position:relative;padding:10px}
+.eo svg{width:100%;height:100%}
+.eo.good{background:#d6f5c9}.eo.badc{background:#ffe0e0}
+.eo .why{position:absolute;left:6px;right:6px;bottom:6px;background:#ef5350;color:#fff;border-radius:12px;font-weight:900;font-size:15px;padding:3px}
+/* 泡泡 */
+.sea{position:relative;height:480px;border-radius:24px;overflow:hidden;background:linear-gradient(#bfe9ff,#7fd0f5);margin-top:10px;border:4px solid #fff;box-shadow:0 6px 0 #0002}
+.bub{position:absolute;bottom:-110px;width:96px;height:96px;border-radius:50%;border:none;padding:0;background:radial-gradient(circle at 30% 28%,#fff 0 12%,#ffffffaa 13% 22%,#e9f8ffcc 23% 60%,#9fdcf7cc 100%);box-shadow:inset 0 0 0 3px #ffffffcc,0 4px 10px #0002;font-size:calc(52px*var(--k));color:var(--ink);display:flex;align-items:center;justify-content:center;animation:rise linear forwards}
+@keyframes rise{to{transform:translateY(-640px)}}
+.bub.pop{animation:popb .35s forwards!important}@keyframes popb{to{transform:scale(1.6);opacity:0}}
+.bub.no{animation-play-state:paused;filter:hue-rotate(140deg)}
+.pq{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;border-radius:22px;padding:8px;box-shadow:0 5px 0 #0002;min-height:96px}
+.pq img{height:80px}
 /* 選擇題 */
 .opts{display:flex;flex-direction:column;gap:12px;margin-top:12px}
 .opts.pics{display:grid;grid-template-columns:repeat(3,1fr)}
@@ -195,7 +223,7 @@ body{background:linear-gradient(var(--sky) 0 76%,var(--grass) 76% 78%,#6abf4b 78
 
 <section class="screen" id="s-group">
   <div class="top"><button class="back" onclick="showMap()">←</button><div class="title kai" id="g-title" style="font-size:34px;letter-spacing:6px"></div><div class="coins"><span class="coin"></span><span class="cn">0</span></div></div>
-  <img class="petimg idle" id="g-pet" alt="" style="height:100px">
+  <img class="petimg idle" id="g-pet" alt="" style="height:80px">
   <div class="steps" id="steps"></div>
   <div id="chest"></div>
 </section>
@@ -226,12 +254,30 @@ body{background:linear-gradient(var(--sky) 0 76%,var(--grass) 76% 78%,#6abf4b 78
   <button class="btn" id="wr-done" onclick="freeDone()" style="display:none">我寫好了 ✓</button>
 </section>
 
-<!-- 2 翻牌配對 -->
-<section class="screen" id="s-mem">
-  <div class="top"><button class="back" onclick="openGroup()">←</button><div class="title">翻牌配對</div><div class="coins"><span class="coin"></span><span class="cn">0</span></div></div>
-  <div class="hud"><img class="pet-hud" alt=""><div class="prog"><i id="mem-prog"></i></div></div>
-  <div class="hint">翻兩張牌，找出「圖」和「字」一樣的一對</div>
-  <div class="mem" id="mem"></div>
+<!-- 2 送字回家 -->
+<section class="screen" id="s-home">
+  <div class="top"><button class="back" onclick="openGroup()">←</button><div class="title">送字回家</div><div class="coins"><span class="coin"></span><span class="cn">0</span></div></div>
+  <div class="hud"><img class="pet-hud" alt=""><div class="prog"><i id="home-prog"></i></div></div>
+  <div class="hint">用手指把字拖到對的圖片家</div>
+  <div class="houses" id="houses"></div>
+  <div class="tray" id="tray"></div>
+</section>
+
+<!-- 3 火眼金睛 -->
+<section class="screen" id="s-eye">
+  <div class="top"><button class="back" onclick="openGroup()">←</button><div class="title">火眼金睛</div><div class="coins"><span class="coin"></span><span class="cn">0</span></div></div>
+  <div class="hud"><img class="pet-hud" alt=""><div class="prog"><i id="eye-prog"></i></div></div>
+  <div class="card eyeq"><img id="eye-pic" alt=""><div><div class="zy" id="eye-zy"></div><button class="spk" onclick="say(eyeC)">🔊</button></div></div>
+  <div class="hint" style="margin-top:8px">👀 只有一個字是對的，找找看！</div>
+  <div class="eyeopts" id="eye-opts"></div>
+</section>
+
+<!-- 4 泡泡射擊 -->
+<section class="screen" id="s-bub">
+  <div class="top"><button class="back" onclick="bubStop();openGroup()">←</button><div class="title">泡泡射擊</div><div class="coins"><span class="coin"></span><span class="cn">0</span></div></div>
+  <div class="hud"><img class="pet-hud" alt=""><div class="prog"><i id="bub-prog"></i></div></div>
+  <div class="pq" id="bub-q"></div>
+  <div class="sea" id="sea"><button class="btn" id="bub-start" onclick="bubGo()" style="position:absolute;left:20%;width:60%;top:40%">開始 ▶</button></div>
 </section>
 
 <!-- 3 打地鼠 -->
@@ -399,7 +445,7 @@ const FREE_TRACE=new Set([..."火耳牙車舟皿馬兔虎鹿鼠長出左右魚�
 const PETS={cat:"小粉貓",dra:"小藍龍",dog:"小黃狗"};
 const STAGE_XP=[0,30,120];
 const FOODS=[{e:"🍎",n:"蘋果",p:2,x:8},{e:"🥛",n:"牛奶",p:4,x:18},{e:"🍰",n:"蛋糕",p:8,x:40}];
-const STEPS=[["看圖寫字","描 2 次、自己寫 2 次"],["翻牌配對","翻出一樣的圖和字"],["打地鼠","聽聲音，打對的字"],["綜合大挑戰","五種題目大考驗"],["念念看","錄音送給老師"]];
+const STEPS=[["看圖寫字","描 2 次、自己寫 2 次"],["送字回家","把字拖到對的圖片家"],["火眼金睛","找出寫對的字"],["泡泡射擊","戳破對的字泡泡"],["打地鼠","聽聲音，打對的字"],["綜合大挑戰","五種題目大考驗"],["念念看","錄音送給老師"]];
 const ROUNDS=["描①","描②","自己寫①","自己寫②"];
 
 /* ====== 工具 ====== */
@@ -410,7 +456,7 @@ function save(){try{const a=allData();a[who]=st;localStorage.setItem(KEY,JSON.st
 const $=id=>document.getElementById(id);
 const shuffle=a=>a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
 const pick=(arr,n,not)=>shuffle(arr.filter(x=>x!==not)).slice(0,n);
-function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));window.scrollTo(0,0);refresh()}
+function go(id){if(id!=='s-bub'&&typeof bubStop==='function')bubStop();if(id!=='s-mole'&&typeof moleStop==='function')moleStop();document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));window.scrollTo(0,0);refresh()}
 function refresh(){document.querySelectorAll('.cn').forEach(e=>e.textContent=st.coins||0);document.querySelectorAll('.pet-hud').forEach(e=>e.src=petSrc())}
 function setProg(id,i,n){$(id).style.width=(i/n*100)+'%'}
 function stage(){const x=st.pet?st.pet.xp:0;return x>=STAGE_XP[2]?2:x>=STAGE_XP[1]?1:0}
@@ -488,10 +534,10 @@ function openGroup(){
   $('chest').innerHTML=`<div class="chest">${all?(st.chest&&st.chest[group]?'🎉 寶箱已打開':'🎁 寶箱可以打開了！'):'🎁 全部關卡完成，就能打開寶箱'}</div>`;
   if(all&&!(st.chest&&st.chest[group])){st.chest=st.chest||{};st.chest[group]=1;save();setTimeout(()=>{coinRain();addCoin(10,$('chest'));fanfare();say('打開寶箱，得到十枚金幣')},400);$('chest').firstChild.textContent='🎉 寶箱打開了！得到 10 枚金幣'}
   go('s-group');}
-function startStep(i){mistakes=0;combo=0;[openChars,memStart,moleStart,qStart,rcStart][i]()}
+function startStep(i){mistakes=0;combo=0;[openChars,homeStart,eyeStart,bubStart,moleStart,qStart,rcStart][i]()}
 function finishStep(i,msg){
   const s=st.stars[group]=st.stars[group]||{};
-  const stars=i===4?3:(mistakes===0?3:mistakes<=3?2:1);
+  const stars=i===STEPS.length-1?3:(mistakes===0?3:mistakes<=3?2:1);
   if(!s[i]||stars>s[i])s[i]=stars;save();
   const bonus=stars*2;fanfare();coinRain();
   $('cele-t').textContent=['','加油！','很棒！','太厲害了！'][stars];
@@ -551,19 +597,76 @@ function freeDone(){const size=parseInt($('hw').style.width)||300;if(fdrawn<size
   if(wrR>=2){writer.showOutline();$('wr-hint').textContent='跟課本的字比一比，一樣嗎？'}
   $('wr-done').style.display='none';setTimeout(roundDone,wrR>=2?1400:0)}
 
-/* ====== 2 翻牌配對 ====== */
-let memOpen=[],memLock=false,memLeft=0;
-function memStart(){const n=chars.length;memLeft=n;memOpen=[];memLock=false;setProg('mem-prog',0,1);
-  const cards=shuffle([...chars.map(c=>({c,t:'p'})),...chars.map(c=>({c,t:'c'}))]);
-  $('mem').innerHTML=cards.map(x=>`<button class="mc" data-c="${x.c}" onclick="memTap(this)"><div class="in"><div class="f">?</div><div class="b">${x.t==='p'?`<img src="img/p_${x.c}.webp" alt="">`:`<span class="kai">${x.c}</span>`}</div></div></button>`).join('');
-  go('s-mem');say('翻兩張牌，找出一樣的');}
-function memTap(el){if(memLock||el.classList.contains('flip'))return;el.classList.add('flip');tone(700,.05);memOpen.push(el);
-  if(el.querySelector('.b span'))say(el.dataset.c);
-  if(memOpen.length<2)return;const[a,b]=memOpen;memOpen=[];
-  if(a.dataset.c===b.dataset.c&&a!==b){setTimeout(()=>{a.classList.add('got');b.classList.add('got');hit(b,1);say(a.dataset.c+'，配對成功');memLeft--;setProg('mem-prog',chars.length-memLeft,chars.length);if(!memLeft)setTimeout(()=>finishStep(1,'全部配對成功'),1000)},350)}
-  else{memLock=true;setTimeout(()=>{miss();a.classList.remove('flip');b.classList.remove('flip');memLock=false},1000)}}
+const LOOK={日:"目曰白",月:"用丹",山:"出凶",水:"永冰",火:"大八",木:"本禾未",雨:"兩而",土:"士工",石:"右古",人:"入八",大:"太犬",天:"夫大",夫:"天失",目:"日自且",耳:"且自",牙:"互可",舌:"古吉",心:"必",足:"走是",手:"毛牛",眉:"看首",身:"自射",林:"材森",森:"林",果:"東里",竹:"行什",田:"由甲申",米:"未半",衣:"表",巾:"市币",門:"鬥問",戶:"尸",刀:"力刃",弓:"己引",車:"軍東",舟:"丹",井:"并",皿:"血四",犬:"大太",牛:"午生",羊:"半",馬:"鳥",兔:"免",虎:"處",鹿:"麗",鼠:"鳥",多:"夕名",少:"小",長:"表",高:"亮京",小:"少",上:"土止",下:"卞不",左:"右在",右:"左石",出:"山",入:"人八",外:"夕",生:"牛主",虫:"中",羽:"弱",魚:"角魯",貝:"見具"};
+const SYM=new Set([..."山大米田井小門木林森天夫目日巾皿雨羊果土竹羽高出車貝"]);
+/* ====== 2 送字回家（拖拉） ====== */
+let homeLeft=0,dragEl=null,dragSrc=null,dragOff=[0,0];
+function homeStart(){homeLeft=chars.length;setProg('home-prog',0,1);
+  $('houses').innerHTML=shuffle(chars).map(c=>`<div class="house" data-c="${c}"><img src="img/p_${c}.webp" alt=""><div class="slot kai"></div></div>`).join('');
+  $('tray').innerHTML=shuffle(chars).map(c=>`<div class="tile kai" data-c="${c}">${c}</div>`).join('');
+  document.querySelectorAll('#tray .tile').forEach(t=>t.addEventListener('pointerdown',dragStart));
+  go('s-home');say('把字送回家');}
+function dragStart(e){if(dragEl)return;e.preventDefault();dragSrc=e.currentTarget;say(dragSrc.dataset.c);
+  const r=dragSrc.getBoundingClientRect();dragOff=[e.clientX-r.left,e.clientY-r.top];
+  dragEl=dragSrc.cloneNode(true);dragEl.classList.add('drag');document.body.appendChild(dragEl);dragSrc.classList.add('ghost');dragMove(e);
+  window.addEventListener('pointermove',dragMove);window.addEventListener('pointerup',dragEnd,{once:true});window.addEventListener('pointercancel',dragEnd,{once:true})}
+function houseAt(x,y){return [...document.querySelectorAll('.house')].find(h=>{const r=h.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top-22&&y<=r.bottom})}
+function dragMove(e){if(!dragEl)return;dragEl.style.left=(e.clientX-dragOff[0])+'px';dragEl.style.top=(e.clientY-dragOff[1])+'px';
+  document.querySelectorAll('.house').forEach(h=>h.classList.remove('hover'));const h=houseAt(e.clientX,e.clientY);if(h&&!h.classList.contains('lit'))h.classList.add('hover')}
+function dragEnd(e){window.removeEventListener('pointermove',dragMove);if(!dragEl)return;
+  const h=houseAt(e.clientX,e.clientY);document.querySelectorAll('.house').forEach(x=>x.classList.remove('hover'));
+  const c=dragSrc.dataset.c;dragEl.remove();dragEl=null;
+  if(h&&!h.classList.contains('lit')&&h.dataset.c===c){h.classList.add('lit');h.querySelector('.slot').textContent=c;dragSrc.remove();hit(h,1);say(c+'，回到家了');
+    homeLeft--;setProg('home-prog',chars.length-homeLeft,chars.length);if(!homeLeft)setTimeout(()=>finishStep(1,'每個字都送回家了'),900)}
+  else{dragSrc.classList.remove('ghost');if(h){miss();h.classList.add('bad');setTimeout(()=>h.classList.remove('bad'),450);say('不是這一家喔')}}
+  dragSrc=null}
 
-/* ====== 3 打地鼠 ====== */
+/* ====== 3 火眼金睛（字形辨識） ====== */
+const HCACHE={};
+function hzData(c){return HCACHE[c]||(HCACHE[c]=fetch('https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/'+encodeURIComponent(c)+'.json').then(r=>r.json()))}
+function glyph(d,{skip=-1,mirror=false}={}){const paths=d.strokes.filter((_,i)=>i!==skip).map(p=>`<path d="${p}"/>`).join('');
+  return `<svg viewBox="0 0 1024 1024"><g fill="#3a2a1a" transform="${mirror?'translate(1024,0) scale(-1,1) ':''}translate(0,900) scale(1,-1)">${paths}</g></svg>`}
+let eyeQ=[],eyeI=0,eyeC='',eyeMiss=0;
+function eyeStart(){eyeQ=shuffle([...chars,...chars]).filter((c,i,a)=>i===0||c!==a[i-1]).slice(0,Math.max(6,chars.length));eyeI=0;go('s-eye');eyeShow()}
+async function eyeShow(){eyeC=eyeQ[eyeI];eyeMiss=0;setProg('eye-prog',eyeI,eyeQ.length);
+  $('eye-pic').src=`img/p_${eyeC}.webp`;$('eye-zy').textContent=ZY[eyeC];$('eye-opts').innerHTML='<div class="hint">載入中…</div>';say(eyeC);
+  try{const d=await hzData(eyeC);const ops=[{svg:glyph(d),ok:1}];
+    const fakes=[];
+    if(d.strokes.length>=2){const k=1+Math.floor(Math.random()*(d.strokes.length-1));fakes.push({svg:glyph(d,{skip:k}),why:'少了一筆'})}
+    if(!SYM.has(eyeC))fakes.push({svg:glyph(d,{mirror:true}),why:'左右顛倒了'});
+    for(const l of shuffle([...(LOOK[eyeC]||'')])){const ld=await hzData(l).catch(()=>null);if(ld)fakes.push({svg:glyph(ld),why:`這是「${l}」`,l})}
+    if(d.strokes.length>=4&&fakes.length<3){const k=Math.floor(Math.random()*d.strokes.length);fakes.push({svg:glyph(d,{skip:k}),why:'少了一筆'})}
+    const pickF=[];const seen=new Set();for(const f of fakes){const key=f.why;if(seen.has(key)&&f.why==='少了一筆')continue;seen.add(key);pickF.push(f);if(pickF.length===3)break}
+    const all=shuffle([...ops,...pickF]);
+    $('eye-opts').innerHTML=all.map((o,i)=>`<button class="eo" data-ok="${o.ok?1:0}" data-why="${o.why||''}" onclick="eyePick(this)">${o.svg}</button>`).join('');
+  }catch(e){$('eye-opts').innerHTML='<div class="hint">字的資料載入失敗，請檢查網路</div>'}}
+function eyePick(b){if(b.disabled)return;
+  if(b.dataset.ok==='1'){b.classList.add('good');document.querySelectorAll('.eo').forEach(x=>x.disabled=true);if(!eyeMiss)hit(b,1);else{petAct('hop');ding()}say(eyeC+'，你的眼睛好厲害');
+    setTimeout(()=>{if(eyeI<eyeQ.length-1){eyeI++;eyeShow()}else{setProg('eye-prog',1,1);finishStep(2,'每個字都找對了')}},1400)}
+  else{eyeMiss++;miss();b.classList.add('badc','bad');b.disabled=true;b.insertAdjacentHTML('beforeend',`<span class="why">${b.dataset.why}</span>`);say(b.dataset.why.replace(/[「」]/g,''))}}
+
+/* ====== 4 泡泡射擊 ====== */
+let bubT='',bubHits=0,bubNeed=6,bubTimer=null,bubMode=0;
+function bubStart(){bubStop();bubHits=0;setProg('bub-prog',0,1);$('sea').querySelectorAll('.bub').forEach(b=>b.remove());$('bub-start').style.display='block';
+  $('bub-q').innerHTML='<div class="hint">戳破對的字泡泡！</div>';go('s-bub');say('準備好就按開始')}
+function bubTarget(){bubT=chars[Math.floor(Math.random()*chars.length)];bubMode=(bubMode+1)%2;
+  $('bub-q').innerHTML=(bubMode?`<img src="img/p_${bubT}.webp" alt="">`:`<div class="zy" style="font-size:calc(46px*var(--k))">${ZY[bubT]}</div>`)+`<button class="spk" onclick="say(bubT)">🔊</button>`;say(bubT)}
+function bubGo(){$('bub-start').style.display='none';bubTarget();bubSpawn(true);bubTimer=setInterval(()=>bubSpawn(),1300)}
+let bubLast=-1;
+function bubSpawn(force){const sea=$('sea');if(sea.querySelectorAll('.bub:not(.pop)').length>=6)return;
+  const hasT=[...sea.querySelectorAll('.bub:not(.pop)')].some(b=>b.dataset.c===bubT);
+  const c=(force||!hasT||Math.random()<.4)?bubT:chars[Math.floor(Math.random()*chars.length)];
+  const b=document.createElement('button');b.className='bub kai';b.dataset.c=c;b.textContent=c;
+  const W=sea.clientWidth-100;let lane;do{lane=Math.floor(Math.random()*3)}while(lane===bubLast&&Math.random()<.7);bubLast=lane;
+  b.style.left=(8+lane*(W/2.2)+Math.random()*20)+'px';b.style.animationDuration=(8+Math.random()*2.5)+'s';
+  b.onclick=()=>bubTap(b);b.addEventListener('animationend',()=>{if(!b.classList.contains('pop'))b.remove()});sea.appendChild(b)}
+function bubTap(b){if(b.classList.contains('pop'))return;
+  if(b.dataset.c===bubT){b.classList.add('pop');tone(1200,.05,'sine',.1);hit(b,1);bubHits++;setProg('bub-prog',bubHits,bubNeed);setTimeout(()=>b.remove(),400);
+    if(bubHits>=bubNeed){bubStop();setTimeout(()=>finishStep(3,`戳破 ${bubNeed} 個對的泡泡`),700);return}
+    setTimeout(bubTarget,500)}
+  else{b.classList.add('no');miss();say(b.dataset.c+'，不是這個');setTimeout(()=>{b.classList.remove('no')},600)}}
+function bubStop(){clearInterval(bubTimer);bubTimer=null}
+/* ====== 5 打地鼠 ====== */
 let moleT='',moleHits=0,moleTimer=null,moleNeed=6,moleBusy=false;
 function moleStart(){moleStop();moleHits=0;setProg('mole-prog',0,1);
   $('holes').innerHTML=Array.from({length:6},(_,i)=>`<div class="hole"><button class="mole" id="m${i}" onclick="moleTap(this)"><div class="body"></div><i class="eye" style="left:30%"></i><i class="eye" style="right:30%"></i><div class="sign kai"></div></button></div>`).join('');
@@ -578,12 +681,12 @@ function moleTick(){clearTimeout(moleTimer);
   moleBusy=false;moleTimer=setTimeout(moleTick,2600)}
 function moleTap(m){if(!m.classList.contains('up')||moleBusy)return;
   if(m.dataset.c===moleT){moleBusy=true;bonk();m.classList.add('hit');hit(m,1);moleHits++;setProg('mole-prog',moleHits,moleNeed);say(moleT+'，打中了');
-    clearTimeout(moleTimer);if(moleHits>=moleNeed){setTimeout(()=>{moleStop();finishStep(2,`打中 ${moleNeed} 隻地鼠`)},900);return}
+    clearTimeout(moleTimer);if(moleHits>=moleNeed){setTimeout(()=>{moleStop();finishStep(4,`打中 ${moleNeed} 隻地鼠`)},900);return}
     setTimeout(()=>{moleNewTarget();moleTick()},1100)}
   else{m.classList.add('bonk');miss();say(m.dataset.c+'，不是這個');setTimeout(()=>m.classList.remove('up','bonk'),500)}}
 function moleStop(){clearTimeout(moleTimer)}
 
-/* ====== 4 綜合大挑戰 ====== */
+/* ====== 6 綜合大挑戰 ====== */
 const QT=[
  {n:'看圖選字',ask:c=>`<img src="img/p_${c}.webp" alt="">`,opt:'char',speak:null},
  {n:'看字選圖',ask:c=>`<div class="big kai" style="font-size:calc(110px*var(--k))">${c}</div>`,opt:'pic',speak:c=>c},
@@ -601,10 +704,10 @@ function qShow(){qCur=qList[qI];qMiss=0;const T=QT[qCur.t],c=qCur.c;setProg('q-p
   if(T.speak)setTimeout(()=>say(T.speak(c)),300)}
 function qPick(b,x){if(b.disabled)return;
   if(x===qCur.c){b.classList.add('good');document.querySelectorAll('#q-opts .opt').forEach(o=>o.disabled=true);if(!qMiss)hit(b,1);else{petAct('hop');ding()}say(x+'，答對了');
-    setTimeout(()=>{if(qI<qList.length-1){qI++;qShow()}else{setProg('q-prog',1,1);finishStep(3,'五種題目都過關了')}},1300)}
+    setTimeout(()=>{if(qI<qList.length-1){qI++;qShow()}else{setProg('q-prog',1,1);finishStep(5,'五種題目都過關了')}},1300)}
   else{qMiss++;miss();b.classList.add('badc','bad');b.disabled=true;say('再想一想')}}
 
-/* ====== 5 念念看＋錄音 ====== */
+/* ====== 7 念念看＋錄音 ====== */
 let rcI=0,rcCur='',mr=null,chunks=[],blob=null,stream=null,recT=null,recStart=0;
 const RECS=5;
 function rcStart(){rcI=0;go('s-rec');rcShow()}
@@ -633,7 +736,7 @@ async function recSend(){if(!blob)return;const s=$('rc-send');s.disabled=true;s.
       const j=await r.json().catch(()=>({ok:r.ok}));ok=!!j.ok}catch(e){ok=false}}else ok=true;
   if(!ok){s.disabled=false;s.textContent='再送一次 ✉️';$('rc-note').textContent='傳送失敗，請檢查網路後再按一次';oops();return}
   addCoin(2,s);petAct('hop');s.textContent='老師收到了 ✓';say('老師收到了');
-  setTimeout(()=>{if(rcI<chars.length-1){rcI++;rcShow()}else{setProg('rc-prog',1,1);finishStep(4,'每個字的聲音都送給老師了')}},1300)}
+  setTimeout(()=>{if(rcI<chars.length-1){rcI++;rcShow()}else{setProg('rc-prog',1,1);finishStep(6,'每個字的聲音都送給老師了')}},1300)}
 
 /* ====== 寵物屋 ====== */
 function xpPct(){const x=st.pet.xp,s=stage();if(s===2)return 100;return Math.round((x-STAGE_XP[s])/(STAGE_XP[s+1]-STAGE_XP[s])*100)}
