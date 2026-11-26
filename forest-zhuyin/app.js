@@ -73,7 +73,8 @@ const unlocked=l=>RESIDENTS.filter(x=>l>=x.need);
 /* ================= 語音 ================= */
 const AU={rate:LS.get('rate',1),token:0,cur:null,over:{},missing:new Set()};
 const symKey=c=>'sym_'+hex(c), sylKey=zy=>'syl_'+hex(zy), toneKey=t=>'tone_'+t, picKey=ch=>'pic_'+hex(ch);
-function aurl(k){return AU.over[k]||('audio/'+k+'.mp3')}
+const AV='2';
+function aurl(k){return AU.over[k]||('audio/'+k+'.mp3?v='+AV)}
 function playOne(k){return new Promise(res=>{
   const a=new Audio(aurl(k));a.playbackRate=AU.rate;a.preservesPitch=true;AU.cur=a;let done=false;
   const fin=()=>{if(!done){done=true;res()}};
