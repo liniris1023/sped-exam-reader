@@ -240,3 +240,8 @@ input[type=text],input[type=number],select{font-family:inherit;font-size:22px;pa
 .lvcards.four .lv{font-size:28px;padding:16px 10px;min-height:230px}
 .lvcards.four .lv img{height:96px}
 .lvcards.four .lv small{font-size:19px}
+
+.hintsym{color:#cfc4ae;opacity:.75}
+.seedcard .hintsym{color:#cfc4ae}
+.tonebox.hintt{align-items:flex-start;border-style:dashed}
+.key.bad{border-color:var(--red)!important;animation:shake .4s}

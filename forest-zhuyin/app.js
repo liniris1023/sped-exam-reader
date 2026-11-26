@@ -40,7 +40,7 @@ const PRESET={
   seed:{review:true,modes:['findSym']}
 };
 const DEFCFG=()=>({inis:INI.slice(),noIni:true,types:[2],meds:MED.slice(),fins:FIN.slice(),tones:[1,2,3,4],level:'low',count:10,commonOnly:true,
-  seedSyms:[...'ㄅㄆㄇㄈ'],seedOpts:4,seedSimilar:true,
+  seedSyms:[...'ㄅㄆㄇㄈ'],seedOpts:4,seedSimilar:true,onceOnly:true,
   scaf:{low:{...PRESET.low},mid:{...PRESET.mid},high:{...PRESET.high},seed:{...PRESET.seed}}});
 let CFG=Object.assign(DEFCFG(),LS.get('cfg',{}));
 Object.keys(PRESET).forEach(l=>{CFG.scaf[l]=Object.assign({...PRESET[l]},(CFG.scaf||{})[l]||{})});
@@ -75,26 +75,41 @@ const AU={rate:LS.get('rate',1),token:0,cur:null,over:{},missing:new Set()};
 const symKey=c=>'sym_'+hex(c), sylKey=zy=>'syl_'+hex(zy), toneKey=t=>'tone_'+t, picKey=ch=>'pic_'+hex(ch);
 const AV='2';
 function aurl(k){return AU.over[k]||('audio/'+k+'.mp3?v='+AV)}
-function playOne(k){return new Promise(res=>{
-  const a=new Audio(aurl(k));a.playbackRate=AU.rate;a.preservesPitch=true;AU.cur=a;let done=false;
-  const fin=()=>{if(!done){done=true;res()}};
+/* 音檔預先載入（存在記憶體）＋單一播放器，平板上播放較穩定 */
+const ACACHE=new Map();
+function preload(keys){keys.forEach(k=>{if(!k||AU.over[k]||ACACHE.has(k))return;
+  ACACHE.set(k,fetch(aurl(k)).then(r=>{if(!r.ok)throw 0;return r.blob()}).then(b=>URL.createObjectURL(b)).catch(()=>{AU.missing.add(k);return null}))})}
+const PLAYER=new Audio();PLAYER.preload='auto';
+async function srcOf(k){if(AU.over[k])return AU.over[k];if(!ACACHE.has(k))preload([k]);return (await ACACHE.get(k))||aurl(k)}
+function playOne(k,tok){return new Promise(async res=>{
+  const url=await srcOf(k);
+  if(tok!=null&&tok!==AU.token)return res();
+  const a=PLAYER;AU.unlocking=false;let done=false,tm=null;
+  const fin=()=>{if(done)return;done=true;clearTimeout(tm);a.onended=a.onerror=a.onloadedmetadata=null;res()};
   a.onended=fin;a.onerror=()=>{AU.missing.add(k);fin()};
-  a.play().catch(fin);
-  setTimeout(fin,8000);
+  a.muted=false;a.src=url;a.playbackRate=AU.rate;a.defaultPlaybackRate=AU.rate;a.preservesPitch=true;
+  tm=setTimeout(fin,6000);
+  a.onloadedmetadata=()=>{a.playbackRate=AU.rate;if(isFinite(a.duration)){clearTimeout(tm);tm=setTimeout(fin,a.duration/AU.rate*1000+1500)}};
+  a.play().catch(()=>fin());
 })}
-function stopAudio(){AU.token++;if(AU.cur){try{AU.cur.pause()}catch(e){}}clearLit()}
+function stopAudio(){AU.token++;try{PLAYER.pause()}catch(e){}clearLit()}
 async function seq(list){
   stopAudio();const t=AU.token;
+  preload(list.map(it=>typeof it==='string'?it:it&&it.k).filter(Boolean));
   for(const it of list){
     if(t!==AU.token)return false;
     if(typeof it==='number'){await sleep(it/AU.rate);continue}
     const o=typeof it==='string'?{k:it}:it;
-    o.on&&o.on();await playOne(o.k);
+    o.on&&o.on();await playOne(o.k,t);
     if(t!==AU.token)return false;
-    o.off&&o.off();await sleep(o.gap!=null?o.gap:180);
+    o.off&&o.off();await sleep(o.gap!=null?o.gap:220);
   }
   return t===AU.token;
 }
+/* 第一次點畫面時解鎖平板音效 */
+document.addEventListener('pointerdown',function unlock(){document.removeEventListener('pointerdown',unlock,true);
+  try{AU.unlocking=true;PLAYER.muted=true;PLAYER.src=aurl('good1');PLAYER.play().then(()=>{if(AU.unlocking){PLAYER.pause()}PLAYER.muted=false}).catch(()=>{PLAYER.muted=false})}catch(e){}},true);
+preload(['good1','good2','good3','good4','try1','try2','ins_show','ins_name','ins_level','ins_find','ins_task','ins_listen','ins_pick','ins_tone','ins_pick_t','tone_1','tone_2','tone_3','tone_4','tone_5']);
 const say=(...k)=>seq(k);
 function clearLit(){$$('.lit').forEach(e=>e.classList.remove('lit'))}
 /* 教師自訂音檔（IndexedDB） */
@@ -141,10 +156,11 @@ let SLOT_OFF=470;
 function slotSize(){const s=Math.round(Math.max(66,Math.min(104,(innerHeight-SLOT_OFF)/3)));document.documentElement.style.setProperty('--s',s+'px');return s}
 function vzHTML(slots,tone,o={}){SLOTH=slotSize()+6;
   const dot=tone===5?`<div class="dot ${o.toneCls||''}" data-tone="1">${toneSVG(5,40)}</div>`:'';
-  const col=slots.map((x,k)=>`<div class="slot ${x.c||''} ${x.s?'fill':''} ${x.cls||''}" data-idx="${k}">${x.s||''}${o.tags&&!x.s&&x.c?`<span class="tag">${CATN[x.c]}</span>`:''}</div>`).join('');
+  const col=slots.map((x,k)=>`<div class="slot ${x.c||''} ${x.s?'fill':''} ${x.cls||''}" data-idx="${k}">${x.s||(x.hint?`<span class="hintsym">${x.hint}</span>`:'')}${o.tags&&!x.s&&x.c?`<span class="tag">${CATN[x.c]}</span>`:''}</div>`).join('');
   let tn='';
   if(tone&&tone!==1&&tone!==5){tn=`<div class="tonebox ${o.toneCls||''}" data-tone="1" style="margin-top:${(slots.length-1)*SLOTH}px">${toneSVG(tone,52)}</div>`}
-  else if(o.toneEmpty){tn=`<div class="tonebox empty" data-tone="1" style="margin-top:${Math.max(0,slots.length-1)*SLOTH}px">調</div>`}
+  else if(o.toneEmpty&&o.toneHint&&o.toneHint!==1&&o.toneHint!==5){tn=`<div class="tonebox empty hintt" data-tone="1" style="margin-top:${Math.max(0,slots.length-1)*SLOTH}px">${toneSVG(o.toneHint,44,'#f3b9d0')}</div>`}
+  else if(o.toneEmpty){tn=`<div class="tonebox empty" data-tone="1" style="margin-top:${Math.max(0,slots.length-1)*SLOTH}px">${o.toneHint?TNAME[o.toneHint]:'調'}</div>`}
   else tn=`<div class="tonebox"></div>`;
   return `<div class="vz"><div class="col">${dot}${col}<div class="tn" style="top:${tone===5?40+6:0}px">${tn}</div></div></div>`;
 }
@@ -359,6 +375,7 @@ function seedOptions(sym){
 function showSeed(){
   const it=R.items[R.idx],sym=it.sym;
   const Q={it,sym,seed:true,first:true,wrongs:[],hints:0,done:false,elim:{},opts:seedOptions(sym)};R.Q=Q;
+  preload(Q.opts.map(symKey));
   const pct=Math.round(R.idx/R.items.length*100);
   view.innerHTML=`<div class="panel">
    <div class="qhead"><span class="sign" style="font-size:22px;padding:6px 16px">${R.isReview?'錯題複習':R.task?'📮 '+esc(R.task.name):LV_NAMES.seed}</span><div class="prog"><i style="width:${pct}%"></i></div><b style="font-size:26px">第 ${R.idx+1} / ${R.items.length} 題</b>
@@ -375,6 +392,15 @@ function showSeed(){
 }
 async function seedPick(x,el){
   const Q=R.Q;if(Q.done||el.classList.contains('wrongx')){say(symKey(x));return}
+  if(x!==Q.sym&&CFG.onceOnly){Q.first=false;Q.done=true;Q.wrongs.push(x);el.classList.add('wrongx');
+    const c=$('#seedCard');c.textContent=Q.sym;c.className='seedcard ok '+cat(Q.sym);
+    $$('#qInput .key').forEach(k=>{if(k.dataset.s===Q.sym)k.classList.add('sel');else if(k!==el)k.classList.add('off')});
+    $('#qMsg').className='msg warn';$('#qMsg').textContent='答錯了，正確的是「'+Q.sym+'」';
+    R.log.push({zy:Q.sym,i:INI.includes(Q.sym)?Q.sym:'',m:MED.includes(Q.sym)?Q.sym:'',f:FIN.includes(Q.sym)?Q.sym:'',t:0,n:0,mode:'findSym',first:false,final:false,hints:0,wrongs:Q.wrongs.slice(),target:Q.sym});
+    R.streak=0;
+    $('.ctlR').innerHTML=`<button class="big p" id="qPrac">✏️ 練習區</button>`;
+    $('#qPrac').onclick=()=>seedPractice();
+    seq([symKey(x),300,'ins_show',250,symKey(Q.sym),400,symKey(Q.sym)]);return}
   if(x!==Q.sym){Q.first=false;Q.wrongs.push(x);el.classList.add('wrongx');$('#qMsg').className='msg warn';$('#qMsg').textContent='沒關係，再聽一次！';
     seq([symKey(x),250,pick(['try1','try2']),150,symKey(Q.sym)]);return}
   Q.done=true;const c=$('#seedCard');c.textContent=x;c.className='seedcard ok '+cat(x);
@@ -388,6 +414,22 @@ async function seedPick(x,el){
   await seq([symKey(Q.sym),200,pick(['good1','good2','good3']),150,symKey(Q.sym)]);
   if(fruit){popCard(`<span style="font-size:80px">${pick(FRUITS)}</span>連續答對三題！`,1600);await say('fruit')}
   if(unlock){const r=rw();const nu=unlocked(r.leaves).slice(-1)[0];popCard(`<img src="${nu.img}" alt="">${nu.name} 搬來森林了！`,2000);await say('unlock')}
+}
+function seedPractice(){
+  stopAudio();const Q=R.Q;Q.practice=true;Q.done=false;Q.opts=seedOptions(Q.sym);
+  const c=$('#seedCard');c.className='seedcard';c.innerHTML=`<span class="hintsym">${Q.sym}</span>`;
+  $('.noteRow .stepnote').innerHTML='✏️ <b class="t">練習區</b>　找出「'+Q.sym+'」';$('#qMsg').textContent='';
+  $('.ctlR').innerHTML='';
+  $('#qInput').innerHTML=Q.opts.map(x=>keyHTML(x)).join('');
+  $$('#qInput .key').forEach(k=>k.onclick=async()=>{const x=k.dataset.s;
+    if(Q.done){say(symKey(x));return}
+    if(x!==Q.sym){k.classList.add('wrongx');$('#qMsg').className='msg warn';$('#qMsg').textContent=`這是「${x}」，找找看「${Q.sym}」`;seq([symKey(x),250,'try2',200,symKey(Q.sym)]);return}
+    Q.done=true;c.textContent=Q.sym;c.className='seedcard ok '+cat(Q.sym);k.classList.add('sel');
+    $('#qMsg').className='msg';$('#qMsg').textContent='練習完成，你找到了！';R.log[R.log.length-1].practiced=true;
+    $('.ctlR').innerHTML=`<button class="big g" id="qNext">${R.idx+1<R.items.length?'➡️ 下一題':'🏁 看成果'}</button>`;
+    $('#qNext').onclick=()=>{stopAudio();R.idx++;R.idx<R.items.length?showQ():finishRound()};
+    await seq([symKey(Q.sym),200,pick(['good2','good4'])])});
+  say(symKey(Q.sym));
 }
 function compsOf(b){return [['i',b.i],['m',b.m],['f',b.f]].filter(x=>x[1])}
 function showQ(){
@@ -407,6 +449,7 @@ function showQ(){
     if(sc.giveTone){Q.tone=b.t;Q.toneGiven=true}
   }
   Q.input=sc.four?'opts':sc.catkb?'cat':'full';
+  preload([...targetKeys2(b,it),...comps.map(c=>symKey(c[1])),toneKey(b.t),sylKey(b.zy)]);
   SLOT_OFF=Q.input==='full'?560:500;
   Q.flex=(Q.input==='full'&&!sc.showSlots&&!Q.given.some(Boolean));
   if(Q.flex){Q.ans=['','',''];Q.given=[false,false,false]}
@@ -440,6 +483,7 @@ function showQ(){
   setTimeout(()=>{const pre=it.mode==='tone'?'ins_tone':(it.mode.startsWith('miss')&&Q.input==='opts')?'ins_pick':'ins_listen';
     seq([pre,250,...targetKeys()])},250);
 }
+function targetKeys2(b,it){const pp=PICBY[b.zy];if(it.mode==='pic'&&pp)return [picKey(pp[0].ch)];return [sylKey(b.zy)]}
 function targetKeys(){const Q=R.Q;const pp=PICBY[Q.b.zy];if(Q.it.mode==='pic'&&pp)return [picKey(pp[0].ch)];return [sylKey(Q.b.zy)]}
 function playTarget(){seq(targetKeys())}
 function slowTarget(markHint){
@@ -477,13 +521,14 @@ function renderQ(){
   const Q=R.Q,sc=R.sc;
   const st=stepNow();
   const slots=Q.ans.map((s,k)=>{const c=Q.flex?(s?cat(s):''):Q.comps[k][0];
-    return {s,c,cls:[Q.given[k]?'given':'',(k===Q.act&&!s&&!Q.done)?'act':'',Q.flex&&!s&&k>0&&!Q.ans[k-1]?'ghost':''].join(' ')}});
-  $('#qVz').innerHTML=vzHTML(slots,Q.tone||0,{toneEmpty:needTone()&&!Q.tone&&!Q.done});
+    return {s,c,hint:Q.practice?Q.comps[k][1]:'',cls:[Q.given[k]?'given':'',(k===Q.act&&!s&&!Q.done)?'act':'',Q.flex&&!s&&k>0&&!Q.ans[k-1]?'ghost':''].join(' ')}});
+  $('#qVz').innerHTML=vzHTML(slots,Q.tone||0,{toneEmpty:needTone()&&!Q.tone&&!Q.done,toneHint:Q.practice?Q.b.t:0});
   $$('#qVz .slot').forEach(el=>el.onclick=()=>{if(Q.done)return;const k=+el.dataset.idx;if(Q.given[k])return;Q.act=k;if(Q.ans[k])say(symKey(Q.ans[k]));renderQ()});
   const t=$('#qVz [data-tone]');if(t)t.onclick=()=>{if(Q.done||Q.toneGiven)return;Q.tone=0;renderQ()};
   // 提示文字
   const note=$('#qNote');
-  if(Q.done)note.innerHTML='';
+  if(Q.done)note.innerHTML=Q.practiceDone?'✏️ 練習完成！':'';
+  else if(Q.practice)note.innerHTML=`✏️ <b class="t">練習區</b>　照著淡淡的注音，${st==='t'?'選出聲調':'按出「'+(Q.comps[Q.act]||[])[1]+'」'}`;
   else if(st==='t')note.innerHTML='最後選 <b class="t">聲調</b>';
   else if(st==='any')note.innerHTML='聽一聽，自己拼出來';
   else if(st==='done')note.innerHTML='拼好了！按 <b class="t">👂 拼讀我的答案</b> 聽聽看，再按 <b class="f">✅ 確定</b>';
@@ -518,7 +563,7 @@ function makeOptions(right,c,cross){
   return shuffle([right,...d]);
 }
 function inputSym(s,el){
-  const Q=R.Q;if(Q.done||(el&&el.classList.contains('wrongx'))){say(symKey(s));return}
+  const Q=R.Q;if(Q.practice&&!Q.done)return practiceSym(s,el);if(Q.done||(el&&el.classList.contains('wrongx'))){say(symKey(s));return}
   if(Q.input==='opts'){
     const k=Q.act,right=Q.comps[k][1];
     if(s===right){Q.ans[k]=s;Q.opts=null;Q.act=Q.ans.findIndex((a,i)=>!a&&!Q.given[i]);renderQ();
@@ -538,7 +583,7 @@ function autoSpell(otherwise){
   if(stepNow()==='done'&&Q.ans.every(Boolean)&&Q.tone)playMine();else otherwise();
 }
 function inputTone(t,el){
-  const Q=R.Q;if(Q.done||Q.toneGiven||(el&&el.classList.contains('wrongx'))){say(toneKey(t));return}
+  const Q=R.Q;if(Q.practice&&!Q.done)return practiceTone(t,el);if(Q.done||Q.toneGiven||(el&&el.classList.contains('wrongx'))){say(toneKey(t));return}
   if(Q.input==='opts'){
     if(t===Q.b.t){Q.tone=t;renderQ();Q.lock=true;playMine().then(()=>{Q.lock=false;submit()})}
     else wrongPick('t'+t,null,'t',t);
@@ -548,6 +593,7 @@ function inputTone(t,el){
 }
 function wrongPick(key,s,c,t){
   const Q=R.Q;Q.first=false;Q.elim[key]=true;Q.wrongs.push(c==='t'?'聲調':s);
+  if(CFG.onceOnly){Q.done=true;renderQ();showAnswer(c==='t'?toneKey(t):symKey(s));return}
   $('#qMsg').className='msg warn';$('#qMsg').textContent='沒關係，再聽一次！';
   renderQ();seq([c==='t'?toneKey(t):symKey(s),250,pick(['try1','try2']),200,...targetKeys()]);
 }
@@ -557,13 +603,17 @@ function submit(){
   if(!p||(!Q.tone)){ $('#qMsg').className='msg warn';$('#qMsg').textContent=!Q.tone?'還沒選聲調喔':'還沒拼完喔';return}
   const ok=p.i===Q.b.i&&p.m===Q.b.m&&p.f===Q.b.f&&Q.tone===Q.b.t;
   if(ok)return correct();
-  Q.tries++;Q.first=false;
+  Q.tries++;Q.first=false;if(CFG.onceOnly)Q.tries=3;
   // 記錄錯誤符號
   const wrongPos=[];
   if(Q.flex){['i','m','f'].forEach(c=>{if(p[c]!==Q.b[c])Q.wrongs.push(p[c]||('少了'+CATN[c]))})}
   else Q.ans.forEach((s,k)=>{if(!Q.given[k]&&s!==Q.comps[k][1]){wrongPos.push(k);Q.wrongs.push(s)}});
   if(Q.tone!==Q.b.t)Q.wrongs.push('聲調');
   const msg=$('#qMsg');msg.className='msg warn';
+  if(CFG.onceOnly){Q.done=true;$('#qOk').disabled=true;const els=$$('#qVz .slot');
+    if(Q.flex){Q.ans.forEach((s,k)=>{const c=cat(s);if(s&&Q.b[c]!==s)els[k]&&els[k].classList.add('bad')})}else wrongPos.forEach(k=>els[k]&&els[k].classList.add('bad'));
+    if(Q.tone!==Q.b.t){const t=$('#qVz [data-tone]');t&&t.classList.add('lit')}
+    msg.textContent='這題答錯了';$('#qInput').innerHTML='';setTimeout(()=>showAnswer(),1300);return}
   if(Q.tries===1){msg.textContent='再聽一次，你可以的！';seq(['try1',200,...targetKeys()]);return}
   if(Q.tries===2){
     if(R.sc.errPos){
@@ -579,14 +629,14 @@ function submit(){
   // 第三次：示範正確答案
   showAnswer();
 }
-function showAnswer(){
+function showAnswer(pre){
   const Q=R.Q;Q.done=true;Q.final=false;
   Q.flex=false;Q.ans=Q.comps.map(c=>c[1]);Q.given=Q.comps.map(()=>true);Q.tone=Q.b.t;
   renderQ();$$('#qVz .slot').forEach(e=>e.classList.add('ok'));
   $('#qMsg').className='msg';$('#qMsg').textContent='沒關係，我們一起聽正確的拼音';
   logQ(false);
-  seq(['ins_show',200]).then(ok=>{if(ok)slowTarget(false)});
-  nextBtn();
+  seq([...(pre?[pre,250]:[]),'ins_show',200]).then(ok=>{if(ok)slowTarget(false)});
+  practiceBtn();
 }
 async function correct(){
   const Q=R.Q;Q.done=true;
@@ -600,6 +650,44 @@ async function correct(){
   await seq([pick(['good1','good2','good3','good4']),150,sylKey(Q.b.zy)]);
   if(fruit){popCard(`<span style="font-size:80px">${pick(FRUITS)}</span>連續答對三題！`,1600);await say('fruit')}
   if(unlock){const r=rw();const nu=unlocked(r.leaves).slice(-1)[0];popCard(`<img src="${nu.img}" alt="">${nu.name} 搬來森林了！`,2000);await say('unlock')}
+}
+function practiceBtn(){
+  $('#qOk').disabled=true;
+  $('#qInput').innerHTML=`<div class="center"><button class="big p" id="qPrac" style="min-width:340px">✏️ 到練習區，自己拼一次</button></div>`;
+  $('#qPrac').onclick=startPractice;
+}
+function startPractice(){
+  stopAudio();const Q=R.Q;
+  Q.practice=true;Q.done=false;Q.flex=false;Q.opts=null;Q.elim={};
+  Q.ans=Q.comps.map(()=>'');Q.given=Q.comps.map(()=>false);
+  Q.toneGiven=!!R.sc.giveTone;Q.tone=Q.toneGiven?Q.b.t:0;Q.act=0;
+  Q.input=R.sc.four?'opts':'cat';
+  $('#qMsg').className='msg';$('#qMsg').textContent='';
+  renderQ();slowTarget(false);
+}
+function practiceSym(s,el){
+  const Q=R.Q,k=Q.act,right=Q.comps[k]&&Q.comps[k][1];
+  if(!right){say(symKey(s));return}
+  if(s!==right){if(el&&Q.input==='opts'){Q.elim[k+s]=true;el.classList.add('wrongx')}else if(el){el.classList.add('bad');setTimeout(()=>el.classList.remove('bad'),600)}
+    $('#qMsg').className='msg warn';$('#qMsg').textContent=`這是「${s}」，找找看「${right}」`;
+    seq([symKey(s),250,'try2',200,symKey(right)]);return}
+  Q.ans[k]=s;Q.opts=null;Q.act=Q.ans.findIndex(a=>!a);$('#qMsg').textContent='';
+  if(Q.act<0&&Q.tone){renderQ();return practiceDone()}
+  renderQ();say(symKey(s));
+}
+function practiceTone(t,el){
+  const Q=R.Q;
+  if(t!==Q.b.t){if(el&&Q.input==='opts'){Q.elim['t'+t]=true;el.classList.add('wrongx')}
+    $('#qMsg').className='msg warn';$('#qMsg').textContent=`這是${TNAME[t]}，找找看${TNAME[Q.b.t]}`;
+    seq([toneKey(t),250,'try2',200,toneKey(Q.b.t)]);return}
+  Q.tone=t;renderQ();practiceDone();
+}
+async function practiceDone(){
+  const Q=R.Q;Q.done=true;Q.practiceDone=true;R.log[R.log.length-1].practiced=true;
+  renderQ();$$('#qVz .slot').forEach(e=>e.classList.add('ok'));
+  $('#qMsg').className='msg';$('#qMsg').textContent='練習完成，你拼對了！';
+  nextBtn();
+  await playMine();await say(pick(['good2','good4']));
 }
 function nextBtn(){
   $('#qInput').innerHTML=`<div class="center"><button class="big g" id="qNext" style="min-width:300px">${R.idx+1<R.items.length?'➡️ 下一題':'🏁 看成果'}</button></div>`;
@@ -628,7 +716,7 @@ function finishRound(){
   const wrongSym={};L.forEach(x=>x.wrongs.forEach(w=>wrongSym[w]=(wrongSym[w]||0)+1));
   const rec={date:new Date().toISOString(),student:ME,level:R.level,review:R.isReview,count:L.length,
     inis:[...new Set(L.map(x=>x.i).filter(Boolean))],fins:[...new Set(L.map(x=>x.m+x.f))],
-    byType:by(x=>x.n===0?'認注音':x.n===3?'三拼':'二拼'),byTone:by(x=>TNAME[x.t],L.filter(x=>x.n>0)),first,final:fin,task:R.task?R.task.name:'',hints:L.reduce((a,x)=>a+x.hints,0),
+    byType:by(x=>x.n===0?'認注音':x.n===3?'三拼':'二拼'),byTone:by(x=>TNAME[x.t],L.filter(x=>x.n>0)),first,final:fin,practiced:L.filter(x=>x.practiced).length,task:R.task?R.task.name:'',hints:L.reduce((a,x)=>a+x.hints,0),
     wrongSym,wrongList:L.filter(x=>!x.first).map(x=>x.zy)};
   const all=LS.get('records',[]);all.push(rec);LS.set('records',all);
   if(R.task&&!R.isReview){const ts=getTasks();const t=ts.find(x=>x.id===R.task.id);if(t){t.done=t.done||{};t.done[ME]=rec.date;saveTasks(ts)}}
@@ -670,7 +758,8 @@ function tSet(){
   <div class="tsec"><h3>2. 拼音題型（可多選）</h3><div class="row" id="sType">${chkRow([2,3],CFG.types,x=>x===2?'二拼':'三拼','txt')}</div><p class="hint">兩個都勾 = 二拼、三拼混合出題</p>
    <h3 style="margin-top:14px">4. 聲調範圍（可多選）</h3><div class="row" id="sTone">${chkRow([1,2,3,4,5],CFG.tones,x=>TNAME[x],'txt')}</div>
    <h3 style="margin-top:14px">7. 題目數量</h3><div class="row" id="sCnt">${[5,10,15,20].map(n=>`<button class="chk txt ${CFG.count===n?'on':''}" data-n="${n}">${n} 題</button>`).join('')}<input type="number" id="cntX" min="1" max="60" value="${CFG.count}" style="width:100px"> 題</div>
-   <div class="tog" style="margin-top:10px">只出常用生活字音節 <div class="sw ${CFG.commonOnly?'on':''}" id="swCommon"></div></div></div>
+   <div class="tog" style="margin-top:10px">只出常用生活字音節 <div class="sw ${CFG.commonOnly?'on':''}" id="swCommon"></div></div>
+   <div class="tog">每題只能作答一次（答錯直接示範正確答案）<div class="sw ${CFG.onceOnly?'on':''}" id="swOnce"></div></div></div>
   <div class="tsec"><h3>3. 介音與韻母範圍（可多選）</h3><div class="row" id="sMed">${chkRow(MED,CFG.meds)}</div><div class="row" id="sFin" style="margin-top:8px">${chkRow(FIN,CFG.fins)}</div>
    <div class="row" style="margin-top:8px"><button class="sbtn g" id="fAll">全選</button><button class="sbtn" id="fNone">全部取消</button></div><p class="hint">預設為全部適用韻母；可只勾已教過的。</p></div>
   <div class="tsec"><h3>5. 練習程度</h3><div class="row" id="sLv">${LEVELS.map(l=>`<button class="chk txt ${lv===l?'on':''}" data-l="${l}">${LV_NAMES[l]}</button>`).join('')}</div>
@@ -691,6 +780,7 @@ function tSet(){
   $('#fAll').onclick=()=>{CFG.meds=MED.slice();CFG.fins=FIN.slice();saveCfg();tSet()};$('#fNone').onclick=()=>{CFG.meds=[];CFG.fins=[];saveCfg();tSet()};
   $$('#sCnt .chk').forEach(b=>b.onclick=()=>{CFG.count=+b.dataset.n;saveCfg();tSet()});
   $('#cntX').onchange=e=>{CFG.count=Math.max(1,Math.min(60,+e.target.value||10));saveCfg();tSet()};
+  $('#swOnce').onclick=e=>{CFG.onceOnly=!CFG.onceOnly;saveCfg();e.currentTarget.classList.toggle('on')};
   $('#swCommon').onclick=e=>{CFG.commonOnly=!CFG.commonOnly;saveCfg();e.currentTarget.classList.toggle('on');poolInfo()};
   $$('#sLv .chk').forEach(b=>b.onclick=()=>{CFG.level=b.dataset.l;saveCfg();tSet()});
   $('#lvReset').onclick=()=>{CFG.scaf[lv]={...PRESET[lv]};if(lv==='seed'){CFG.seedOpts=4;CFG.seedSimilar=true}saveCfg();tSet()};
