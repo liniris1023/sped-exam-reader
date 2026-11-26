@@ -223,3 +223,20 @@ input[type=text],input[type=number],select{font-family:inherit;font-size:22px;pa
 .noteRow{display:flex;justify-content:center;align-items:center;gap:20px;flex-wrap:wrap;min-height:40px}
 .noteRow .msg{margin:0;min-height:0}
 .noteRow .stepnote{margin:0}
+/* ===== 基礎題・任務 ===== */
+.lvcards.four{grid-template-columns:repeat(4,1fr)}
+.lv.s{background:linear-gradient(#f3e3c8,#dcb98a)}
+.seedcard{width:calc(var(--s,100px)*2.1);height:calc(var(--s,100px)*2.1);border-radius:32px;background:#fffdf7;border:5px dashed #d9ccb3;font-size:calc(var(--s,100px)*1.3);display:flex;align-items:center;justify-content:center;color:#cbbfa8}
+.seedcard.ok{border-style:solid;animation:popin .35s}
+.seedcard.i{color:#1d5ea0;border-color:#9cc4ec;background:var(--blue-l)}.seedcard.m{color:#8a6400;border-color:#efd27a;background:var(--ylw-l)}.seedcard.f{color:#1e7a3c;border-color:#9fd6ae;background:var(--grn-l)}
+.seedopts .key{min-width:120px;min-height:120px;font-size:76px}
+.work3 .vzwrap .seedcard{margin:0 -40px}
+.taskbox{margin-bottom:16px;border-color:var(--yellow)}
+.tasklist{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+.taskcard{background:linear-gradient(#fff6d6,#ffe39a);border-radius:22px;padding:12px 20px;box-shadow:var(--shadow);border:3px solid var(--yellow-d);display:flex;flex-direction:column;align-items:flex-start;gap:4px;font-size:26px;min-width:240px}
+.taskcard small{font-size:18px;color:var(--muted)}.taskcard span{font-size:22px;color:var(--green-d);font-weight:700}
+.taskqr svg{width:min(420px,80vw);height:auto;background:#fff;border-radius:12px}
+@media (max-width:900px){.lvcards.four{grid-template-columns:1fr 1fr}}
+.lvcards.four .lv{font-size:28px;padding:16px 10px;min-height:230px}
+.lvcards.four .lv img{height:96px}
+.lvcards.four .lv small{font-size:19px}

@@ -36,20 +36,22 @@ const LS={get(k,d){try{const v=localStorage.getItem('fz_'+k);return v?JSON.parse
 const PRESET={
   low:{pic:true,partial:true,four:true,catkb:false,fullkb:false,giveTone:true,toneHint:true,slow:true,hintBtn:true,errPos:true,review:true,showSlots:true,modes:['listen','pic','missF','missI']},
   mid:{pic:false,partial:false,four:false,catkb:true,fullkb:false,giveTone:false,toneHint:true,slow:false,hintBtn:true,errPos:true,review:true,showSlots:true,modes:['listen','pic']},
-  high:{pic:false,partial:false,four:false,catkb:false,fullkb:true,giveTone:false,toneHint:false,slow:false,hintBtn:false,errPos:true,review:true,showSlots:false,modes:['listen']}
+  high:{pic:false,partial:false,four:false,catkb:false,fullkb:true,giveTone:false,toneHint:false,slow:false,hintBtn:false,errPos:true,review:true,showSlots:false,modes:['listen']},
+  seed:{review:true,modes:['findSym']}
 };
 const DEFCFG=()=>({inis:INI.slice(),noIni:true,types:[2],meds:MED.slice(),fins:FIN.slice(),tones:[1,2,3,4],level:'low',count:10,commonOnly:true,
-  scaf:{low:{...PRESET.low},mid:{...PRESET.mid},high:{...PRESET.high}}});
+  seedSyms:[...'ㄅㄆㄇㄈ'],seedOpts:4,seedSimilar:true,
+  scaf:{low:{...PRESET.low},mid:{...PRESET.mid},high:{...PRESET.high},seed:{...PRESET.seed}}});
 let CFG=Object.assign(DEFCFG(),LS.get('cfg',{}));
-['low','mid','high'].forEach(l=>{CFG.scaf[l]=Object.assign({...PRESET[l]},(CFG.scaf||{})[l]||{})});
+Object.keys(PRESET).forEach(l=>{CFG.scaf[l]=Object.assign({...PRESET[l]},(CFG.scaf||{})[l]||{})});
 const saveCfg=()=>LS.set('cfg',CFG);
 let STUDENTS=LS.get('students',['宣軒','粲鈞','登輝','測試者']);
 if(!LS.get('addTester',false)){if(!STUDENTS.includes('測試者'))STUDENTS.push('測試者');LS.set('students',STUDENTS);LS.set('addTester',true)}
 let ME=null; // 目前學生
-let FIXED=LS.get('fixed',null); // 老師固定題單 {level, items:[{zy,mode}]}
 const SCAF_NAMES={pic:'圖片提示',partial:'部分注音提示',four:'四個注音選項',catkb:'分類注音鍵盤',fullkb:'完整注音鍵盤',giveTone:'直接提供聲調',toneHint:'聲調選項提示（只出現存在的聲調）',slow:'慢速拼讀按鈕',hintBtn:'按鍵式提示',errPos:'錯誤位置提示',review:'錯題複習',showSlots:'顯示定位格數量'};
 const MODE_NAMES={listen:'聽音拼注音',pic:'看圖拼注音',missI:'補上缺少的聲母',missM:'補上缺少的介音',missF:'補上缺少的韻母',tone:'選擇正確聲調'};
-const LV_NAMES={low:'低階・森林小萌芽',mid:'中階・森林探險家',high:'高階・森林拼音王'};
+const LEVELS=['seed','low','mid','high'];
+const LV_NAMES={seed:'基礎・森林小種子',low:'低階・森林小萌芽',mid:'中階・森林探險家',high:'高階・森林拼音王'};
 
 /* 獎勵 / 森林居民 */
 const RESIDENTS=[
@@ -162,7 +164,7 @@ function goNames(){
 function goHome(){
   stopAudio();updateBar();setTitle('森林注音拼拼樂');$('#homeBtn').classList.remove('hide');
   const r=rw(), un=unlocked(r.leaves);
-  view.innerHTML=`<div class="home">
+  view.innerHTML=`${taskBanner()}<div class="home">
    <button class="door a" id="dFree"><img src="pic/c_rabbit.webp" alt=""><div>自由拼音<br><small>點一點，聽一聽</small></div></button>
    <button class="door b" id="dQuiz"><img src="pic/c_squirrel.webp" alt=""><div>拼音闖關<br><small>森林冒險去</small></div></button>
    <button class="door c" id="dTea"><img src="pic/c_tanuki.webp" alt=""><div>老師專區<br><small>出題・紀錄</small></div></button></div>
@@ -170,6 +172,7 @@ function goHome(){
    <div class="residents">${RESIDENTS.map(x=>un.includes(x)?`<img src="${x.img}" title="${x.name}" alt="${x.name}">`:`<div class="lock" title="再收集 ${x.need-r.leaves} 片葉子">🔒</div>`).join('')}</div>
    <div style="flex:1"></div><button class="sbtn" id="swName">換人</button></div>`;
   $('#dFree').onclick=goFree;$('#dQuiz').onclick=goLevels;$('#dTea').onclick=()=>teacherGate();$('#swName').onclick=goNames;
+  bindTaskBanner();if(myTasks().length)setTimeout(()=>say('ins_task'),700);
 }
 function teacherGate(){
   modal(`<div style="text-align:center"><div class="sign">老師專區</div><p style="font-size:24px">請老師按住下面的按鈕 2 秒</p>
@@ -248,16 +251,42 @@ function freePlay(slow){
   if(items.length){FREE.last=items;seq(items)}
 }
 
+/* ================= 老師任務 ================= */
+const MCODE={listen:'L',pic:'P',missI:'I',missM:'M',missF:'F',tone:'T',findSym:'S'};
+const MDEC=Object.fromEntries(Object.entries(MCODE).map(([k,v])=>[v,k]));
+const getTasks=()=>LS.get('tasks',[]), saveTasks=t=>LS.set('tasks',t);
+function itemsFor(task,name){return (task.items[name]||task.items['*']||[])}
+function myTasks(){return getTasks().filter(t=>t.students.includes(ME)&&!(t.done||{})[ME])}
+const SITE_URL='https://liniris1023.github.io/sped-exam-reader/forest-zhuyin/';
+function b64u(str){return btoa(String.fromCharCode(...new TextEncoder().encode(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function unb64u(s){s=s.replace(/-/g,'+').replace(/_/g,'/');const bin=atob(s);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
+function encItem(q){return q.sym?q.sym:q.zy+MCODE[q.mode]}
+function decItem(c){const last=c.slice(-1);if(MDEC[last]&&c.length>1)return {zy:c.slice(0,-1),mode:MDEC[last]};return {sym:c,mode:'findSym'}}
+function taskURL(t){const o={v:1,id:t.id,n:t.name,l:t.level,s:t.students,c:t.created,i:{}};for(const k in t.items)o.i[k]=t.items[k].map(encItem).join(',');return SITE_URL+'#t='+b64u(JSON.stringify(o))}
+function importTaskFromHash(){
+  const h=location.hash;if(!h.startsWith('#t='))return null;
+  try{const o=JSON.parse(unb64u(h.slice(3)));const items={};for(const k in o.i)items[k]=o.i[k]?o.i[k].split(',').map(decItem):[];
+    const t={id:o.id,name:o.n,level:o.l,students:o.s,created:o.c,items,done:{}};
+    const all=getTasks();if(!all.some(x=>x.id===t.id)){all.push(t);saveTasks(all)}
+    history.replaceState(null,'',location.pathname+location.search);return t}catch(e){console.warn(e);return null}
+}
+function qrSVG(text,size=300){try{const q=qrcode(0,'L');q.addData(text);q.make();const n=q.getModuleCount();return q.createSvgTag({cellSize:Math.max(2,Math.floor(size/(n+4))),margin:2,scalable:true})}catch(e){return '<p>QR 產生失敗（題目太多，請減少題數）</p>'}}
+function taskBanner(){
+  const ts=myTasks();if(!ts.length)return '';
+  return `<div class="panel taskbox"><div class="sign" style="font-size:24px">📮 老師的任務</div><div class="tasklist">${ts.map(t=>`<button class="taskcard" data-task="${t.id}"><b>${esc(t.name)}</b><small>${LV_NAMES[t.level]}・${itemsFor(t,ME).length} 題</small><span>▶ 開始</span></button>`).join('')}</div></div>`;
+}
+function bindTaskBanner(){$$('[data-task]').forEach(b=>b.onclick=()=>{const t=getTasks().find(x=>x.id===b.dataset.task);if(t)startRound(t.level,itemsFor(t,ME),false,t)})}
+
 /* ================= 拼音闖關：選程度 ================= */
 function goLevels(){
   stopAudio();setTitle('拼音闖關');
-  const fx=FIXED&&FIXED.items&&FIXED.items.length?`<div class="msg">📋 老師準備了 ${FIXED.items.length} 題（${LV_NAMES[FIXED.level]}）<br><button class="big g" id="useFixed">開始老師的題目</button></div>`:'';
-  view.innerHTML=`<div class="panel" style="text-align:center"><div class="sign">選擇今天的冒險</div>${fx}
-  <div class="lvcards"><button class="lv l" data-l="low"><img src="pic/c_rabbit.webp" alt=""><div>🌱 森林小萌芽<br><small>低階・四選一</small></div></button>
+  view.innerHTML=`${taskBanner()}<div class="panel" style="text-align:center"><div class="sign">選擇今天的冒險</div>
+  <div class="lvcards four"><button class="lv s" data-l="seed"><img src="pic/w_葉.webp" alt=""><div>🌰 森林小種子<br><small>基礎・聽音找注音</small></div></button>
+  <button class="lv l" data-l="low"><img src="pic/c_rabbit.webp" alt=""><div>🌱 森林小萌芽<br><small>低階・四選一</small></div></button>
   <button class="lv m" data-l="mid"><img src="pic/c_squirrel.webp" alt=""><div>🧭 森林探險家<br><small>中階・一步一步拼</small></div></button>
   <button class="lv h" data-l="high"><img src="pic/c_fox.webp" alt=""><div>👑 森林拼音王<br><small>高階・自己拼</small></div></button></div></div>`;
   $$('.lv').forEach(b=>b.onclick=()=>startRound(b.dataset.l));
-  const u=$('#useFixed');if(u)u.onclick=()=>startRound(FIXED.level,FIXED.items);
+  bindTaskBanner();
   say('ins_level');
 }
 
@@ -297,19 +326,68 @@ function genQuestions(cfg,level,count){
   return shuffle(out);
 }
 
+function genSeed(cfg,count){
+  const pool=cfg.seedSyms.length?cfg.seedSyms:[...'ㄅㄆㄇㄈ'];const out=[];let bag=[];
+  while(out.length<count){if(!bag.length)bag=shuffle(pool);let x=bag.shift();if(out.length&&out[out.length-1].sym===x&&pool.length>1){bag.push(x);x=bag.shift()}out.push({sym:x,mode:'findSym'})}
+  return out;
+}
+function genFor(level,count){return level==='seed'?genSeed(CFG,count):genQuestions(CFG,level,count)}
 /* ================= 拼音闖關：作答 ================= */
 let R=null; // round state
-function startRound(level,fixedItems,isReview){
+function startRound(level,fixedItems,isReview,task){
   stopAudio();
-  const items=fixedItems?fixedItems.slice():genQuestions(CFG,level,CFG.count);
+  const items=fixedItems?fixedItems.slice():genFor(level,CFG.count);
   if(!items.length){modal(`<div class="sign">沒有題目</div><p style="font-size:24px">目前老師的設定找不到合適的音節，請老師到「老師專區」放寬聲母、韻母或聲調範圍。</p><button class="big g" onclick="closeModal()">好</button>`);return}
-  R={level,sc:CFG.scaf[level],items,idx:0,streak:0,log:[],isReview:!!isReview,start:Date.now()};
+  R={level,sc:CFG.scaf[level]||{},items,idx:0,streak:0,log:[],isReview:!!isReview,task:task||null,start:Date.now()};
   showQ();
+}
+function seedOptions(sym){
+  const n=Math.max(2,Math.min(8,CFG.seedOpts||4));const all=[...INI,...MED,...FIN];
+  const sel=CFG.seedSyms.filter(x=>x!==sym);
+  const sim=CFG.seedSimilar?(SIMILAR.find(g=>g.includes(sym))||'').split('').filter(x=>x!==sym):[];
+  let d=shuffle(sel.filter(x=>sim.includes(x))).concat(shuffle(sel.filter(x=>!sim.includes(x))));
+  if(d.length<n-1)d=d.concat(shuffle(sim.filter(x=>!d.includes(x))));
+  if(d.length<n-1)d=d.concat(shuffle(all.filter(x=>x!==sym&&!d.includes(x))));
+  return shuffle([sym,...d.slice(0,n-1)]);
+}
+function showSeed(){
+  const it=R.items[R.idx],sym=it.sym;
+  const Q={it,sym,seed:true,first:true,wrongs:[],hints:0,done:false,elim:{},opts:seedOptions(sym)};R.Q=Q;
+  const pct=Math.round(R.idx/R.items.length*100);
+  view.innerHTML=`<div class="panel">
+   <div class="qhead"><span class="sign" style="font-size:22px;padding:6px 16px">${R.isReview?'錯題複習':R.task?'📮 '+esc(R.task.name):LV_NAMES.seed}</span><div class="prog"><i style="width:${pct}%"></i></div><b style="font-size:26px">第 ${R.idx+1} / ${R.items.length} 題</b>
+    <div class="speed">🐢<input type="range" id="rate" min="0.6" max="1.3" step="0.1" value="${AU.rate}">🐇</div></div>
+   <div class="noteRow"><div class="stepnote">聽一聽，找出你聽到的注音</div><div class="msg" id="qMsg"></div></div>
+   <div class="work3"><div class="ctlL"><button class="big y" id="qPlay">🔊 再聽一次</button></div>
+    <div class="vzwrap"><button class="seedcard" id="seedCard">❓</button></div>
+    <div class="ctlR"><img src="pic/c_rabbit.webp" alt="" style="height:120px"></div>
+    <div class="kbArea"><div class="opts seedopts" id="qInput">${Q.opts.map(x=>keyHTML(x)).join('')}</div></div></div></div>`;
+  $('#rate').oninput=e=>{AU.rate=+e.target.value;LS.set('rate',AU.rate)};
+  $('#qPlay').onclick=()=>say(symKey(sym));$('#seedCard').onclick=()=>{if(!Q.done)say(symKey(sym))};
+  $$('#qInput .key').forEach(k=>k.onclick=()=>seedPick(k.dataset.s,k));
+  setTimeout(()=>seq(R.idx===0?['ins_find',250,symKey(sym)]:[symKey(sym)]),250);
+}
+async function seedPick(x,el){
+  const Q=R.Q;if(Q.done)return;
+  if(x!==Q.sym){Q.first=false;Q.wrongs.push(x);el.classList.add('wrongx');$('#qMsg').className='msg warn';$('#qMsg').textContent='沒關係，再聽一次！';
+    seq([pick(['try1','try2']),150,symKey(Q.sym)]);return}
+  Q.done=true;const c=$('#seedCard');c.textContent=x;c.className='seedcard ok '+cat(x);
+  $$('#qInput .key').forEach(k=>{if(k!==el)k.classList.add('off')});el.classList.add('sel');
+  $('#qMsg').className='msg';$('#qMsg').textContent=pick(['答對了！🍃','好棒喔！🍃','太厲害了！🍃']);
+  R.log.push({zy:Q.sym,i:INI.includes(Q.sym)?Q.sym:'',m:MED.includes(Q.sym)?Q.sym:'',f:FIN.includes(Q.sym)?Q.sym:'',t:0,n:0,mode:'findSym',first:Q.first,final:true,hints:0,wrongs:Q.wrongs.slice(),target:Q.sym});
+  const unlock=addReward('leaves',1);flyLeaf(c);
+  if(Q.first)R.streak++;else R.streak=0;let fruit=false;if(R.streak>0&&R.streak%3===0){addReward('fruits',1);fruit=true}
+  $('.ctlR').innerHTML=`<button class="big g" id="qNext">${R.idx+1<R.items.length?'➡️ 下一題':'🏁 看成果'}</button>`;
+  $('#qNext').onclick=()=>{stopAudio();R.idx++;R.idx<R.items.length?showQ():finishRound()};
+  await seq([pick(['good1','good2','good3']),150,symKey(Q.sym)]);
+  if(fruit){popCard(`<span style="font-size:80px">${pick(FRUITS)}</span>連續答對三題！`,1600);await say('fruit')}
+  if(unlock){const r=rw();const nu=unlocked(r.leaves).slice(-1)[0];popCard(`<img src="${nu.img}" alt="">${nu.name} 搬來森林了！`,2000);await say('unlock')}
 }
 function compsOf(b){return [['i',b.i],['m',b.m],['f',b.f]].filter(x=>x[1])}
 function showQ(){
   stopAudio();
-  const it=R.items[R.idx], b=BYZY[it.zy], sc=R.sc;
+  if(R.items[R.idx].mode==='findSym')return showSeed();
+  const it=R.items[R.idx], b=BYZY[it.zy], sc=CFG.scaf[R.level]||R.sc;R.sc=sc;
   const comps=compsOf(b);
   const Q={it,b,comps,ans:comps.map(()=>''),given:comps.map(()=>false),tone:0,toneGiven:false,act:0,tries:0,wrongs:[],hints:0,first:true,done:false,elim:{},flex:false};
   R.Q=Q;
@@ -331,7 +409,7 @@ function showQ(){
   const showPic=(it.mode==='pic')||(sc.pic&&PICBY[b.zy]);
   const pp=PICBY[b.zy]&&PICBY[b.zy][0];
   view.innerHTML=`<div class="panel">
-   <div class="qhead"><span class="sign" style="font-size:22px;padding:6px 16px">${R.isReview?'錯題複習':LV_NAMES[R.level]}</span><div class="prog"><i style="width:${pct}%"></i></div><b style="font-size:26px">第 ${R.idx+1} / ${R.items.length} 題</b>
+   <div class="qhead"><span class="sign" style="font-size:22px;padding:6px 16px">${R.isReview?'錯題複習':R.task?'📮 '+esc(R.task.name):LV_NAMES[R.level]}</span><div class="prog"><i style="width:${pct}%"></i></div><b style="font-size:26px">第 ${R.idx+1} / ${R.items.length} 題</b>
     <div class="speed">🐢<input type="range" id="rate" min="0.6" max="1.3" step="0.1" value="${AU.rate}">🐇</div></div>
    <div class="noteRow"><div class="stepnote" id="qNote"></div><div class="msg" id="qMsg"></div></div>
    <div class="work3">
@@ -533,25 +611,27 @@ function finishRound(){
   stopAudio();
   const L=R.log, n=L.length||1;
   const first=L.filter(x=>x.first).length, fin=L.filter(x=>x.final).length;
-  const by=(f)=>{const o={};L.forEach(x=>{const k=f(x);o[k]=o[k]||[0,0];o[k][1]++;if(x.final)o[k][0]++});return o};
+  const by=(f,list=L)=>{const o={};list.forEach(x=>{const k=f(x);o[k]=o[k]||[0,0];o[k][1]++;if(x.first)o[k][0]++});return o};
   const wrongSym={};L.forEach(x=>x.wrongs.forEach(w=>wrongSym[w]=(wrongSym[w]||0)+1));
   const rec={date:new Date().toISOString(),student:ME,level:R.level,review:R.isReview,count:L.length,
     inis:[...new Set(L.map(x=>x.i).filter(Boolean))],fins:[...new Set(L.map(x=>x.m+x.f))],
-    byType:by(x=>x.n===3?'三拼':'二拼'),byTone:by(x=>TNAME[x.t]),first,final:fin,hints:L.reduce((a,x)=>a+x.hints,0),
+    byType:by(x=>x.n===0?'認注音':x.n===3?'三拼':'二拼'),byTone:by(x=>TNAME[x.t],L.filter(x=>x.n>0)),first,final:fin,task:R.task?R.task.name:'',hints:L.reduce((a,x)=>a+x.hints,0),
     wrongSym,wrongList:L.filter(x=>!x.first).map(x=>x.zy)};
   const all=LS.get('records',[]);all.push(rec);LS.set('records',all);
+  if(R.task&&!R.isReview){const ts=getTasks();const t=ts.find(x=>x.id===R.task.id);if(t){t.done=t.done||{};t.done[ME]=rec.date;saveTasks(ts)}}
   addReward('gifts',1);
-  const wrongItems=L.filter(x=>!x.first).map(x=>({zy:x.zy,mode:'listen'}));
-  view.innerHTML=`<div class="panel" style="text-align:center"><div class="sign">🎁 完成這一回！</div>
+  const wrongItems=L.filter(x=>!x.first).map(x=>x.n===0?{sym:x.zy,mode:'findSym'}:{zy:x.zy,mode:'listen'});
+  view.innerHTML=`<div class="panel" style="text-align:center"><div class="sign">🎁 ${R.task&&!R.isReview?'任務完成！':'完成這一回！'}</div>
    <div style="margin:14px 0"><img src="pic/c_rabbit.webp" class="bounce" style="height:120px" alt=""><img src="pic/c_squirrel.webp" class="bounce" style="height:120px" alt=""><img src="pic/c_fox.webp" class="bounce" style="height:120px" alt=""></div>
    <div class="summary"><div>完成題數<b>${L.length}</b></div><div>一次就答對<b>${first}</b></div><div>最後答對<b>${fin}</b></div><div>獲得葉子<b>🍃${fin}</b></div></div>
    <div class="center">${R.sc.review&&wrongItems.length&&!R.isReview?`<button class="big p" id="rv">🔁 錯題複習（${wrongItems.length} 題）</button>`:''}
-   <button class="big g" id="again">再玩一次</button><button class="big" id="home2">回首頁</button></div></div>`;
+   <button class="big g" id="again">${R.task?'再練一次這個任務':'再玩一次'}</button><button class="big" id="home2">回首頁</button></div></div>`;
   popCard(`<span style="font-size:80px">🎁</span>獲得森林禮物！`,1800);
   say('ins_done','gift');
   const lv=R.level;
   if($('#rv'))$('#rv').onclick=()=>{say('ins_review');startRound(lv,wrongItems,true)};
-  $('#again').onclick=()=>startRound(lv,FIXED&&R.items===FIXED.items?FIXED.items:null);
+  const tk=R.task,its=R.items;
+  $('#again').onclick=()=>tk?startRound(lv,its,true,tk):startRound(lv);
   $('#home2').onclick=goHome;
 }
 
@@ -559,13 +639,13 @@ function finishRound(){
 let TTAB='set', PREVIEW=null;
 function goTeacher(){
   stopAudio();setTitle('老師專區');$('#homeBtn').classList.remove('hide');updateBar();
-  view.innerHTML=`<div class="panel"><div class="tabs">${[['set','📝 出題設定'],['preview','👀 出題預覽'],['rec','📊 學習紀錄'],['audio','🔊 語音校對'],['more','⚙️ 學生名單・QR']].map(([k,n])=>`<button data-k="${k}" class="${TTAB===k?'on':''}">${n}</button>`).join('')}</div><div id="tBody"></div></div>`;
+  view.innerHTML=`<div class="panel"><div class="tabs">${[['set','📝 出題設定'],['preview','👀 出題預覽'],['task','📮 派任務'],['rec','📊 學習紀錄'],['audio','🔊 語音校對'],['more','⚙️ 學生名單・QR']].map(([k,n])=>`<button data-k="${k}" class="${TTAB===k?'on':''}">${n}</button>`).join('')}</div><div id="tBody"></div></div>`;
   $$('.tabs button').forEach(b=>b.onclick=()=>{TTAB=b.dataset.k;goTeacher()});
-  ({set:tSet,preview:tPreview,rec:tRec,audio:tAudio,more:tMore})[TTAB]();
+  ({set:tSet,preview:tPreview,task:tTask,rec:tRec,audio:tAudio,more:tMore})[TTAB]();
 }
 function chkRow(arr,sel,fmt=x=>x,cls=''){return arr.map(x=>`<button class="chk ${cls} ${sel.includes(x)?'on':''}" data-v="${x}">${fmt(x)}</button>`).join('')}
 function bindChk(box,arr,key,num){box.querySelectorAll('.chk').forEach(b=>b.onclick=()=>{const v=num?+b.dataset.v:b.dataset.v;const a=CFG[key];const i=a.indexOf(v);i>=0?a.splice(i,1):a.push(v);saveCfg();b.classList.toggle('on');poolInfo()})}
-function poolInfo(){const n=poolOf(CFG).length;const e=$('#poolN');if(e)e.innerHTML=n?`目前符合條件的合法音節：<b>${n}</b> 個`:`<span style="color:var(--red)">目前沒有符合的音節，請放寬條件</span>`}
+function poolInfo(){if(CFG.level==='seed'){const e=$('#poolN');if(e)e.innerHTML=CFG.seedSyms.length?`基礎題練習的注音：<b>${CFG.seedSyms.join(' ')}</b>`:`<span style="color:var(--red)">請至少勾選一個注音</span>`;return}const n=poolOf(CFG).length;const e=$('#poolN');if(e)e.innerHTML=n?`目前符合條件的合法音節：<b>${n}</b> 個`:`<span style="color:var(--red)">目前沒有符合的音節，請放寬條件</span>`}
 function tSet(){
   const lv=CFG.level, sc=CFG.scaf[lv];
   $('#tBody').innerHTML=`<div class="msg" id="poolN"></div><div class="tgrid">
@@ -580,12 +660,16 @@ function tSet(){
    <div class="tog" style="margin-top:10px">只出常用生活字音節 <div class="sw ${CFG.commonOnly?'on':''}" id="swCommon"></div></div></div>
   <div class="tsec"><h3>3. 介音與韻母範圍（可多選）</h3><div class="row" id="sMed">${chkRow(MED,CFG.meds)}</div><div class="row" id="sFin" style="margin-top:8px">${chkRow(FIN,CFG.fins)}</div>
    <div class="row" style="margin-top:8px"><button class="sbtn g" id="fAll">全選</button><button class="sbtn" id="fNone">全部取消</button></div><p class="hint">預設為全部適用韻母；可只勾已教過的。</p></div>
-  <div class="tsec"><h3>5. 練習程度</h3><div class="row" id="sLv">${['low','mid','high'].map(l=>`<button class="chk txt ${lv===l?'on':''}" data-l="${l}">${LV_NAMES[l]}</button>`).join('')}</div>
+  <div class="tsec"><h3>5. 練習程度</h3><div class="row" id="sLv">${LEVELS.map(l=>`<button class="chk txt ${lv===l?'on':''}" data-l="${l}">${LV_NAMES[l]}</button>`).join('')}</div>
    <p class="hint">下方「出題方式」與「鷹架」是 <b>${LV_NAMES[lv]}</b> 的設定。學生選這個程度時就會套用。</p><button class="sbtn" id="lvReset">↺ 還原這個程度的預設鷹架</button>
-   <h3 style="margin-top:14px">6. 出題方式（可多選）</h3><div class="row" id="sMode">${Object.keys(MODE_NAMES).map(m=>`<button class="chk txt ${sc.modes.includes(m)?'on':''}" data-m="${m}">${MODE_NAMES[m]}</button>`).join('')}</div></div>
-  <div class="tsec"><h3>8. 鷹架設定（${LV_NAMES[lv]}）</h3>${Object.keys(SCAF_NAMES).map(k=>`<div class="tog">${SCAF_NAMES[k]}<div class="sw ${sc[k]?'on':''}" data-k="${k}"></div></div>`).join('')}
-   <p class="hint">輸入方式優先順序：四個注音選項 → 分類注音鍵盤 → 完整注音鍵盤。「顯示定位格數量」關閉時（高階），學生要自己判斷二拼或三拼。</p></div>
-  </div><div class="center" style="margin-top:16px"><button class="big y" id="goPrev">👀 預覽題目</button><button class="big g" id="goStart">▶ 開始學生練習</button></div>`;
+   ${lv==='seed'?'':`<h3 style="margin-top:14px">6. 出題方式（可多選）</h3><div class="row" id="sMode">${Object.keys(MODE_NAMES).map(m=>`<button class="chk txt ${sc.modes.includes(m)?'on':''}" data-m="${m}">${MODE_NAMES[m]}</button>`).join('')}</div>`}</div>
+  ${lv==='seed'?`<div class="tsec"><h3>基礎題：聽音找注音</h3><p class="hint">學生聽到一個注音，從選項中找出來。請勾選要練習的注音符號：</p>
+   <div class="kb" id="sSeed"><div class="kbrow">${chkRow(INI,CFG.seedSyms)}</div><div class="kbrow">${chkRow(MED,CFG.seedSyms)}${chkRow(FIN,CFG.seedSyms)}</div></div>
+   <div class="row" style="margin-top:8px"><button class="sbtn g" id="sdIni">全部聲母</button><button class="sbtn g" id="sdFin">全部介音韻母</button><button class="sbtn" id="sdNone">全部取消</button></div>
+   <h3 style="margin-top:12px">選項數量</h3><div class="row" id="sdOpt">${[2,3,4,6].map(n=>`<button class="chk txt ${CFG.seedOpts===n?'on':''}" data-o="${n}">${n} 個</button>`).join('')}</div>
+   <div class="tog">優先用長得像的注音當選項（如 ㄅ／ㄆ、ㄉ／ㄊ）<div class="sw ${CFG.seedSimilar?'on':''}" id="sdSim"></div></div></div>`:`<div class="tsec"><h3>8. 鷹架設定（${LV_NAMES[lv]}）</h3>${Object.keys(SCAF_NAMES).map(k=>`<div class="tog">${SCAF_NAMES[k]}<div class="sw ${sc[k]?'on':''}" data-k="${k}"></div></div>`).join('')}
+   <p class="hint">輸入方式優先順序：四個注音選項 → 分類注音鍵盤 → 完整注音鍵盤。「顯示定位格數量」關閉時（高階），學生要自己判斷二拼或三拼。</p></div>`}
+  </div><div class="center" style="margin-top:16px"><button class="big y" id="goPrev">👀 預覽題目</button><button class="big g" id="goStart">📮 派任務給學生</button></div>`;
   const B=$('#tBody');
   $('#sIni').querySelectorAll('.chk[data-v]').forEach(b=>b.onclick=()=>{const a=CFG.inis,v=b.dataset.v,i=a.indexOf(v);i>=0?a.splice(i,1):a.push(v);saveCfg();b.classList.toggle('on');poolInfo()});
   $('#noIni').onclick=e=>{CFG.noIni=!CFG.noIni;saveCfg();e.currentTarget.classList.toggle('on');poolInfo()};
@@ -596,47 +680,90 @@ function tSet(){
   $('#cntX').onchange=e=>{CFG.count=Math.max(1,Math.min(60,+e.target.value||10));saveCfg();tSet()};
   $('#swCommon').onclick=e=>{CFG.commonOnly=!CFG.commonOnly;saveCfg();e.currentTarget.classList.toggle('on');poolInfo()};
   $$('#sLv .chk').forEach(b=>b.onclick=()=>{CFG.level=b.dataset.l;saveCfg();tSet()});
-  $('#lvReset').onclick=()=>{CFG.scaf[lv]={...PRESET[lv]};saveCfg();tSet()};
-  $$('#sMode .chk').forEach(b=>b.onclick=()=>{const a=sc.modes,m=b.dataset.m,i=a.indexOf(m);i>=0?a.splice(i,1):a.push(m);saveCfg();b.classList.toggle('on')});
+  $('#lvReset').onclick=()=>{CFG.scaf[lv]={...PRESET[lv]};if(lv==='seed'){CFG.seedOpts=4;CFG.seedSimilar=true}saveCfg();tSet()};
+  if($('#sMode'))$$('#sMode .chk').forEach(b=>b.onclick=()=>{const a=sc.modes,m=b.dataset.m,i=a.indexOf(m);i>=0?a.splice(i,1):a.push(m);saveCfg();b.classList.toggle('on')});
   B.querySelectorAll('.sw[data-k]').forEach(s=>s.onclick=()=>{const k=s.dataset.k;sc[k]=!sc[k];
     if(k==='four'&&sc.four){sc.catkb=false;sc.fullkb=false}if(k==='catkb'&&sc.catkb){sc.four=false;sc.fullkb=false}if(k==='fullkb'&&sc.fullkb){sc.four=false;sc.catkb=false}
     saveCfg();tSet()});
   $('#combo').onchange=e=>{const c=LS.get('combos',{})[e.target.value];if(c){Object.assign(CFG,JSON.parse(JSON.stringify(c)));saveCfg();tSet()}};
   $('#cSave').onclick=()=>{const n=prompt('幫這個出題組合取個名字（例如：ㄅㄆㄇㄈ＋一二聲）');if(!n)return;const c=LS.get('combos',{});c[n]=JSON.parse(JSON.stringify(CFG));LS.set('combos',c);tSet()};
   $('#cDel').onclick=()=>{const v=$('#combo').value;if(!v)return;const c=LS.get('combos',{});delete c[v];LS.set('combos',c);tSet()};
+  if($('#sSeed')){$$('#sSeed .chk').forEach(b=>b.onclick=()=>{const a=CFG.seedSyms,v=b.dataset.v,i=a.indexOf(v);i>=0?a.splice(i,1):a.push(v);saveCfg();b.classList.toggle('on');poolInfo()});
+    $('#sdIni').onclick=()=>{CFG.seedSyms=[...new Set([...CFG.seedSyms,...INI])];saveCfg();tSet()};$('#sdFin').onclick=()=>{CFG.seedSyms=[...new Set([...CFG.seedSyms,...MED,...FIN])];saveCfg();tSet()};
+    $('#sdNone').onclick=()=>{CFG.seedSyms=[];saveCfg();tSet()};$$('#sdOpt .chk').forEach(b=>b.onclick=()=>{CFG.seedOpts=+b.dataset.o;saveCfg();tSet()});
+    $('#sdSim').onclick=e=>{CFG.seedSimilar=!CFG.seedSimilar;saveCfg();e.currentTarget.classList.toggle('on')}}
   $('#goPrev').onclick=()=>{PREVIEW=null;TTAB='preview';goTeacher()};
   $('#goStart').onclick=startForStudent;
   poolInfo();
 }
-function startForStudent(){
-  const items=PREVIEW||genQuestions(CFG,CFG.level,CFG.count);
-  if(!items.length){alert('沒有符合條件的題目');return}
-  FIXED={level:CFG.level,items};LS.set('fixed',FIXED);
-  modal(`<div style="text-align:center"><div class="sign">開始學生練習</div><p style="font-size:24px">題目已準備好（${items.length} 題・${LV_NAMES[CFG.level]}）。<br>學生在「拼音闖關」會看到「開始老師的題目」。</p>
-  <div class="center">${STUDENTS.map(n=>`<button class="big g" data-n="${esc(n)}">${esc(n)} 現在開始</button>`).join('')}<button class="big" onclick="closeModal()">稍後</button></div></div>`);
-  $$('#modal [data-n]').forEach(b=>b.onclick=()=>{closeModal();ME=b.dataset.n;updateBar();$('#homeBtn').classList.remove('hide');startRound(FIXED.level,FIXED.items)});
-}
+function startForStudent(){if(!PREVIEW)PREVIEW=genFor(CFG.level,CFG.count);TASKSRC='same';TTAB='task';goTeacher()}
 function tPreview(){
-  if(!PREVIEW)PREVIEW=genQuestions(CFG,CFG.level,CFG.count);
-  const fx=FIXED&&FIXED.items?`<p class="hint">學生目前的老師題單：${FIXED.items.length} 題（${LV_NAMES[FIXED.level]}）。<button class="sbtn r" id="clrFixed">取消老師題單（改回隨機出題）</button></p>`:'';
+  const isSeed=CFG.level==='seed';
+  if(PREVIEW&&PREVIEW.length&&((PREVIEW[0].mode==='findSym')!==isSeed))PREVIEW=null;
+  if(!PREVIEW)PREVIEW=genFor(CFG.level,CFG.count);
+  const fx='';
   $('#tBody').innerHTML=`<div class="tsec"><h3>出題預覽（${LV_NAMES[CFG.level]}，${PREVIEW.length} 題）</h3>${fx}
-   <div class="qlist">${PREVIEW.map((q,k)=>`<div class="qitem"><span>${k+1}.</span><b>${q.zy}</b><small>${exampleOf(q.zy)}・${MODE_NAMES[q.mode]}</small><button data-p="${k}" title="試聽">🔊</button><button data-d="${k}" title="刪除">✕</button></div>`).join('')||'<p>沒有題目</p>'}</div>
+   <div class="qlist">${PREVIEW.map((q,k)=>`<div class="qitem"><span>${k+1}.</span><b>${q.sym||q.zy}</b><small>${q.sym?'聽音找注音':exampleOf(q.zy)+'・'+MODE_NAMES[q.mode]}</small><button data-p="${k}" title="試聽">🔊</button><button data-d="${k}" title="刪除">✕</button></div>`).join('')||'<p>沒有題目</p>'}</div>
    <div class="row" style="margin-top:12px"><span style="font-size:20px">手動新增：</span><input type="text" id="addZy" placeholder="例如 ㄊㄨˋ" style="width:180px"><select id="addMode">${Object.keys(MODE_NAMES).map(m=>`<option value="${m}">${MODE_NAMES[m]}</option>`).join('')}</select><button class="sbtn g" id="addBtn">＋ 新增</button></div>
    <div id="addKb" style="margin-top:8px"></div>
    <p class="hint">可直接用下面的注音按鈕輸入；第一聲不用加調號，輕聲把「˙」放在最後。</p>
-   <div class="center" style="margin-top:14px"><button class="big y" id="reroll">🎲 重新隨機出題</button><button class="big w" id="saveCombo">💾 儲存常用設定</button><button class="big g" id="startS">▶ 開始學生練習</button></div></div>`;
+   <div class="center" style="margin-top:14px"><button class="big y" id="reroll">🎲 重新隨機出題</button><button class="big w" id="saveCombo">💾 儲存常用設定</button><button class="big g" id="startS">📮 用這份題目派任務</button></div></div>`;
   $('#addKb').innerHTML=`<div class="kbrow">${[...INI,...MED,...FIN].map(c=>`<button class="key ${cat(c)}" style="min-width:48px;min-height:48px;font-size:28px" data-a="${c}">${c}</button>`).join('')}${['ˊ','ˇ','ˋ','˙'].map(c=>`<button class="key t" style="min-width:48px;min-height:48px;font-size:28px" data-a="${c}">${c}</button>`).join('')}<button class="sbtn" id="addBs">⌫</button></div>`;
   $$('#addKb [data-a]').forEach(b=>b.onclick=()=>{$('#addZy').value+=b.dataset.a});
   $('#addBs').onclick=()=>{const v=[...$('#addZy').value];v.pop();$('#addZy').value=v.join('')};
-  $$('.qitem [data-p]').forEach(b=>b.onclick=()=>say(sylKey(PREVIEW[+b.dataset.p].zy)));
+  $$('.qitem [data-p]').forEach(b=>b.onclick=()=>{const q=PREVIEW[+b.dataset.p];say(q.sym?symKey(q.sym):sylKey(q.zy))});
   $$('.qitem [data-d]').forEach(b=>b.onclick=()=>{PREVIEW.splice(+b.dataset.d,1);tPreview()});
-  $('#addBtn').onclick=()=>{let v=$('#addZy').value.trim().replace(/ˉ/g,'');if(v.startsWith('˙'))v=v.slice(1)+'˙';const b=BYZY[v];const m=$('#addMode').value;
+  $('#addBtn').onclick=()=>{let v=$('#addZy').value.trim().replace(/ˉ/g,'');
+    if(isSeed){const ok=[...v].filter(c=>cat(c));if(!ok.length){alert('請輸入注音符號');return}ok.forEach(c=>PREVIEW.push({sym:c,mode:'findSym'}));tPreview();return}if(v.startsWith('˙'))v=v.slice(1)+'˙';const b=BYZY[v];const m=$('#addMode').value;
     if(!b||b.n===1){alert('「'+v+'」不在合法二拼／三拼音節題庫中，請再確認。');return}
     PREVIEW.push({zy:v,mode:modeFits(b,m)?m:'listen'});tPreview()};
-  $('#reroll').onclick=()=>{PREVIEW=genQuestions(CFG,CFG.level,CFG.count);tPreview()};
+  $('#reroll').onclick=()=>{PREVIEW=genFor(CFG.level,CFG.count);tPreview()};
   $('#saveCombo').onclick=()=>{const n=prompt('常用設定名稱');if(!n)return;const c=LS.get('combos',{});c[n]=JSON.parse(JSON.stringify(CFG));LS.set('combos',c);alert('已儲存')};
   $('#startS').onclick=startForStudent;
-  const cf=$('#clrFixed');if(cf)cf.onclick=()=>{FIXED=null;LS.set('fixed',null);tPreview()};
+}
+let TASKSRC='rand', TASKSTU=null, TASKLV=null;
+function tTask(){
+  const lv=TASKLV||CFG.level;TASKSTU=TASKSTU||STUDENTS.filter(n=>n!=='測試者');
+  const d=new Date();const defName=`${d.getMonth()+1}/${d.getDate()} 注音任務`;
+  const ts=getTasks().slice().reverse();
+  $('#tBody').innerHTML=`<div class="tgrid"><div class="tsec"><h3>建立任務</h3>
+   <div class="row"><span style="font-size:20px">任務名稱</span><input type="text" id="tkName" value="${esc(defName)}" style="flex:1"></div>
+   <h3 style="margin-top:12px">給誰（可多選）</h3><div class="row" id="tkStu">${STUDENTS.map(n=>`<button class="chk txt ${TASKSTU.includes(n)?'on':''}" data-v="${esc(n)}">${esc(n)}</button>`).join('')}<button class="sbtn" id="tkAll">全選</button></div>
+   <h3 style="margin-top:12px">程度</h3><div class="row" id="tkLv">${LEVELS.map(l=>`<button class="chk txt ${lv===l?'on':''}" data-l="${l}">${LV_NAMES[l]}</button>`).join('')}</div>
+   <h3 style="margin-top:12px">題目來源</h3><div class="row" id="tkSrc">${[['rand','每位學生各自隨機（依出題設定）'],['same','大家同一份（出題預覽的題目）'],['wrong','依每位學生自己的錯題']].map(([k,n])=>`<button class="chk txt ${TASKSRC===k?'on':''}" data-s="${k}">${n}</button>`).join('')}</div>
+   <p class="hint">題數：${CFG.count} 題（在「出題設定」修改）。「依錯題」若錯題不夠，會用出題設定補滿。${TASKSRC==='same'&&PREVIEW?`目前預覽題單 ${PREVIEW.length} 題。`:''}</p>
+   <div class="center" style="margin-top:10px"><button class="big g" id="tkMake">📮 建立任務</button></div></div>
+   <div class="tsec"><h3>任務清單</h3><p class="hint">學生選名字後，首頁和「拼音闖關」就會出現自己的任務。<br>學生用<b>別台平板</b>時，請按「📱 任務 QR」讓學生掃描，任務就會送到那台平板。完成狀態只記在學生作答的那台裝置。</p>
+   <div class="alist" style="max-height:520px">${ts.map(t=>`<div class="ar" style="flex-wrap:wrap"><b style="min-width:0">${esc(t.name)}</b><span style="flex:1">${LV_NAMES[t.level]}・${Object.values(t.items)[0].length} 題<br>${t.students.map(n=>`${esc(n)} ${(t.done||{})[n]?'✅':'⏳'}`).join('　')}</span>
+    <button class="sbtn g" data-qr="${t.id}">📱 任務 QR</button><button class="sbtn" data-go="${t.id}">▶ 讓學生開始</button><button class="sbtn r" data-del="${t.id}">🗑</button></div>`).join('')||'<p>還沒有任務</p>'}</div></div></div>`;
+  $$('#tkStu .chk').forEach(b=>b.onclick=()=>{const v=b.dataset.v,i=TASKSTU.indexOf(v);i>=0?TASKSTU.splice(i,1):TASKSTU.push(v);b.classList.toggle('on')});
+  $('#tkAll').onclick=()=>{TASKSTU=STUDENTS.slice();tTask()};
+  $$('#tkLv .chk').forEach(b=>b.onclick=()=>{TASKLV=b.dataset.l;tTask()});
+  $$('#tkSrc .chk').forEach(b=>b.onclick=()=>{TASKSRC=b.dataset.s;tTask()});
+  $('#tkMake').onclick=()=>{
+    if(!TASKSTU.length){alert('請選擇學生');return}
+    const name=$('#tkName').value.trim()||defName;const items={};
+    if(TASKSRC==='same'){let p=PREVIEW&&PREVIEW.length&&((PREVIEW[0].mode==='findSym')===(lv==='seed'))?PREVIEW:genFor(lv,CFG.count);items['*']=p.slice()}
+    else TASKSTU.forEach(n=>{
+      let list=[];
+      if(TASKSRC==='wrong'){const zs=[...new Set(LS.get('records',[]).filter(r=>r.student===n).flatMap(r=>r.wrongList||[]))];
+        list=shuffle(zs).filter(z=>lv==='seed'?cat(z):BYZY[z]&&BYZY[z].n>1).slice(0,CFG.count).map(z=>lv==='seed'?{sym:z,mode:'findSym'}:{zy:z,mode:'listen'})}
+      if(list.length<CFG.count){const used=new Set(list.map(q=>q.zy||q.sym));list=list.concat(genFor(lv,CFG.count*2).filter(q=>!used.has(q.zy||q.sym)).slice(0,CFG.count-list.length))}
+      items[n]=list});
+    if(!Object.values(items).every(l=>l.length)){alert('目前的出題設定找不到題目，請放寬範圍');return}
+    const t={id:Date.now().toString(36),name,level:lv,students:TASKSTU.slice(),created:new Date().toISOString(),items,done:{}};
+    const all=getTasks();all.push(t);saveTasks(all);tTask();showTaskQR(t.id)};
+  $$('[data-qr]').forEach(b=>b.onclick=()=>showTaskQR(b.dataset.qr));
+  $$('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('刪除這個任務？')){saveTasks(getTasks().filter(t=>t.id!==b.dataset.del));tTask()}});
+  $$('[data-go]').forEach(b=>b.onclick=()=>{const t=getTasks().find(x=>x.id===b.dataset.go);
+    modal(`<div style="text-align:center"><div class="sign">誰要開始？</div><div class="center" style="margin-top:14px">${t.students.map(n=>`<button class="big g" data-n="${esc(n)}">${esc(n)}</button>`).join('')}<button class="big" onclick="closeModal()">取消</button></div></div>`);
+    $$('#modal [data-n]').forEach(x=>x.onclick=()=>{closeModal();ME=x.dataset.n;updateBar();$('#homeBtn').classList.remove('hide');startRound(t.level,itemsFor(t,ME),false,t)})});
+}
+function showTaskQR(id){
+  const t=getTasks().find(x=>x.id===id);if(!t)return;const url=taskURL(t);
+  modal(`<div style="text-align:center"><div class="sign">📱 ${esc(t.name)}</div><p style="font-size:20px">給：${t.students.map(esc).join('、')}<br>學生用平板掃描，任務就會出現在學生端</p>
+   <div class="taskqr">${qrSVG(url,420)}</div><div class="center"><button class="sbtn" id="cpUrl">複製任務連結</button><button class="big g" onclick="closeModal()">關閉</button></div></div>`);
+  $('#cpUrl').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(url).then(()=>alert('已複製'))};
 }
 function pct(a,b){return b?Math.round(a/b*100)+'%':'—'}
 function tRec(){
@@ -649,16 +776,17 @@ function tRec(){
    <button class="sbtn" id="csv">⬇ 匯出 CSV</button><button class="sbtn r" id="clr">清除紀錄</button></div>
    <p style="font-size:20px">常錯的注音：${top.length?top.map(([k,v])=>`<b style="font-size:28px">${esc(k)}</b>×${v}`).join('　'):'（目前沒有）'}</p>
    <div class="row"><button class="sbtn g" id="reWrong">🎯 用常錯題目重新出題</button><button class="sbtn g" id="reSym">🎯 針對常錯聲母・韻母・聲調設定出題範圍</button></div>
-   <div style="overflow:auto;margin-top:10px"><table class="rec"><tr><th>日期</th><th>學生</th><th>程度</th><th>題數</th><th>首次正確率</th><th>最終正確率</th><th>二拼</th><th>三拼</th><th>各聲調</th><th>提示</th><th>錯誤注音</th><th>錯題</th></tr>
-   ${list.map(r=>`<tr><td>${new Date(r.date).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${esc(r.student)}</td><td>${LV_NAMES[r.level].slice(0,2)}${r.review?'<br>複習':''}</td><td>${r.count}</td><td>${pct(r.first,r.count)}</td><td>${pct(r.final,r.count)}</td>
-   <td>${r.byType['二拼']?pct(...r.byType['二拼']):'—'}</td><td>${r.byType['三拼']?pct(...r.byType['三拼']):'—'}</td><td style="font-size:14px">${Object.entries(r.byTone).map(([k,v])=>k+' '+pct(...v)).join('<br>')}</td><td>${r.hints}</td>
+   <div style="overflow:auto;margin-top:10px"><table class="rec"><tr><th>日期</th><th>學生</th><th>程度</th><th>題數</th><th>首次正確率</th><th>最終正確率</th><th>二拼／認注音</th><th>三拼</th><th>各聲調</th><th>提示</th><th>錯誤注音</th><th>錯題</th></tr>
+   ${list.map(r=>`<tr><td>${new Date(r.date).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${esc(r.student)}</td><td>${(LV_NAMES[r.level]||'').slice(0,2)}${r.review?'<br>複習':''}${r.task?'<br>📮'+esc(r.task):''}</td><td>${r.count}</td><td>${pct(r.first,r.count)}</td><td>${pct(r.final,r.count)}</td>
+   <td>${r.byType['認注音']?'認注音 '+pct(...r.byType['認注音']):r.byType['二拼']?pct(...r.byType['二拼']):'—'}</td><td>${r.byType['三拼']?pct(...r.byType['三拼']):'—'}</td><td style="font-size:14px">${Object.entries(r.byTone).map(([k,v])=>k+' '+pct(...v)).join('<br>')}</td><td>${r.hints}</td>
    <td>${Object.entries(r.wrongSym||{}).map(([k,v])=>esc(k)+'×'+v).join(' ')}</td><td style="font-size:18px">${(r.wrongList||[]).join(' ')}</td></tr>`).join('')||'<tr><td colspan="12">還沒有紀錄</td></tr>'}</table></div></div>`;
   $('#who').onchange=e=>{tRec.who=e.target.value;tRec()};
   $('#clr').onclick=()=>{if(confirm('確定清除'+(f==='全部'?'全部':f+' 的')+'學習紀錄？')){LS.set('records',f==='全部'?[]:all.filter(r=>r.student!==f));tRec()}};
   $('#csv').onclick=()=>{const rows=[['日期','學生','程度','題數','首次正確','最終正確','提示次數','錯誤注音','錯題']].concat(list.map(r=>[r.date,r.student,LV_NAMES[r.level],r.count,r.first,r.final,r.hints,Object.entries(r.wrongSym||{}).map(([k,v])=>k+'x'+v).join(' '),(r.wrongList||[]).join(' ')]));
     const blob=new Blob(['﻿'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='森林注音拼拼樂_學習紀錄.csv';a.click()};
-  $('#reWrong').onclick=()=>{const zs=[...new Set(list.flatMap(r=>r.wrongList||[]))].filter(z=>BYZY[z]);if(!zs.length){alert('目前沒有錯題');return}
-    PREVIEW=shuffle(zs).slice(0,Math.max(CFG.count,5)).map(z=>({zy:z,mode:'listen'}));TTAB='preview';goTeacher()};
+  $('#reWrong').onclick=()=>{const zs=[...new Set(list.flatMap(r=>r.wrongList||[]))];if(!zs.length){alert('目前沒有錯題');return}
+    const syl=zs.filter(z=>BYZY[z]&&BYZY[z].n>1);if(!syl.length){alert('目前沒有拼音錯題');return}if(CFG.level==='seed'){CFG.level='low';saveCfg()}
+    PREVIEW=shuffle(syl).slice(0,Math.max(CFG.count,5)).map(z=>({zy:z,mode:'listen'}));TTAB='preview';goTeacher()};
   $('#reSym').onclick=()=>{const ks=Object.keys(agg);const ini=ks.filter(k=>INI.includes(k)),fin=ks.filter(k=>FIN.includes(k)),med=ks.filter(k=>MED.includes(k));
     if(!ini.length&&!fin.length&&!med.length){alert('目前沒有常錯的注音符號紀錄');return}
     if(ini.length)CFG.inis=ini;if(fin.length)CFG.fins=fin;if(med.length)CFG.meds=MED.slice();saveCfg();TTAB='set';goTeacher();alert('已把出題範圍改成常錯的：'+[...ini,...med,...fin].join('、'))};
@@ -712,4 +840,6 @@ $('#homeBtn').onclick=()=>{stopAudio();ME&&ME!=='老師'?goHome():goNames()};
 $('#qrBtn').onclick=showQR;
 loadOverrides().then(()=>{});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAudio()});
+const IMPORTED=importTaskFromHash();
 goNames();
+if(IMPORTED)setTimeout(()=>popCard(`📮 收到老師任務：${esc(IMPORTED.name)}<br><small style="font-size:22px">給 ${IMPORTED.students.map(esc).join('、')}</small>`,3000),400);
